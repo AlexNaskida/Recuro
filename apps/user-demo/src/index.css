@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background:   220 40% 4%;
+    --foreground:   210 40% 98%;
+    --card:         222 47% 7%;
+    --card-foreground: 210 40% 98%;
+    --primary:      239 84% 67%;
+    --primary-foreground: 210 40% 98%;
+    --secondary:    160 84% 39%;
+    --secondary-foreground: 210 40% 98%;
+    --muted:        217 33% 17%;
+    --muted-foreground: 215 20% 55%;
+    --destructive:  0 72% 51%;
+    --destructive-foreground: 210 40% 98%;
+    --border:       217 33% 17%;
+    --input:        217 33% 17%;
+    --ring:         239 84% 67%;
+    --radius:       0.625rem;
+  }
+  * { border-color: hsl(var(--border)); }
+  html { -webkit-font-smoothing: antialiased; }
+  body { background-color: hsl(220, 40%, 4%); color: hsl(210, 40%, 98%); }
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: #0f172a; }
+  ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+  .wallet-adapter-button {
+    background: #1e293b !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    height: auto !important;
+    padding: 10px 20px !important;
+  }
+  .wallet-adapter-button:hover { border-color: #6366f1 !important; }
+}

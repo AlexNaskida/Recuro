@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+env:
+  SOLANA_CLI_VERSION: "1.18.0"
+  ANCHOR_VERSION: "0.29.0"
+  NODE_VERSION: "20"
+  RUST_TOOLCHAIN: "1.75.0"
+
+jobs:
+  # ── Rust / Anchor ───────────────────────────────────────────────────────────
+  anchor-build-and-test:
+    name: Anchor Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          override: true
+          components: rustfmt, clippy
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_CLI_VERSION }}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
+
+      - name: Install Anchor CLI
+        run: |
+          npm install -g @coral-xyz/anchor-cli@${{ env.ANCHOR_VERSION }}
+
+      - name: Generate test keypair
+        run: solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json
+
+      - name: Rust fmt check
+        run: cargo fmt --all -- --check
+
+      - name: Clippy lint
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Anchor build
+        run: anchor build
+
+      - name: Anchor test (localnet)
+        run: anchor test
+
+      - name: Sync IDL to SDK
+        run: cp target/idl/subscription.json sdk/src/idl.json
+
+      - name: Upload IDL artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: subscription-idl
+          path: target/idl/subscription.json
+
+  # ── TypeScript SDK ──────────────────────────────────────────────────────────
+  sdk-build:
+    name: SDK Build & Type-check
+    runs-on: ubuntu-latest
+    needs: anchor-build-and-test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download IDL
+        uses: actions/download-artifact@v4
+        with:
+          name: subscription-idl
+          path: sdk/src/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Type-check SDK
+        run: yarn workspace @solana-subscription/sdk type-check
+
+      - name: Build SDK
+        run: yarn workspace @solana-subscription/sdk build
+
+  # ── Apps ────────────────────────────────────────────────────────────────────
+  apps-build:
+    name: Apps Build & Type-check
+    runs-on: ubuntu-latest
+    needs: sdk-build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - run: yarn install --frozen-lockfile
+
+      - name: Type-check merchant dashboard
+        run: yarn workspace merchant-dashboard type-check
+
+      - name: Type-check user demo
+        run: yarn workspace user-demo type-check
+
+      - name: Build merchant dashboard
+        run: yarn workspace merchant-dashboard build
+
+      - name: Build user demo
+        run: yarn workspace user-demo build

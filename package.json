@@ -1,0 +1,34 @@
+{
+  "name": "solana-subscription-sdk",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "sdk",
+    "apps/merchant-dashboard",
+    "apps/user-demo"
+  ],
+  "scripts": {
+    "dev": "concurrently \"yarn workspace merchant-dashboard dev\" \"yarn workspace user-demo dev\"",
+    "dev:merchant": "yarn workspace merchant-dashboard dev",
+    "dev:user": "yarn workspace user-demo dev",
+    "build": "yarn workspace @solana-subscription/sdk build && concurrently \"yarn workspace merchant-dashboard build\" \"yarn workspace user-demo build\"",
+    "build:sdk": "yarn workspace @solana-subscription/sdk build",
+    "type-check": "yarn workspaces run type-check",
+    "lint": "yarn workspaces run lint",
+    "test": "anchor test",
+    "test:devnet": "anchor test --provider.cluster devnet",
+    "anchor:build": "anchor build",
+    "anchor:deploy": "anchor deploy",
+    "anchor:idl": "cp target/idl/subscription.json sdk/src/idl.json && echo 'IDL synced'"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.11",
+    "@types/mocha": "^10.0.6",
+    "chai": "^4.3.11",
+    "concurrently": "^8.2.2",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+}
