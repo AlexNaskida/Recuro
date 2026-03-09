@@ -106,7 +106,7 @@ export default function Plans() {
           <AlertDescription>
             {connected
               ? "No on-chain plans found. Deploy your first plan to see real data."
-              : "Connect your wallet to see your on-chain plans. Showing demo data."}
+              : "Connect your wallet to see your on-chain plans."}
           </AlertDescription>
         </Alert>
       )}

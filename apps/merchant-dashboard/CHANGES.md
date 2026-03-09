@@ -1,4 +1,4 @@
-# SubPay Hub — Changes from Lovable Export
+# SubPay Hub
 
 All changes made to wire real Solana wallet adapter + on-chain data.
 
