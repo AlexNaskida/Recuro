@@ -1,27 +1,55 @@
 import { useMemo } from "react";
-import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { createSdk, createReadOnlyProgram } from "@/lib/anchor";
-import type { SubscriptionSdk } from "@solana-subscription/sdk";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { AnchorProvider, Program, type Idl } from "@coral-xyz/anchor";
+import { PublicKey } from "@solana/web3.js";
+import { PROGRAM_ID } from "@/lib/constants";
 
-/**
- * Returns the SubscriptionSdk when a wallet is connected,
- * or null if no wallet is present (read-only mode).
- */
-export function useSdk(): SubscriptionSdk | null {
-  const { connection } = useConnection();
-  const wallet         = useAnchorWallet();
+// IDL will be available after anchor build + copy
+// For now we use a minimal stub that lets us at least init the provider
+// Replace with: import IDL from "@/lib/idl.json" after anchor build
+const IDL_STUB: Idl = {
+  version: "0.1.0",
+  name: "subscription",
+  instructions: [],
+  accounts: [],
+  errors: [],
+} as unknown as Idl;
 
-  return useMemo(() => {
-    if (!wallet) return null;
-    return createSdk(connection, wallet);
-  }, [connection, wallet]);
+let cachedIdl: Idl = IDL_STUB;
+// Attempt to load real IDL if it exists
+try {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const realIdl = require("@/lib/idl.json");
+  cachedIdl = realIdl;
+} catch {
+  // IDL not yet generated — will use mock data
 }
 
-/**
- * Returns a read-only Anchor Program instance for fetching accounts
- * without requiring a connected wallet.
- */
-export function useReadOnlyProgram() {
+export function useAnchorProgram() {
   const { connection } = useConnection();
-  return useMemo(() => createReadOnlyProgram(connection), [connection]);
+  const wallet = useWallet();
+
+  const provider = useMemo(() => {
+    if (!wallet.publicKey || !wallet.signTransaction) return null;
+    return new AnchorProvider(
+      connection,
+      {
+        publicKey: wallet.publicKey,
+        signTransaction: wallet.signTransaction,
+        signAllTransactions: wallet.signAllTransactions!,
+      },
+      { commitment: "confirmed" }
+    );
+  }, [connection, wallet.publicKey, wallet.signTransaction, wallet.signAllTransactions]);
+
+  const program = useMemo(() => {
+    if (!provider) return null;
+    try {
+      return new Program(cachedIdl, new PublicKey(PROGRAM_ID), provider);
+    } catch {
+      return null;
+    }
+  }, [provider]);
+
+  return { provider, program, connected: !!wallet.publicKey };
 }
