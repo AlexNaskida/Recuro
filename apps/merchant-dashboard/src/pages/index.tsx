@@ -43,7 +43,9 @@ export function OverviewPage() {
           value={analytics ? `${analytics.churnRate.toFixed(1)}%` : "—"}
           subLabel="Cancelled + expired"
           icon={XCircle}
-          highlight={analytics && analytics.churnRate > 10 ? "amber" : "default"}
+          highlight={
+            analytics && analytics.churnRate > 10 ? "amber" : "default"
+          }
           isLoading={isLoading}
         />
         <KpiCard
@@ -85,7 +87,7 @@ import { useMerchantPlans } from "@/hooks/useMerchantPlans";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 
 export function PlansPage() {
-  const wallet               = useAnchorWallet();
+  const wallet = useAnchorWallet();
   const { data: plans, isLoading } = useMerchantPlans();
   const { selectedPlanId, setSelectedPlan } = useAnalyticsStore();
 
@@ -94,7 +96,9 @@ export function PlansPage() {
       <div className="flex min-h-[60vh] items-center justify-center p-8">
         <div className="text-center">
           <h2 className="text-xl font-semibold">Connect your wallet</h2>
-          <p className="text-sm text-muted-foreground mt-2">Connect to manage your plans.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Connect to manage your plans.
+          </p>
         </div>
       </div>
     );
@@ -118,7 +122,9 @@ export function PlansPage() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-          {Array.from({ length: 3 }).map((_, i) => <PlanCardSkeleton key={i} />)}
+          {Array.from({ length: 3 }).map((_, i) => (
+            <PlanCardSkeleton key={i} />
+          ))}
         </div>
       ) : plans && plans.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -138,7 +144,9 @@ export function PlansPage() {
             Deploy your first plan to start accepting subscriptions.
           </p>
           <Button variant="brand" asChild>
-            <Link to="/create"><PlusCircle className="h-4 w-4" /> Create your first plan</Link>
+            <Link to="/create">
+              <PlusCircle className="h-4 w-4" /> Create your first plan
+            </Link>
           </Button>
         </div>
       )}
@@ -157,7 +165,8 @@ export function CreatePlanPage() {
       <div className="px-6 pt-6">
         <h1 className="text-2xl font-bold">Create Plan</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Deploy a new subscription plan PDA to Solana. Price and interval are immutable after creation.
+          Deploy a new subscription plan PDA to Solana. Price and interval are
+          immutable after creation.
         </p>
       </div>
       <CreatePlanForm />
@@ -171,19 +180,38 @@ export function CreatePlanPage() {
 import { RevenueChart as RC } from "@/components/analytics/RevenueChart";
 import { SubscriberTrendChart as STC } from "@/components/analytics/SubscriberTrendChart";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
 import { CHART_COLORS, formatUSDC } from "@/constants";
 import { KpiCard as KC } from "@/components/analytics/KpiCard";
-import { DollarSign, Users, TrendingDown, Activity } from "lucide-react";
+import { TrendingDown, Activity } from "lucide-react";
 
 export function AnalyticsPage() {
   const { data: analytics, isLoading } = useAnalytics();
 
   const pieData = analytics
     ? [
-        { name: "Active",    value: analytics.activeSubscriptions,    color: CHART_COLORS.secondary },
-        { name: "Cancelled", value: analytics.cancelledSubscriptions, color: CHART_COLORS.danger    },
-        { name: "Expired",   value: analytics.expiredSubscriptions,   color: CHART_COLORS.muted     },
+        {
+          name: "Active",
+          value: analytics.activeSubscriptions,
+          color: CHART_COLORS.secondary,
+        },
+        {
+          name: "Cancelled",
+          value: analytics.cancelledSubscriptions,
+          color: CHART_COLORS.danger,
+        },
+        {
+          name: "Expired",
+          value: analytics.expiredSubscriptions,
+          color: CHART_COLORS.muted,
+        },
       ].filter((d) => d.value > 0)
     : [];
 
@@ -192,10 +220,41 @@ export function AnalyticsPage() {
       <h1 className="text-2xl font-bold">Analytics</h1>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <KC label="MRR" value={analytics ? formatUSDC(analytics.totalRevenue * 1_000_000, true) : "—"} subLabel="Monthly recurring" icon={DollarSign} highlight="emerald" isLoading={isLoading} />
-        <KC label="Total Subscribers" value={analytics?.totalSubscriptions.toString() ?? "—"} subLabel="All-time" icon={Users} highlight="brand" isLoading={isLoading} />
-        <KC label="Churn" value={analytics ? `${analytics.churnRate.toFixed(1)}%` : "—"} subLabel="Cancellation rate" icon={TrendingDown} isLoading={isLoading} />
-        <KC label="Retention" value={analytics ? `${(100 - analytics.churnRate).toFixed(1)}%` : "—"} subLabel="Still active" icon={Activity} highlight="brand" isLoading={isLoading} />
+        <KC
+          label="MRR"
+          value={
+            analytics
+              ? formatUSDC(analytics.totalRevenue * 1_000_000, true)
+              : "—"
+          }
+          subLabel="Monthly recurring"
+          icon={DollarSign}
+          highlight="emerald"
+          isLoading={isLoading}
+        />
+        <KC
+          label="Total Subscribers"
+          value={analytics?.totalSubscriptions.toString() ?? "—"}
+          subLabel="All-time"
+          icon={Users}
+          highlight="brand"
+          isLoading={isLoading}
+        />
+        <KC
+          label="Churn"
+          value={analytics ? `${analytics.churnRate.toFixed(1)}%` : "—"}
+          subLabel="Cancellation rate"
+          icon={TrendingDown}
+          isLoading={isLoading}
+        />
+        <KC
+          label="Retention"
+          value={analytics ? `${(100 - analytics.churnRate).toFixed(1)}%` : "—"}
+          subLabel="Still active"
+          icon={Activity}
+          highlight="brand"
+          isLoading={isLoading}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -204,20 +263,43 @@ export function AnalyticsPage() {
         </div>
 
         <Card className="card-hover">
-          <CardHeader><CardTitle className="text-base">Status Breakdown</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Status Breakdown</CardTitle>
+          </CardHeader>
           <CardContent>
             {pieData.length > 0 ? (
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
-                  <Pie data={pieData} cx="50%" cy="45%" innerRadius={55} outerRadius={85} paddingAngle={3} dataKey="value">
-                    {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                  <Pie
+                    data={pieData}
+                    cx="50%"
+                    cy="45%"
+                    innerRadius={55}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
                   </Pie>
-                  <Tooltip contentStyle={{ background: CHART_COLORS.tooltip_bg, border: `1px solid ${CHART_COLORS.grid}`, borderRadius: "12px", fontSize: 12 }} />
-                  <Legend wrapperStyle={{ fontSize: 12, color: CHART_COLORS.muted }} />
+                  <Tooltip
+                    contentStyle={{
+                      background: CHART_COLORS.tooltip_bg,
+                      border: `1px solid ${CHART_COLORS.grid}`,
+                      borderRadius: "12px",
+                      fontSize: 12,
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 12, color: CHART_COLORS.muted }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">No data</div>
+              <div className="flex h-52 items-center justify-center text-sm text-muted-foreground">
+                No data
+              </div>
             )}
           </CardContent>
         </Card>
@@ -239,7 +321,8 @@ export function LogsPage() {
       <div>
         <h1 className="text-2xl font-bold">Execution Logs</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Real-time on-chain event log — all payment executions, failures, and subscription changes.
+          Real-time on-chain event log — all payment executions, failures, and
+          subscription changes.
         </p>
       </div>
       <ExecutionLogsTable />
@@ -256,20 +339,25 @@ import { CLUSTER, PROGRAM_ID, USDC_MINT, truncate as trunc } from "@/constants";
 export function SettingsPage() {
   const w = useWallet();
   const info = [
-    { label: "Cluster",    value: CLUSTER                            },
-    { label: "Program ID", value: PROGRAM_ID,   mono: true, copy: true },
-    { label: "USDC Mint",  value: USDC_MINT,    mono: true, copy: true },
-    { label: "Wallet",     value: w?.publicKey.toBase58() ?? "—", mono: true },
+    { label: "Cluster", value: CLUSTER },
+    { label: "Program ID", value: PROGRAM_ID, mono: true, copy: true },
+    { label: "USDC Mint", value: USDC_MINT, mono: true, copy: true },
+    { label: "Wallet", value: w?.publicKey.toBase58() ?? "—", mono: true },
   ];
 
   return (
     <div className="p-6 max-w-2xl space-y-6 animate-fade-in">
       <h1 className="text-2xl font-bold">Settings</h1>
       <Card>
-        <CardHeader><CardTitle className="text-base">Protocol Configuration</CardTitle></CardHeader>
+        <CardHeader>
+          <CardTitle className="text-base">Protocol Configuration</CardTitle>
+        </CardHeader>
         <CardContent className="space-y-4">
           {info.map(({ label, value, mono }) => (
-            <div key={label} className="flex items-center justify-between py-2 border-b border-surface-4 last:border-0">
+            <div
+              key={label}
+              className="flex items-center justify-between py-2 border-b border-surface-4 last:border-0"
+            >
               <span className="text-sm text-muted-foreground">{label}</span>
               <span className={`text-sm ${mono ? "font-mono" : "font-medium"}`}>
                 {mono && value.length > 20 ? trunc(value) : value}
