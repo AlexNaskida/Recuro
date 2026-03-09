@@ -7,10 +7,8 @@ on:
     branches: [main]
 
 env:
-  SOLANA_CLI_VERSION: "1.18.0"
-  ANCHOR_VERSION: "0.29.0"
   NODE_VERSION: "20"
-  RUST_TOOLCHAIN: "1.75.0"
+  RUST_TOOLCHAIN: "stable"
 
 jobs:
   anchor-build-and-test:
@@ -35,20 +33,19 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Solana CLI
+      - name: Install Solana Ecosystem CLI tools (Solana, Anchor, Surfpool, Node, Yarn)
         run: |
-          sh -c "$(curl -sSfL https://release.solana.com/v${{ env.SOLANA_CLI_VERSION }}/install)"
+          curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
 
-      - name: Verify Solana CLI Install
+      - name: Verify CLI install
         run: |
-          ls -al "$HOME/.local/share/solana/install/active_release/bin"
-          which solana-keygen
+          rustc --version
+          solana --version
           solana-keygen --version
-
-      - name: Install Anchor CLI
-        run: |
-          npm install -g @coral-xyz/anchor-cli@${{ env.ANCHOR_VERSION }}
+          anchor --version
+          node --version
+          yarn --version
 
       - name: Generate test keypair
         run: solana-keygen new --no-bip39-passphrase -o ~/.config/solana/id.json

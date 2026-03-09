@@ -1,6 +1,6 @@
 export const PROGRAM_ID =
   import.meta.env.VITE_PROGRAM_ID ??
-  "SubsCR1PT111111111111111111111111111111111111";
+  "FkKLg2QDgktNzmPRj5LkeUJBCJ22YGC6NSwn9MJZe2cK";
 
 export const USDC_MINT =
   import.meta.env.VITE_USDC_MINT ??
