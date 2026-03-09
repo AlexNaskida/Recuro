@@ -289,3 +289,16 @@ The SPL delegate approval is granted **to the Subscription PDA** (not the progra
 `execute_payment` can only be called by the Clockwork thread that was registered at subscription creation. The instruction verifies the thread authority against the `subscription.thread` field — preventing any other caller from triggering payments.
 
 ---
+
+## Contributing
+
+1. Fork and create a feature branch.
+2. Run `anchor test` — all 17 tests must pass.
+3. Run `cargo clippy --all-targets -- -D warnings` — zero warnings.
+4. Open a pull request against `main`.
+
+---
+
+## License
+
+MIT © 2024 SubFlow
