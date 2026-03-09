@@ -1,21 +1,24 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react-swc";
 import path from "path";
-import { componentTagger } from "lovable-tagger";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
 
-// https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  server: {
-    host: "::",
-    port: 8080,
-    hmr: {
-      overlay: false,
+export default defineConfig({
+  plugins: [react()],
+  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
+  define:  { "process.env": {}, global: "globalThis" },
+  optimizeDeps: {
+    include: ["@coral-xyz/anchor", "@solana/web3.js", "@solana/spl-token"],
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-solana": ["@solana/web3.js", "@coral-xyz/anchor"],
+          "vendor-ui":     ["recharts", "lucide-react"],
+          "vendor-react":  ["react", "react-dom", "react-router-dom"],
+        },
+      },
     },
   },
-  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-}));
+  server: { port: 3001 },
+});
