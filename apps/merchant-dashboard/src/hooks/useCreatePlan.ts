@@ -1,8 +1,12 @@
 import { useState } from "react";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddress } from "@solana/spl-token";
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import {
+  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import BN from "bn.js";
 import { getPlanPDA, usdcToMicro } from "@/lib/pda";
 import { USDC_MINT } from "@/lib/constants";
@@ -30,7 +34,10 @@ export function useCreatePlan() {
       const planId = new BN(Date.now());
       const planPubkey = getPlanPDA(publicKey, planId);
       const usdcMint = new PublicKey(USDC_MINT);
-      const merchantTokenAccount = await getAssociatedTokenAddress(usdcMint, publicKey);
+      const merchantTokenAccount = await getAssociatedTokenAddressSync(
+        usdcMint,
+        publicKey,
+      );
 
       const sig = await program.methods
         .createPlan({
@@ -50,6 +57,7 @@ export function useCreatePlan() {
           tokenProgram: TOKEN_PROGRAM_ID,
           associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
           systemProgram: SystemProgram.programId,
+          rent: SYSVAR_RENT_PUBKEY,
         })
         .rpc({ commitment: "confirmed" });
 

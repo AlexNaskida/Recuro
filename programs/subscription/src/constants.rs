@@ -19,7 +19,7 @@ pub const DEVNET_USDC_MINT: &str = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU
 pub const MAINNET_USDC_MINT: &str = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 /// Minimum billing interval: 1 day (86,400 seconds)
-pub const MIN_INTERVAL_SECONDS: i64 = 86_400;
+pub const MIN_INTERVAL_SECONDS: i64 = 1;
 
 /// Maximum billing interval: 1 year (365 days)
 pub const MAX_INTERVAL_SECONDS: i64 = 365 * 86_400;

@@ -1,33 +1,24 @@
 import * as anchor from "@coral-xyz/anchor";
 import { readFileSync } from "fs";
-import { createRequire } from "module";
 
-// const require = createRequire(import.meta.url);
 const idl = JSON.parse(readFileSync("./target/idl/subscription.json", "utf8"));
 const keypair = anchor.web3.Keypair.fromSecretKey(
-  Uint8Array.from(
-    JSON.parse(
-      readFileSync(process.env.HOME + "/.config/solana/id.json", "utf8"),
-    ),
-  ),
+  Uint8Array.from(JSON.parse(readFileSync(process.env.HOME + "/.config/solana/id.json", "utf8")))
 );
 
-const connection = new anchor.web3.Connection(
-  "https://api.devnet.solana.com",
-  "confirmed",
-);
+const PROGRAM_ID = new anchor.web3.PublicKey("E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q");
+const connection = new anchor.web3.Connection("https://api.devnet.solana.com", "confirmed");
 const wallet = new anchor.Wallet(keypair);
-const provider = new anchor.AnchorProvider(connection, wallet, {
-  commitment: "confirmed",
-});
+const provider = new anchor.AnchorProvider(connection, wallet, { commitment: "confirmed" });
 anchor.setProvider(provider);
 
 const program = new anchor.Program(idl, provider);
+console.log("Program ID:", program.programId.toBase58());
 
 const FEE_BPS = 25;
 const [config] = anchor.web3.PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
-  program.programId,
+  PROGRAM_ID
 );
 
 try {
@@ -43,7 +34,6 @@ try {
       systemProgram: anchor.web3.SystemProgram.programId,
     })
     .rpc();
-
   console.log("✅ Protocol config initialised:", config.toBase58());
   console.log(`   Fee: ${FEE_BPS} bps (${FEE_BPS / 100}%)`);
   console.log(`   Treasury: ${wallet.publicKey.toBase58()}`);

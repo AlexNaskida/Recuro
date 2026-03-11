@@ -1,16 +1,16 @@
 [features]
 seeds = false
 skip-lint = false
-anchor_version = "0.31.1"
+anchor_version = "0.32.0"
 
 [programs.localnet]
-subscription = "FkKLg2QDgktNzmPRj5LkeUJBCJ22YGC6NSwn9MJZe2cK"
+subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
 
 [programs.devnet]
-subscription = "FkKLg2QDgktNzmPRj5LkeUJBCJ22YGC6NSwn9MJZe2cK"
+subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
 
 [programs.mainnet]
-subscription = "FkKLg2QDgktNzmPRj5LkeUJBCJ22YGC6NSwn9MJZe2cK"
+subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
 
 [registry]
 url = "https://api.apr.dev"

@@ -15,7 +15,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("FkKLg2QDgktNzmPRj5LkeUJBCJ22YGC6NSwn9MJZe2cK");
+declare_id!("E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q");
 
 #[program]
 pub mod subscription {
