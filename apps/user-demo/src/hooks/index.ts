@@ -1,19 +1,28 @@
 import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { SubscriptionSdk } from "@solana-subscription/sdk";
-import { CLUSTER, PROGRAM_ID, USDC_MINT } from "@/constants";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { createUserSdk } from "@/lib/sdk";
+import type { SubscriptionSdk } from "@solana-subscription/sdk";
 
 // ── SDK factory ───────────────────────────────────────────────────────────────
 export function useSdk(): SubscriptionSdk | null {
   const { connection } = useConnection();
-  const wallet         = useAnchorWallet();
+  const wallet = useAnchorWallet();
   return useMemo(() => {
-    if (!wallet) return null;
-    const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
-    return new SubscriptionSdk(provider, { cluster: CLUSTER, programId: PROGRAM_ID, usdcMint: USDC_MINT });
+    if (!wallet) {
+      // read-only — no wallet needed for fetching plans
+      const rpcUrl =
+        import.meta.env.VITE_RPC_URL ?? "https://api.devnet.solana.com";
+      const readConn = new Connection(rpcUrl, "confirmed");
+      const dummyWallet = {
+        publicKey: PublicKey.default,
+        signTransaction: async (t: any) => t,
+        signAllTransactions: async (t: any) => t,
+      };
+      return createUserSdk(readConn, dummyWallet as any);
+    }
+    return createUserSdk(connection, wallet);
   }, [connection, wallet]);
 }
 
@@ -22,7 +31,7 @@ export function usePlan(pubkey: string | null) {
   const sdk = useSdk();
   return useQuery({
     queryKey: ["plan", pubkey],
-    queryFn:  async () => {
+    queryFn: async () => {
       if (!sdk || !pubkey) return null;
       return sdk.fetchPlan(new PublicKey(pubkey));
     },
@@ -33,16 +42,30 @@ export function usePlan(pubkey: string | null) {
 
 // ── Fetch all subscriptions for the connected wallet ─────────────────────────
 export function useMySubscriptions() {
-  const sdk    = useSdk();
+  const sdk = useSdk();
   const wallet = useAnchorWallet();
   return useQuery({
     queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()],
-    queryFn:  async () => {
+    queryFn: async () => {
       if (!sdk || !wallet) return [];
       return sdk.fetchSubscriberSubscriptions(wallet.publicKey);
     },
-    enabled:         !!sdk && !!wallet,
+    enabled: !!sdk && !!wallet,
     refetchInterval: 60_000,
+  });
+}
+
+// --- Fetch all plans belonging to merchant ─────────────────────────────────
+export function useMerchantPlans(merchantPubkey: string | null) {
+  const sdk = useSdk();
+  return useQuery({
+    queryKey: ["merchant-plans", merchantPubkey],
+    queryFn: async () => {
+      if (!sdk || !merchantPubkey) return [];
+      return sdk.fetchMerchantPlans(new PublicKey(merchantPubkey));
+    },
+    enabled: !!merchantPubkey && !!sdk,
+    staleTime: 30_000,
   });
 }
 
@@ -51,7 +74,7 @@ export function useSubscription(pubkey: string | null) {
   const sdk = useSdk();
   return useQuery({
     queryKey: ["subscription", pubkey],
-    queryFn:  async () => {
+    queryFn: async () => {
       if (!sdk || !pubkey) return null;
       return sdk.fetchSubscription(new PublicKey(pubkey));
     },
@@ -62,8 +85,8 @@ export function useSubscription(pubkey: string | null) {
 
 // ── Subscribe to a plan ───────────────────────────────────────────────────────
 export function useSubscribe() {
-  const sdk         = useSdk();
-  const wallet      = useAnchorWallet();
+  const sdk = useSdk();
+  const wallet = useAnchorWallet();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -72,15 +95,17 @@ export function useSubscribe() {
       return sdk.createSubscription({ planPubkey: new PublicKey(planPubkey) });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()] });
+      queryClient.invalidateQueries({
+        queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()],
+      });
     },
   });
 }
 
 // ── Cancel a subscription ─────────────────────────────────────────────────────
 export function useCancelSubscription() {
-  const sdk         = useSdk();
-  const wallet      = useAnchorWallet();
+  const sdk = useSdk();
+  const wallet = useAnchorWallet();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -89,7 +114,9 @@ export function useCancelSubscription() {
       return sdk.cancelSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()] });
+      queryClient.invalidateQueries({
+        queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()],
+      });
     },
   });
 }
