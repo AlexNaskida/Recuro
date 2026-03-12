@@ -191,15 +191,27 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         .checked_add(total_charge).ok_or(SubscriptionError::ArithmeticOverflow)?;
     subscription.payment_count        = subscription.payment_count
         .checked_add(1).ok_or(SubscriptionError::ArithmeticOverflow)?;
-    subscription.next_payment_at      = now
-        .checked_add(plan.interval_seconds).ok_or(SubscriptionError::ArithmeticOverflow)?;
 
-    plan.total_revenue = plan.total_revenue
-        .checked_add(plan_amount).ok_or(SubscriptionError::ArithmeticOverflow)?;
-    plan.fees_paid = plan.fees_paid
-        .checked_add(fee).ok_or(SubscriptionError::ArithmeticOverflow)?;
-    plan.successful_payments = plan.successful_payments
-        .checked_add(1).ok_or(SubscriptionError::ArithmeticOverflow)?;
+    subscription.cycles_remaining = subscription.cycles_remaining.saturating_sub(1);
+
+    if subscription.cycles_remaining == 0 {
+        subscription.status   = SubscriptionStatus::Expired;
+        subscription.ended_at = now;
+        plan.active_subscribers = plan.active_subscribers.saturating_sub(1);
+        emit!(SubscriptionExpired {
+            subscription:  subscription.key(),
+            plan:          plan.key(),
+            subscriber:    subscription.subscriber,
+            total_paid:    subscription.total_paid,
+            payment_count: subscription.payment_count,
+            timestamp:     now,
+        });
+        msg!("[execute_payment] 12 cycles complete — subscription expired cleanly");
+    } else {
+        subscription.next_payment_at = now
+            .checked_add(plan.interval_seconds).ok_or(SubscriptionError::ArithmeticOverflow)?;
+        msg!("[execute_payment] cycles_remaining={}", subscription.cycles_remaining);
+    }
 
     emit!(PaymentExecuted {
         subscription:  subscription.key(),

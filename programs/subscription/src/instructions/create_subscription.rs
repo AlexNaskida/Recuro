@@ -46,6 +46,7 @@ pub struct CreateSubscription<'info> {
 
     /// Subscriber's USDC ATA — must exist; funds stay here until billing
     #[account(
+        mut,
         associated_token::mint      = usdc_mint,
         associated_token::authority = subscriber,
         constraint = subscriber_token_account.mint == plan.usdc_mint
@@ -96,6 +97,7 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     subscription.total_paid               = 0;
     subscription.payment_count            = 0;
     subscription.failed_payment_count     = 0;
+    subscription.cycles_remaining         = 12;
     subscription.status                   = SubscriptionStatus::Active;
     subscription.bump                     = ctx.bumps.subscription;
 

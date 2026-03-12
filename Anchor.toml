@@ -4,13 +4,13 @@ skip-lint = false
 anchor_version = "0.32.0"
 
 [programs.localnet]
-subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
+subscription = "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq"
 
 [programs.devnet]
-subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
+subscription = "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq"
 
 [programs.mainnet]
-subscription = "E9zAmMEF69hTEYvqLQ2w1HC4ueyAoPfvstviRMUhwr5q"
+subscription = "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq"
 
 [registry]
 url = "https://api.apr.dev"

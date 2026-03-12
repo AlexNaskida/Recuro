@@ -3,24 +3,26 @@ use crate::constants::MAX_FAILED_PAYMENTS;
 
 #[account]
 pub struct Subscription {
-    pub plan:                     Pubkey,             // 32
-    pub subscriber:               Pubkey,             // 32
-    pub subscriber_token_account: Pubkey,             // 32
-    pub amount_usdc:              u64,                // 8  (copied from Plan at creation)
-    pub next_payment_at:          i64,                // 8
-    pub started_at:               i64,                // 8
-    pub trial_ends_at:            i64,                // 8  (0 = no trial)
-    pub last_paid_at:             i64,                // 8
-    pub ended_at:                 i64,                // 8
-    pub total_paid:               u64,                // 8  (total charged including fees)
-    pub payment_count:            u64,                // 8
-    pub failed_payment_count:     u8,                 // 1
-    pub status:                   SubscriptionStatus, // 1
-    pub bump:                     u8,                 // 1
+    pub plan:                     Pubkey,
+    pub subscriber:               Pubkey,
+    pub subscriber_token_account: Pubkey,
+    pub amount_usdc:              u64,
+    pub next_payment_at:          i64,
+    pub started_at:               i64,
+    pub trial_ends_at:            i64,
+    pub last_paid_at:             i64,
+    pub ended_at:                 i64,
+    pub total_paid:               u64,
+    pub payment_count:            u64,
+    pub failed_payment_count:     u8,
+    pub billing_cycles:           u8,   // how many cycles were pre-authorized (1/3/6/12)
+    pub cycles_remaining:         u8,   // decrements each payment - when 0, subscription expires
+    pub status:                   SubscriptionStatus,
+    pub bump:                     u8,
 }
 
 impl Subscription {
-    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1;
+    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1;
 
     #[inline]
     pub fn is_active(&self) -> bool  { self.status == SubscriptionStatus::Active }
