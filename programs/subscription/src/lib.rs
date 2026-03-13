@@ -73,4 +73,8 @@ pub mod subscription {
     pub fn execute_payment(ctx: Context<ExecutePayment>) -> Result<()> {
         instructions::execute_payment::handler(ctx)
     }
+
+    pub fn update_config(ctx: Context<UpdateConfig>, new_treasury: Pubkey, new_fee_bps: u16) -> Result<()> {
+        instructions::update_config::handler(ctx, new_treasury, new_fee_bps)
+    }
 }

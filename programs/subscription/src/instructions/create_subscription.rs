@@ -77,11 +77,12 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         0
     };
 
-    let next_payment_at = now
-        .checked_add(plan.trial_seconds)
-        .ok_or(SubscriptionError::ArithmeticOverflow)?
-        .checked_add(plan.interval_seconds)
-        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    let next_payment_at = if plan.trial_seconds > 0 {
+        now.checked_add(plan.trial_seconds)
+            .ok_or(SubscriptionError::ArithmeticOverflow)?
+    } else {
+        now // charge immediately on subscribe
+    };
 
     // ── Populate Subscription PDA ─────────────────────────────────────────────
     // CRITICAL: amount_usdc is copied from the Plan PDA, never from user input.
@@ -97,6 +98,7 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     subscription.total_paid               = 0;
     subscription.payment_count            = 0;
     subscription.failed_payment_count     = 0;
+    subscription.billing_cycles           = 12;
     subscription.cycles_remaining         = 12;
     subscription.status                   = SubscriptionStatus::Active;
     subscription.bump                     = ctx.bumps.subscription;
@@ -112,7 +114,14 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     // ── Approve Subscription PDA as SPL delegate ──────────────────────────────
     // Covers 12 billing cycles. Keeper calls execute_payment; the program
     // signs the transfer via PDA seeds (no private key needed).
-    let delegate_amount = plan.amount_usdc
+    // Note: the fee is included in approval
+    let fee_per_cycle = (plan.amount_usdc as u128)
+        .saturating_mul(25)
+        .saturating_div(10_000) as u64;
+    let total_per_cycle = plan.amount_usdc
+        .checked_add(fee_per_cycle)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    let delegate_amount = total_per_cycle
         .checked_mul(12)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 

@@ -22,7 +22,7 @@ pub struct Subscription {
 }
 
 impl Subscription {
-    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1;
+    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1;
 
     #[inline]
     pub fn is_active(&self) -> bool  { self.status == SubscriptionStatus::Active }
