@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,14 +37,27 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { usePlans } from "@/hooks/usePlans";
+import { type Plan, usePlans } from "@/hooks/usePlans";
 import { useCreatePlan } from "@/hooks/useCreatePlan";
+import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 
 export default function Plans() {
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
+  const { program } = useAnchorProgram();
   const { plans, loading, usingMock, refetch } = usePlans();
   const { createPlan, loading: deploying, canCreate } = useCreatePlan();
   const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const [updatingPlan, setUpdatingPlan] = useState(false);
+  const [pausingPlanId, setPausingPlanId] = useState<string | null>(null);
+  const [resumingPlanId, setResumingPlanId] = useState<string | null>(null);
+  const [archivingPlanId, setArchivingPlanId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "paused" | "archived"
+  >("all");
 
   // Form state
   const [name, setName] = useState("");
@@ -95,7 +109,170 @@ export default function Plans() {
       ? "bg-primary/10 text-primary border-primary/20"
       : s === "paused"
         ? "bg-warning/10 text-warning border-warning/20"
-        : "bg-destructive/10 text-destructive border-destructive/20";
+        : "bg-black text-white border-black";
+
+  const filteredPlans =
+    statusFilter === "all"
+      ? plans
+      : plans.filter((plan) => plan.status === statusFilter);
+
+  const openEditDialog = (plan: Plan) => {
+    setEditingPlan(plan);
+    setEditName(plan.name);
+    setEditDescription(plan.description ?? "");
+    setEditOpen(true);
+  };
+
+  const handleUpdatePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!program || !publicKey || !editingPlan?.pubkey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    const nextName = editName.trim();
+    const nextDescription = editDescription.trim();
+
+    if (!nextName) {
+      toast.error("Plan name is required");
+      return;
+    }
+
+    const nameChanged = nextName !== editingPlan.name;
+    const descriptionChanged =
+      nextDescription !== (editingPlan.description ?? "");
+
+    if (!nameChanged && !descriptionChanged) {
+      toast.info("No changes to save");
+      return;
+    }
+
+    setUpdatingPlan(true);
+    try {
+      const signature = await program.methods
+        .updatePlan({
+          name: nameChanged ? nextName : null,
+          description: descriptionChanged ? nextDescription : null,
+          maxSubscribers: null,
+        })
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(editingPlan.pubkey),
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan updated", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      setEditOpen(false);
+      setEditingPlan(null);
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Update failed", { description: message });
+    } finally {
+      setUpdatingPlan(false);
+    }
+  };
+
+  const handlePausePlan = async (planPubkey: string) => {
+    if (!program || !publicKey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    if (!planPubkey) {
+      toast.error("Cannot pause mock plan");
+      return;
+    }
+
+    setPausingPlanId(planPubkey);
+    try {
+      const signature = await program.methods
+        .pausePlan()
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(planPubkey),
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan paused", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Pause failed", { description: message });
+    } finally {
+      setPausingPlanId(null);
+    }
+  };
+
+  const handleResumePlan = async (planPubkey: string) => {
+    if (!program || !publicKey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    if (!planPubkey) {
+      toast.error("Cannot resume mock plan");
+      return;
+    }
+
+    setResumingPlanId(planPubkey);
+    try {
+      const signature = await program.methods
+        .resumePlan()
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(planPubkey),
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan resumed", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Resume failed", { description: message });
+    } finally {
+      setResumingPlanId(null);
+    }
+  };
+
+  const handleArchivePlan = async (planPubkey: string) => {
+    if (!program || !publicKey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    if (!planPubkey) {
+      toast.error("Cannot archive mock plan");
+      return;
+    }
+
+    setArchivingPlanId(planPubkey);
+    try {
+      const signature = await program.methods
+        .archivePlan()
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(planPubkey),
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan archived", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Archive failed", { description: message });
+    } finally {
+      setArchivingPlanId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -112,7 +289,22 @@ export default function Plans() {
       )}
 
       <div className="flex items-center justify-between">
-        <div />
+        <Select
+          value={statusFilter}
+          onValueChange={(val) =>
+            setStatusFilter(val as "all" | "active" | "paused" | "archived")
+          }
+        >
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Filter plans" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Plans</SelectItem>
+            <SelectItem value="active">Active</SelectItem>
+            <SelectItem value="paused">Paused</SelectItem>
+            <SelectItem value="archived">Archived</SelectItem>
+          </SelectContent>
+        </Select>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
@@ -211,6 +403,46 @@ export default function Plans() {
             </form>
           </DialogContent>
         </Dialog>
+
+        <Dialog
+          open={editOpen}
+          onOpenChange={(nextOpen) => {
+            setEditOpen(nextOpen);
+            if (!nextOpen) {
+              setEditingPlan(null);
+            }
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Plan</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleUpdatePlan} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Plan Name</Label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Optional description"
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={updatingPlan}>
+                {updatingPlan && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Save Changes
+              </Button>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {loading ? (
@@ -225,7 +457,7 @@ export default function Plans() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {plans.map((plan) => (
+          {filteredPlans.map((plan) => (
             <Card key={plan.id}>
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div>
@@ -249,20 +481,42 @@ export default function Plans() {
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => toast.info("Edit coming soon")}
+                        onClick={() => openEditDialog(plan)}
+                        disabled={!plan.pubkey || plan.status === "archived"}
                       >
                         Edit
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => toast.info("Pause coming soon")}
+                        onClick={() =>
+                          plan.status === "paused"
+                            ? handleResumePlan(plan.pubkey)
+                            : handlePausePlan(plan.pubkey)
+                        }
+                        disabled={
+                          !plan.pubkey ||
+                          plan.status === "archived" ||
+                          pausingPlanId === plan.pubkey ||
+                          resumingPlanId === plan.pubkey
+                        }
                       >
-                        Pause
+                        {pausingPlanId === plan.pubkey
+                          ? "Pausing..."
+                          : resumingPlanId === plan.pubkey
+                            ? "Resuming..."
+                            : plan.status === "paused"
+                              ? "Resume"
+                              : "Pause"}
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={() => toast.info("Archive coming soon")}
-                        className="text-destructive"
+                        onClick={() => handleArchivePlan(plan.pubkey)}
+                        disabled={
+                          !plan.pubkey || archivingPlanId === plan.pubkey
+                        }
+                        className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
                       >
-                        Archive
+                        {archivingPlanId === plan.pubkey
+                          ? "Archiving..."
+                          : "Archive"}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>

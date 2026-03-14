@@ -48,6 +48,10 @@ pub mod subscription {
         instructions::pause_plan::handler(ctx)
     }
 
+    pub fn resume_plan(ctx: Context<ResumePlan>) -> Result<()> {
+        instructions::resume_plan::handler(ctx)
+    }
+
     pub fn archive_plan(ctx: Context<ArchivePlan>) -> Result<()> {
         instructions::archive_plan::handler(ctx)
     }
