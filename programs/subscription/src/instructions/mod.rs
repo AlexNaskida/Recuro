@@ -8,6 +8,7 @@ pub mod pause_plan;
 pub mod pause_subscription;
 pub mod resume_subscription;
 pub mod update_plan;
+pub mod update_config;
 
 pub use archive_plan::*;
 pub use cancel_subscription::*;
