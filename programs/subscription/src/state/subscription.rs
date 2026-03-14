@@ -50,20 +50,14 @@ impl Subscription {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
 pub enum SubscriptionStatus {
+    #[default]
     Active,
     Paused,
     Cancelled,
     Expired,
 }
-
-impl Default for SubscriptionStatus {
-    fn default() -> Self {
-        SubscriptionStatus::Active
-    }
-}
-
 // ── Events ────────────────────────────────────────────────────────────────────
 
 #[event]

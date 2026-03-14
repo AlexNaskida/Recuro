@@ -112,10 +112,8 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     // Guard: insufficient balance
     let balance = ctx.accounts.subscriber_token_account.amount;
     if balance < total_charge {
-        subscription.failed_payment_count = subscription
-            .failed_payment_count
-            .checked_add(1)
-            .unwrap_or(u8::MAX);
+        subscription.failed_payment_count = subscription.failed_payment_count.saturating_add(1);
+
         let will_expire = subscription.should_auto_expire();
 
         emit!(PaymentFailed {

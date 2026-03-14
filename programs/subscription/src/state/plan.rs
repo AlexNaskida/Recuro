@@ -56,17 +56,12 @@ impl Plan {
     }
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq, Default)]
 pub enum PlanStatus {
+    #[default]
     Active,
     Paused,
     Archived,
-}
-
-impl Default for PlanStatus {
-    fn default() -> Self {
-        PlanStatus::Active
-    }
 }
 
 // ── Events ────────────────────────────────────────────────────────────────────
