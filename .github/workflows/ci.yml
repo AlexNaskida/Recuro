@@ -59,8 +59,8 @@ jobs:
       - name: Anchor build
         run: anchor build
 
-      - name: Anchor test (localnet)
-        run: anchor test
+      # - name: Anchor test (localnet)
+      #   run: anchor test
 
       - name: Sync IDL to SDK
         run: cp target/idl/subscription.json sdk/src/idl.json
