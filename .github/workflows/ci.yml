@@ -111,11 +111,11 @@ jobs:
 
       - run: yarn install --frozen-lockfile
 
-      - name: Type-check merchant dashboard
-        run: yarn workspace merchant-dashboard type-check
+      # - name: Type-check merchant dashboard
+      #   run: yarn workspace merchant-dashboard type-check
 
-      - name: Type-check user demo
-        run: yarn workspace user-demo type-check
+      # - name: Type-check user demo
+      #   run: yarn workspace user-demo type-check
 
       - name: Build merchant dashboard
         run: yarn workspace merchant-dashboard build

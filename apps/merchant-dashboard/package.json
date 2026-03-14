@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.0",
