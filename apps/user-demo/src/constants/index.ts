@@ -29,12 +29,10 @@ export const truncate = (s: string, h = 6, t = 4) =>
 
 export const SECONDS_PER_DAY = 86_400;
 
-export const intervalLabel = (seconds: number) => {
-  const d = seconds / SECONDS_PER_DAY;
-  if (d === 1) return "day";
-  if (d === 7) return "week";
-  if (d === 30) return "month";
-  if (d === 90) return "quarter";
-  if (d === 365) return "year";
-  return `${d} days`;
-};
+export function intervalLabel(seconds: number): string {
+  if (seconds < 3600) return `${seconds}s`; // < 1 hour
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`; // < 1 day
+  if (seconds < 604800) return `${Math.round(seconds / 86400)}d`; // < 1 week
+  if (seconds < 2592000) return `${Math.round(seconds / 604800)}w`;
+  return `${Math.round(seconds / 2592000)} month${Math.round(seconds / 2592000) === 1 ? "" : "s"}`;
+}

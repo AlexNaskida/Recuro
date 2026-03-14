@@ -5,7 +5,7 @@
  *   node create_test_plan.mjs
  *
  * Creates a plan with:
- *   - amount: $0.01 (10,000 μUSDC)
+ *   - amount: $1.00 (1,000,000 μUSDC)
  *   - interval: 60 seconds
  *   - name: "Keeper Test"
  */
@@ -29,8 +29,8 @@ const PROGRAM_ID = new PublicKey(
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 const PLAN_NAME = "Keeper Test";
-const AMOUNT_USDC = 10_000_000; // $0.01 in μUSDC (6 decimals)
-const INTERVAL_SECS = 60; // 60 seconds — fires every minute
+const AMOUNT_USDC = 1_000_000; // $1.00 in μUSDC (6 decimals)
+const INTERVAL_SECS = 120; // 120 seconds — fires every 2 minutes
 const TRIAL_SECS = 0;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
@@ -75,8 +75,8 @@ const merchantTokenAccount = await getAssociatedTokenAddress(
 console.log("Creating test plan...");
 console.log("  Merchant:  ", keypair.publicKey.toBase58());
 console.log("  Plan PDA:  ", planPubkey.toBase58());
-console.log("  Amount:     $10 (10,000 μUSDC)");
-console.log("  Interval:   60 seconds");
+console.log("  Amount:     $1.00 (1,000,000 μUSDC)");
+console.log("  Interval:   120 seconds");
 
 try {
   const tx = await program.methods

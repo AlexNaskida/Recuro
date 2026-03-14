@@ -33,6 +33,14 @@ function intervalLabel(seconds: number): string {
   return "yearly";
 }
 
+// export function intervalLabel(seconds: number): string {
+//   if (seconds < 3600)   return `${seconds}s`;         // < 1 hour
+//   if (seconds < 86400)  return `${Math.round(seconds / 3600)}h`;  // < 1 day
+//   if (seconds < 604800) return `${Math.round(seconds / 86400)}d`; // < 1 week
+//   if (seconds < 2592000) return `${Math.round(seconds / 604800)}w`;
+//   return `${Math.round(seconds / 2592000)} month${Math.round(seconds / 2592000) === 1 ? "" : "s"}`;
+// }
+
 export function usePlans() {
   const { publicKey } = useWallet();
   const { program } = useAnchorProgram();
@@ -58,6 +66,7 @@ export function usePlans() {
 
     setLoading(true);
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const accounts = await (program.account as any).plan.all([
         { memcmp: { offset: 8, bytes: publicKey.toBase58() } },
       ]);
@@ -75,6 +84,7 @@ export function usePlans() {
         );
         setUsingMock(true);
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const real: Plan[] = accounts.map((a: any) => {
           const acc = a.account;
           return {

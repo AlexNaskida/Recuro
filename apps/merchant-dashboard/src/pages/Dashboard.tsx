@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   AreaChart,
   Area,
@@ -15,21 +17,23 @@ import {
   Cell,
 } from "recharts";
 import {
-  revenueData,
-  events,
-  planDistribution,
-  plans,
-  revenueSparkline,
-  subscriberSparkline,
-  successSparkline,
-} from "@/lib/mock-data";
-import { MoreHorizontal, ChevronDown, DollarSign, Users, CheckCircle, ArrowUpRight, ArrowDownRight } from "lucide-react";
+  MoreHorizontal,
+  ChevronDown,
+  DollarSign,
+  Users,
+  CheckCircle,
+  ArrowUpRight,
+  AlertCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboard } from "@/hooks/useDashboard";
 
 const TEAL = "hsl(168, 82%, 32%)";
 const GRAY = "hsl(220, 9%, 72%)";
 
-// Mini sparkline bar chart
+// ── Sparklines ────────────────────────────────────────────────────────────────
+
 function SparkBars({ data, color = TEAL }: { data: number[]; color?: string }) {
   const max = Math.max(...data);
   return (
@@ -48,21 +52,31 @@ function SparkBars({ data, color = TEAL }: { data: number[]; color?: string }) {
   );
 }
 
-// Mini sparkline line
 function SparkLine({ data }: { data: number[] }) {
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
   const h = 40;
   const w = data.length * 12;
-  const points = data.map((v, i) => `${i * 12},${h - ((v - min) / range) * h}`).join(" ");
+  const points = data
+    .map((v, i) => `${i * 12},${h - ((v - min) / range) * h}`)
+    .join(" ");
   return (
     <svg width={w} height={h} className="overflow-visible">
-      <polyline points={points} fill="none" stroke={TEAL} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={TEAL}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
 
+// ── Chart tooltip ─────────────────────────────────────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ChartTooltipContent = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
@@ -70,27 +84,81 @@ const ChartTooltipContent = ({ active, payload, label }: any) => {
       <p className="font-medium text-foreground mb-1">{label}</p>
       {payload.map((p: any, i: number) => (
         <div key={i} className="flex items-center gap-2">
-          <div className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
+          <div
+            className="h-2 w-2 rounded-full"
+            style={{ backgroundColor: p.color }}
+          />
           <span className="text-muted-foreground">{p.name}</span>
-          <span className="font-medium text-foreground ml-auto">${p.value?.toLocaleString()}</span>
+          <span className="font-medium text-foreground ml-auto">
+            ${p.value?.toLocaleString()}
+          </span>
         </div>
       ))}
     </div>
   );
 };
 
+// ── Event icon map ────────────────────────────────────────────────────────────
+
 const eventIcons: Record<string, { color: string; icon: string }> = {
   PaymentExecuted: { color: "text-success", icon: "↗" },
   SubscriptionCreated: { color: "text-primary", icon: "+" },
   PaymentFailed: { color: "text-destructive", icon: "!" },
   SubscriptionCancelled: { color: "text-warning", icon: "−" },
+  SubscriptionExpired: { color: "text-muted-foreground", icon: "×" },
 };
 
+// ── KPI skeleton ──────────────────────────────────────────────────────────────
+
+function KpiSkeleton() {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <Skeleton className="h-4 w-32" />
+      </CardHeader>
+      <CardContent className="flex items-end justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-3 w-28" />
+        </div>
+        <Skeleton className="h-10 w-16" />
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
 export default function Dashboard() {
-  const totalSubscribers = plans.reduce((s, p) => s + p.subscribers, 0);
+  const d = useDashboard();
+
+  if (d.loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <KpiSkeleton />
+          <KpiSkeleton />
+          <KpiSkeleton />
+        </div>
+      </div>
+    );
+  }
+
+  const totalSubscribers = d.planDistribution.reduce((s, p) => s + p.value, 0);
 
   return (
     <div className="space-y-6">
+      {/* Mock data banner */}
+      {d.usingMock && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Showing sample data. Connect your wallet to see real on-chain
+            analytics.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
@@ -102,13 +170,19 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex items-end justify-between">
             <div>
-              <div className="text-2xl font-bold">$24,847</div>
+              <div className="text-2xl font-bold">
+                $
+                {d.totalRevenue.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}
+              </div>
               <p className="text-xs text-primary flex items-center gap-0.5 mt-1">
                 <ArrowUpRight className="h-3 w-3" />
-                +12.5% vs last month
+                {d.revenueDelta} vs last period
               </p>
             </div>
-            <SparkBars data={revenueSparkline} />
+            <SparkBars data={d.revenueSparkline} />
           </CardContent>
         </Card>
 
@@ -121,10 +195,12 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex items-end justify-between">
             <div>
-              <div className="text-2xl font-bold">{totalSubscribers}</div>
-              <p className="text-xs text-muted-foreground mt-1">Across {plans.length} plans</p>
+              <div className="text-2xl font-bold">{d.activeSubscribers}</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Across {d.planCount} plan{d.planCount !== 1 ? "s" : ""}
+              </p>
             </div>
-            <SparkLine data={subscriberSparkline} />
+            <SparkLine data={d.subscriberSparkline} />
           </CardContent>
         </Card>
 
@@ -137,13 +213,13 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="flex items-end justify-between">
             <div>
-              <div className="text-2xl font-bold">97.3%</div>
+              <div className="text-2xl font-bold">{d.successRate}</div>
               <p className="text-xs text-primary flex items-center gap-0.5 mt-1">
                 <ArrowUpRight className="h-3 w-3" />
-                On track
+                Payment success
               </p>
             </div>
-            <SparkBars data={successSparkline} />
+            <SparkBars data={d.successSparkline} />
           </CardContent>
         </Card>
       </div>
@@ -153,36 +229,73 @@ export default function Dashboard() {
         <Card className="lg:col-span-3">
           <CardHeader className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
-              <CardTitle className="text-sm font-medium">Revenue vs MRR</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Revenue vs MRR
+              </CardTitle>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-primary" />Revenue</span>
-                <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: GRAY }} />MRR</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  Revenue
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: GRAY }}
+                  />
+                  MRR
+                </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" className="text-xs h-8">
-                Date <ChevronDown className="ml-1 h-3 w-3" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={280}>
-              <AreaChart data={revenueData}>
+              <AreaChart data={d.revenueData}>
                 <defs>
                   <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor={TEAL} stopOpacity={0.15} />
                     <stop offset="100%" stopColor={TEAL} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 13%, 91%)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="hsl(220, 13%, 91%)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="month"
+                  tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                />
+                <YAxis
+                  tick={{ fill: "hsl(220, 9%, 46%)", fontSize: 12 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(v) =>
+                    v >= 1000 ? `$${(v / 1000).toFixed(0)}k` : `$${v}`
+                  }
+                />
                 <Tooltip content={<ChartTooltipContent />} />
-                <Area type="monotone" dataKey="revenue" stroke={TEAL} fill="url(#revGrad)" strokeWidth={2} name="Revenue" />
-                <Line type="monotone" dataKey="mrr" stroke={GRAY} strokeWidth={2} strokeDasharray="5 5" dot={false} name="MRR" />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke={TEAL}
+                  fill="url(#revGrad)"
+                  strokeWidth={2}
+                  name="Revenue"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="mrr"
+                  stroke={GRAY}
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                  name="MRR"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </CardContent>
@@ -190,29 +303,51 @@ export default function Dashboard() {
 
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Recent Activity
+            </CardTitle>
             <Button variant="ghost" size="icon" className="h-8 w-8">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </CardHeader>
           <CardContent className="space-y-1">
-            {events.slice(0, 6).map((e, i) => {
-              const ev = eventIcons[e.type] || { color: "text-muted-foreground", icon: "•" };
-              return (
-                <div key={i} className="flex items-center gap-3 py-2.5 border-b last:border-0">
-                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-sm font-bold ${ev.color}`}>
-                    {ev.icon}
+            {d.events.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4 text-center">
+                No recent activity
+              </p>
+            ) : (
+              d.events.slice(0, 6).map((e, i) => {
+                const ev = eventIcons[e.type] ?? {
+                  color: "text-muted-foreground",
+                  icon: "•",
+                };
+                return (
+                  <div
+                    key={i}
+                    className="flex items-center gap-3 py-2.5 border-b last:border-0"
+                  >
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-sm font-bold ${ev.color}`}
+                    >
+                      {ev.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {e.type.replace(/([A-Z])/g, " $1").trim()}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {e.wallet} · {e.plan}
+                      </p>
+                    </div>
+                    {e.amount > 0 && (
+                      <span className="text-sm font-semibold">
+                        ${e.amount.toFixed(2)}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{e.type.replace(/([A-Z])/g, " $1").trim()}</p>
-                    <p className="text-xs text-muted-foreground">{e.wallet} · {e.time}</p>
-                  </div>
-                  {e.amount > 0 && (
-                    <span className="text-sm font-semibold">${e.amount}</span>
-                  )}
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </div>
@@ -221,74 +356,103 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Donut */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Subscribers by Plan</CardTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Subscribers by Plan
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex items-center gap-8">
-            <div className="relative">
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie
-                    data={planDistribution}
-                    innerRadius={50}
-                    outerRadius={75}
-                    paddingAngle={2}
-                    dataKey="value"
-                    strokeWidth={0}
-                  >
-                    {planDistribution.map((entry, i) => (
-                      <Cell key={i} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-lg font-bold">{totalSubscribers}</span>
-                <span className="text-xs text-muted-foreground">Total</span>
-              </div>
-            </div>
-            <div className="space-y-3 flex-1">
-              {planDistribution.map((p) => (
-                <div key={p.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: p.fill }} />
-                    <span className="text-sm">{p.name}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-sm font-medium">{Math.round((p.value / totalSubscribers) * 100)}%</span>
-                    <span className="text-xs text-muted-foreground ml-2">{p.value}</span>
+            {totalSubscribers === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No subscribers yet
+              </p>
+            ) : (
+              <>
+                <div className="relative">
+                  <ResponsiveContainer width={160} height={160}>
+                    <PieChart>
+                      <Pie
+                        data={d.planDistribution}
+                        innerRadius={50}
+                        outerRadius={75}
+                        paddingAngle={2}
+                        dataKey="value"
+                        strokeWidth={0}
+                      >
+                        {d.planDistribution.map((entry, i) => (
+                          <Cell key={i} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-lg font-bold">
+                      {totalSubscribers}
+                    </span>
+                    <span className="text-xs text-muted-foreground">Total</span>
                   </div>
                 </div>
-              ))}
-            </div>
+                <div className="space-y-3 flex-1">
+                  {d.planDistribution.map((p) => (
+                    <div
+                      key={p.name}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: p.fill }}
+                        />
+                        <span className="text-sm">{p.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-medium">
+                          {Math.round((p.value / totalSubscribers) * 100)}%
+                        </span>
+                        <span className="text-xs text-muted-foreground ml-2">
+                          {p.value}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
         {/* Plan Performance */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium">Plan Performance</CardTitle>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">
+              Plan Performance
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-1">
-            {plans.map((plan) => (
-              <div key={plan.id} className="flex items-center justify-between py-3 border-b last:border-0">
+            {d.plans.map((plan) => (
+              <div
+                key={plan.id}
+                className="flex items-center justify-between py-3 border-b last:border-0"
+              >
                 <div className="flex items-center gap-3">
                   <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
                     <DollarSign className="h-4 w-4 text-muted-foreground" />
                   </div>
                   <div>
                     <p className="text-sm font-medium">{plan.name}</p>
-                    <p className="text-xs text-muted-foreground">{plan.subscribers} subscribers</p>
+                    <p className="text-xs text-muted-foreground">
+                      {plan.subscribers} subscribers
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold">${plan.revenue.toLocaleString()}</span>
+                  <span className="text-sm font-semibold">
+                    $
+                    {plan.revenue.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                   <Badge
                     variant="outline"
                     className={

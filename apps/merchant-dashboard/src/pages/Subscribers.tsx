@@ -45,10 +45,12 @@ export default function Subscribers() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
 
-  const uniquePlans = [...new Set(subscribers.map((s) => s.plan))];
+  const uniquePlans = [
+    ...new Map(subscribers.map((s) => [s.planPubkey, s.plan])).entries(),
+  ].filter(([pubkey]) => pubkey !== "");
 
   const filtered = subscribers.filter((s) => {
-    if (planFilter !== "all" && s.plan !== planFilter) return false;
+    if (planFilter !== "all" && s.planPubkey !== planFilter) return false;
     if (statusFilter !== "all" && s.status !== statusFilter) return false;
     return true;
   });
@@ -79,9 +81,9 @@ export default function Subscribers() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Plans</SelectItem>
-            {uniquePlans.map((p) => (
-              <SelectItem key={p} value={p}>
-                {p}
+            {uniquePlans.map(([pubkey, name]) => (
+              <SelectItem key={pubkey} value={pubkey}>
+                {name}
               </SelectItem>
             ))}
           </SelectContent>

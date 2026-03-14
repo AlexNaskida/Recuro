@@ -2,6 +2,7 @@ import { Zap } from "lucide-react";
 import { Card } from "@/components/ui/index";
 import { PlanCard, PlanCardSkeleton } from "@/components/subscription/PlanCard";
 import { useMySubscriptions, useMerchantPlans } from "@/hooks/index";
+import type { SubscriptionAccount } from "@solana-subscription/sdk";
 
 const MERCHANT = import.meta.env.VITE_MERCHANT_WALLET ?? null;
 
@@ -36,15 +37,23 @@ function PlanList() {
 
   return (
     <div className="space-y-4">
-      {plans.map((plan) => (
-        <PlanCard
-          key={plan.publicKey.toBase58()}
-          plan={plan}
-          isSubscribed={mySubscriptions.some(
-            (s) => s.plan.toBase58() === plan.publicKey.toBase58(),
-          )}
-        />
-      ))}
+      {plans.map((plan) => {
+        const userSub =
+          mySubscriptions.find(
+            (s: SubscriptionAccount) =>
+              s.plan.toBase58() === plan.publicKey.toBase58() &&
+              s.status === "Active",
+          ) ?? undefined;
+
+        return (
+          <PlanCard
+            key={plan.publicKey.toBase58()}
+            plan={plan}
+            isSubscribed={!!userSub}
+            subscription={userSub}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -39,6 +39,10 @@ const DRY_RUN       = process.env.DRY_RUN === "true";
 const MAX_RETRIES    = 3;
 const RETRY_DELAY_MS = 5_000;
 
+// Tracks subscriptions that permanently fail so the keeper stops retrying them
+// each poll (e.g. stale delegate, wrong accounts). Cleared on keeper restart.
+const permanentFailures = new Set();
+
 // ── IDL ───────────────────────────────────────────────────────────────────────
 
 const IDL_PATHS = [
@@ -249,10 +253,11 @@ async function executePayment(subPubkey, subAccount, config) {
         });
         await sleep(RETRY_DELAY_MS);
       } else {
-        log("error", `Failed after ${MAX_RETRIES} attempts`, {
+        log("error", `Failed after ${MAX_RETRIES} attempts — marking as permanent failure for this session`, {
           subscription: subPubkey.toBase58(),
           error:        msg.slice(0, 200),
         });
+        permanentFailures.add(subPubkey.toBase58());
         return "error";
       }
     }
@@ -277,6 +282,12 @@ async function poll(config) {
   log("info", `Poll #${stats.polls} — ${due.length} payment(s) due`);
 
   for (const { publicKey, account } of due) {
+    // Skip subscriptions that have permanently failed this session
+    if (permanentFailures.has(publicKey.toBase58())) {
+      log("skip", "Skipping permanently failed subscription", { sub: publicKey.toBase58().slice(0, 8) + "..." });
+      continue;
+    }
+
     const nextPayment = account.nextPaymentAt?.toNumber?.() ?? account.nextPaymentAt;
     log("info", "Processing", {
       sub:        publicKey.toBase58().slice(0, 8) + "...",
