@@ -1,9 +1,9 @@
-use anchor_lang::prelude::*;
 use crate::{
     constants::SEED_SUBSCRIPTION,
     errors::SubscriptionError,
     state::{Plan, Subscription, SubscriptionCancelled, SubscriptionStatus},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct CancelSubscription<'info> {
@@ -29,28 +29,28 @@ pub struct CancelSubscription<'info> {
 }
 
 pub fn handler(ctx: Context<CancelSubscription>) -> Result<()> {
-    let sub       = &mut ctx.accounts.subscription;
-    let plan      = &mut ctx.accounts.plan;
+    let sub = &mut ctx.accounts.subscription;
+    let plan = &mut ctx.accounts.plan;
     let authority = ctx.accounts.authority.key();
-    let now       = Clock::get()?.unix_timestamp;
+    let now = Clock::get()?.unix_timestamp;
 
     require!(
         authority == sub.subscriber || authority == plan.merchant,
         SubscriptionError::UnauthorizedActor
     );
 
-    sub.status   = SubscriptionStatus::Cancelled;
+    sub.status = SubscriptionStatus::Cancelled;
     sub.ended_at = now;
     plan.active_subscribers = plan.active_subscribers.saturating_sub(1);
 
     emit!(SubscriptionCancelled {
-        subscription:  sub.key(),
-        plan:          plan.key(),
-        subscriber:    sub.subscriber,
-        cancelled_by:  authority,
-        total_paid:    sub.total_paid,
+        subscription: sub.key(),
+        plan: plan.key(),
+        subscriber: sub.subscriber,
+        cancelled_by: authority,
+        total_paid: sub.total_paid,
         payment_count: sub.payment_count,
-        timestamp:     now,
+        timestamp: now,
     });
 
     msg!("[cancel_subscription] sub={} by={}", sub.key(), authority);

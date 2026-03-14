@@ -5,8 +5,8 @@ use crate::{
     constants::*,
     errors::SubscriptionError,
     state::{
-        PaymentExecuted, PaymentFailed, Plan, ProtocolConfig,
-        Subscription, SubscriptionExpired, SubscriptionStatus,
+        PaymentExecuted, PaymentFailed, Plan, ProtocolConfig, Subscription, SubscriptionExpired,
+        SubscriptionStatus,
     },
 };
 
@@ -69,26 +69,33 @@ pub struct ExecutePayment<'info> {
     #[account(address = subscription.subscriber)]
     pub subscriber: UncheckedAccount<'info>,
 
-    pub token_program:  Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
-    let now          = Clock::get()?.unix_timestamp;
-    let config       = &ctx.accounts.config;
+    let now = Clock::get()?.unix_timestamp;
+    let config = &ctx.accounts.config;
     let subscription_account_info = ctx.accounts.subscription.to_account_info();
     let subscription = &mut ctx.accounts.subscription;
-    let plan         = &mut ctx.accounts.plan;
+    let plan = &mut ctx.accounts.plan;
 
     // Guard: still in trial period
     if subscription.is_in_trial(now) {
-        msg!("[execute_payment] skipped: trial ends at {}", subscription.trial_ends_at);
+        msg!(
+            "[execute_payment] skipped: trial ends at {}",
+            subscription.trial_ends_at
+        );
         return Ok(());
     }
 
     // Guard: not due yet
     if !subscription.is_payment_due(now) {
-        msg!("[execute_payment] skipped: next_payment_at={} now={}", subscription.next_payment_at, now);
+        msg!(
+            "[execute_payment] skipped: next_payment_at={} now={}",
+            subscription.next_payment_at,
+            now
+        );
         return Ok(());
     }
 
@@ -106,34 +113,42 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     let balance = ctx.accounts.subscriber_token_account.amount;
     if balance < total_charge {
         subscription.failed_payment_count = subscription
-            .failed_payment_count.checked_add(1).unwrap_or(u8::MAX);
+            .failed_payment_count
+            .checked_add(1)
+            .unwrap_or(u8::MAX);
         let will_expire = subscription.should_auto_expire();
 
         emit!(PaymentFailed {
             subscription: subscription.key(),
-            plan:         plan.key(),
-            subscriber:   subscription.subscriber,
-            reason:       "insufficient_balance".to_string(),
+            plan: plan.key(),
+            subscriber: subscription.subscriber,
+            reason: "insufficient_balance".to_string(),
             failed_count: subscription.failed_payment_count,
             will_expire,
-            timestamp:    now,
+            timestamp: now,
         });
 
-        msg!("[execute_payment] FAILED: need {} ({}+{} fee), have {}. failures={}/{}",
-            total_charge, plan_amount, fee, balance,
-            subscription.failed_payment_count, MAX_FAILED_PAYMENTS);
+        msg!(
+            "[execute_payment] FAILED: need {} ({}+{} fee), have {}. failures={}/{}",
+            total_charge,
+            plan_amount,
+            fee,
+            balance,
+            subscription.failed_payment_count,
+            MAX_FAILED_PAYMENTS
+        );
 
         if will_expire {
-            subscription.status   = SubscriptionStatus::Expired;
+            subscription.status = SubscriptionStatus::Expired;
             subscription.ended_at = now;
             plan.active_subscribers = plan.active_subscribers.saturating_sub(1);
             emit!(SubscriptionExpired {
-                subscription:  subscription.key(),
-                plan:          plan.key(),
-                subscriber:    subscription.subscriber,
-                total_paid:    subscription.total_paid,
+                subscription: subscription.key(),
+                plan: plan.key(),
+                subscriber: subscription.subscriber,
+                total_paid: subscription.total_paid,
                 payment_count: subscription.payment_count,
-                timestamp:     now,
+                timestamp: now,
             });
         }
         return Ok(());
@@ -141,9 +156,9 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
 
     // ── PDA signer seeds ──────────────────────────────────────────────────────
     // Save account_info references BEFORE taking mutable borrow of subscription
-    let plan_key    = subscription.plan;
-    let sub_key     = subscription.subscriber;
-    let sub_bump    = subscription.bump;
+    let plan_key = subscription.plan;
+    let sub_key = subscription.subscriber;
+    let sub_bump = subscription.bump;
 
     let seeds: &[&[u8]] = &[
         SEED_SUBSCRIPTION,
@@ -158,8 +173,8 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
-                from:      ctx.accounts.subscriber_token_account.to_account_info(),
-                to:        ctx.accounts.merchant_token_account.to_account_info(),
+                from: ctx.accounts.subscriber_token_account.to_account_info(),
+                to: ctx.accounts.merchant_token_account.to_account_info(),
                 authority: subscription_account_info.clone(),
             },
             signer_seeds,
@@ -173,8 +188,8 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
-                    from:      ctx.accounts.subscriber_token_account.to_account_info(),
-                    to:        ctx.accounts.treasury_token_account.to_account_info(),
+                    from: ctx.accounts.subscriber_token_account.to_account_info(),
+                    to: ctx.accounts.treasury_token_account.to_account_info(),
                     authority: subscription_account_info.clone(),
                 },
                 signer_seeds,
@@ -183,50 +198,62 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         )?;
     }
 
-
     // ── Update state ──────────────────────────────────────────────────────────
     subscription.failed_payment_count = 0;
-    subscription.last_paid_at         = now;
-    subscription.total_paid           = subscription.total_paid
-        .checked_add(total_charge).ok_or(SubscriptionError::ArithmeticOverflow)?;
-    subscription.payment_count        = subscription.payment_count
-        .checked_add(1).ok_or(SubscriptionError::ArithmeticOverflow)?;
+    subscription.last_paid_at = now;
+    subscription.total_paid = subscription
+        .total_paid
+        .checked_add(total_charge)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    subscription.payment_count = subscription
+        .payment_count
+        .checked_add(1)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
     subscription.cycles_remaining = subscription.cycles_remaining.saturating_sub(1);
 
     if subscription.cycles_remaining == 0 {
-        subscription.status   = SubscriptionStatus::Expired;
+        subscription.status = SubscriptionStatus::Expired;
         subscription.ended_at = now;
         plan.active_subscribers = plan.active_subscribers.saturating_sub(1);
         emit!(SubscriptionExpired {
-            subscription:  subscription.key(),
-            plan:          plan.key(),
-            subscriber:    subscription.subscriber,
-            total_paid:    subscription.total_paid,
+            subscription: subscription.key(),
+            plan: plan.key(),
+            subscriber: subscription.subscriber,
+            total_paid: subscription.total_paid,
             payment_count: subscription.payment_count,
-            timestamp:     now,
+            timestamp: now,
         });
         msg!("[execute_payment] 12 cycles complete — subscription expired cleanly");
     } else {
         subscription.next_payment_at = now
-            .checked_add(plan.interval_seconds).ok_or(SubscriptionError::ArithmeticOverflow)?;
-        msg!("[execute_payment] cycles_remaining={}", subscription.cycles_remaining);
+            .checked_add(plan.interval_seconds)
+            .ok_or(SubscriptionError::ArithmeticOverflow)?;
+        msg!(
+            "[execute_payment] cycles_remaining={}",
+            subscription.cycles_remaining
+        );
     }
 
     emit!(PaymentExecuted {
-        subscription:  subscription.key(),
-        plan:          plan.key(),
-        subscriber:    subscription.subscriber,
-        merchant:      plan.merchant,
-        amount_usdc:   plan_amount,
-        fee_usdc:      fee,
+        subscription: subscription.key(),
+        plan: plan.key(),
+        subscriber: subscription.subscriber,
+        merchant: plan.merchant,
+        amount_usdc: plan_amount,
+        fee_usdc: fee,
         total_charged: total_charge,
         payment_count: subscription.payment_count,
-        timestamp:     now,
+        timestamp: now,
     });
 
-    msg!("[execute_payment] SUCCESS: {} to merchant + {} fee (total {}). payment #{}",
-        plan_amount, fee, total_charge, subscription.payment_count);
+    msg!(
+        "[execute_payment] SUCCESS: {} to merchant + {} fee (total {}). payment #{}",
+        plan_amount,
+        fee,
+        total_charge,
+        subscription.payment_count
+    );
 
     Ok(())
 }

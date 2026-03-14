@@ -9,8 +9,7 @@ pub const MAX_FAILED_PAYMENTS: u8 = 3;
 
 /// Clockwork thread program ID (v2 — stable across environments)
 /// Source: https://github.com/clockwork-xyz/clockwork
-pub const CLOCKWORK_THREAD_PROGRAM_ID: &str =
-    "CLoCKi11111111111111111111111111111111111111";
+pub const CLOCKWORK_THREAD_PROGRAM_ID: &str = "CLoCKi11111111111111111111111111111111111111";
 
 /// USDC mint on devnet (Circle's devnet faucet)
 pub const DEVNET_USDC_MINT: &str = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";

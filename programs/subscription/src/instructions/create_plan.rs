@@ -16,13 +16,13 @@ use crate::{
 // ────────────────────────────────────────────────────────────
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct CreatePlanParams {
-    pub plan_id:           u64,
-    pub name:              String,
-    pub description:       String,
-    pub amount_usdc:       u64,   // micro-units (1 USDC = 1_000_000)
-    pub interval_seconds:  i64,
-    pub trial_seconds:     i64,   // 0 = no trial
-    pub max_subscribers:   u64,   // 0 = unlimited
+    pub plan_id: u64,
+    pub name: String,
+    pub description: String,
+    pub amount_usdc: u64, // micro-units (1 USDC = 1_000_000)
+    pub interval_seconds: i64,
+    pub trial_seconds: i64,   // 0 = no trial
+    pub max_subscribers: u64, // 0 = unlimited
 }
 
 // ────────────────────────────────────────────────────────────
@@ -55,10 +55,10 @@ pub struct CreatePlan<'info> {
     )]
     pub plan: Account<'info, Plan>,
 
-    pub token_program:            Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program:           Program<'info, System>,
-    pub rent:                     Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 // ────────────────────────────────────────────────────────────
@@ -80,8 +80,7 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         SubscriptionError::InvalidInterval
     );
     require!(
-        params.amount_usdc >= MIN_AMOUNT_USDC
-            && params.amount_usdc <= MAX_AMOUNT_USDC,
+        params.amount_usdc >= MIN_AMOUNT_USDC && params.amount_usdc <= MAX_AMOUNT_USDC,
         SubscriptionError::InvalidAmount
     );
     require!(
@@ -89,39 +88,39 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         SubscriptionError::TrialExceedsInterval
     );
 
-    let plan  = &mut ctx.accounts.plan;
+    let plan = &mut ctx.accounts.plan;
     let clock = Clock::get()?;
-    let now   = clock.unix_timestamp;
+    let now = clock.unix_timestamp;
 
     // ---- Populate Plan PDA ----
-    plan.merchant               = ctx.accounts.merchant.key();
+    plan.merchant = ctx.accounts.merchant.key();
     plan.merchant_token_account = ctx.accounts.merchant_token_account.key();
-    plan.usdc_mint              = ctx.accounts.usdc_mint.key();
-    plan.plan_id                = params.plan_id;
-    plan.name                   = params.name.clone();
-    plan.description            = params.description.clone();
-    plan.amount_usdc            = params.amount_usdc;
-    plan.interval_seconds       = params.interval_seconds;
-    plan.trial_seconds          = params.trial_seconds;
-    plan.max_subscribers        = params.max_subscribers;
-    plan.active_subscribers     = 0;
+    plan.usdc_mint = ctx.accounts.usdc_mint.key();
+    plan.plan_id = params.plan_id;
+    plan.name = params.name.clone();
+    plan.description = params.description.clone();
+    plan.amount_usdc = params.amount_usdc;
+    plan.interval_seconds = params.interval_seconds;
+    plan.trial_seconds = params.trial_seconds;
+    plan.max_subscribers = params.max_subscribers;
+    plan.active_subscribers = 0;
     plan.total_subscribers_ever = 0;
-    plan.total_revenue          = 0;
-    plan.created_at             = now;
-    plan.updated_at             = now;
-    plan.status                 = PlanStatus::Active;
-    plan.bump                   = ctx.bumps.plan;
+    plan.total_revenue = 0;
+    plan.created_at = now;
+    plan.updated_at = now;
+    plan.status = PlanStatus::Active;
+    plan.bump = ctx.bumps.plan;
 
     // ---- Emit structured event (indexed by SDK event listeners) ----
     emit!(PlanCreated {
-        plan:             plan.key(),
-        merchant:         ctx.accounts.merchant.key(),
-        plan_id:          params.plan_id,
-        name:             params.name,
-        amount_usdc:      params.amount_usdc,
+        plan: plan.key(),
+        merchant: ctx.accounts.merchant.key(),
+        plan_id: params.plan_id,
+        name: params.name,
+        amount_usdc: params.amount_usdc,
         interval_seconds: params.interval_seconds,
-        trial_seconds:    params.trial_seconds,
-        timestamp:        now,
+        trial_seconds: params.trial_seconds,
+        timestamp: now,
     });
 
     msg!(

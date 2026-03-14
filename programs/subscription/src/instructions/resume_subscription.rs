@@ -1,9 +1,9 @@
-use anchor_lang::prelude::*;
 use crate::{
     constants::SEED_SUBSCRIPTION,
     errors::SubscriptionError,
     state::{Plan, Subscription, SubscriptionResumed, SubscriptionStatus},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct ResumeSubscription<'info> {
@@ -25,29 +25,33 @@ pub struct ResumeSubscription<'info> {
 }
 
 pub fn handler(ctx: Context<ResumeSubscription>) -> Result<()> {
-    let sub       = &mut ctx.accounts.subscription;
-    let plan      = &ctx.accounts.plan;
+    let sub = &mut ctx.accounts.subscription;
+    let plan = &ctx.accounts.plan;
     let authority = ctx.accounts.authority.key();
-    let now       = Clock::get()?.unix_timestamp;
+    let now = Clock::get()?.unix_timestamp;
 
     require!(
         authority == sub.subscriber || authority == plan.merchant,
         SubscriptionError::UnauthorizedActor
     );
 
-    sub.status          = SubscriptionStatus::Active;
+    sub.status = SubscriptionStatus::Active;
     sub.next_payment_at = now
         .checked_add(plan.interval_seconds)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
     emit!(SubscriptionResumed {
-        subscription:    sub.key(),
-        plan:            plan.key(),
-        subscriber:      sub.subscriber,
+        subscription: sub.key(),
+        plan: plan.key(),
+        subscriber: sub.subscriber,
         next_payment_at: sub.next_payment_at,
-        timestamp:       now,
+        timestamp: now,
     });
 
-    msg!("[resume_subscription] sub={} next_at={}", sub.key(), sub.next_payment_at);
+    msg!(
+        "[resume_subscription] sub={} next_at={}",
+        sub.key(),
+        sub.next_payment_at
+    );
     Ok(())
 }

@@ -1,9 +1,9 @@
-use anchor_lang::prelude::*;
 use crate::{
     constants::SEED_PLAN,
     errors::SubscriptionError,
     state::{Plan, PlanStatus},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct PausePlan<'info> {
@@ -20,7 +20,7 @@ pub struct PausePlan<'info> {
 }
 
 pub fn handler(ctx: Context<PausePlan>) -> Result<()> {
-    ctx.accounts.plan.status     = PlanStatus::Paused;
+    ctx.accounts.plan.status = PlanStatus::Paused;
     ctx.accounts.plan.updated_at = Clock::get()?.unix_timestamp;
     msg!("[pause_plan] plan={}", ctx.accounts.plan.key());
     Ok(())

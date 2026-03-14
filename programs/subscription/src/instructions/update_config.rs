@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::state::ProtocolConfig;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct UpdateConfig<'info> {
@@ -13,7 +13,11 @@ pub struct UpdateConfig<'info> {
 pub fn handler(ctx: Context<UpdateConfig>, new_treasury: Pubkey, new_fee_bps: u16) -> Result<()> {
     let config = &mut ctx.accounts.config;
     config.treasury = new_treasury;
-    config.fee_bps  = new_fee_bps;
-    msg!("[update_config] treasury={} fee_bps={}", new_treasury, new_fee_bps);
+    config.fee_bps = new_fee_bps;
+    msg!(
+        "[update_config] treasury={} fee_bps={}",
+        new_treasury,
+        new_fee_bps
+    );
     Ok(())
 }

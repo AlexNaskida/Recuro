@@ -2,11 +2,11 @@ use anchor_lang::prelude::*;
 
 #[account]
 pub struct ProtocolConfig {
-    pub admin:           Pubkey,
-    pub treasury:        Pubkey,
-    pub fee_bps:         u16,
+    pub admin: Pubkey,
+    pub treasury: Pubkey,
+    pub fee_bps: u16,
     pub creation_paused: bool,
-    pub bump:            u8,
+    pub bump: u8,
 }
 
 impl ProtocolConfig {

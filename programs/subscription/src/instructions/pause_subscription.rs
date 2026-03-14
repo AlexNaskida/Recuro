@@ -1,9 +1,9 @@
-use anchor_lang::prelude::*;
 use crate::{
     constants::SEED_SUBSCRIPTION,
     errors::SubscriptionError,
     state::{Plan, Subscription, SubscriptionPaused, SubscriptionStatus},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct PauseSubscription<'info> {
@@ -25,10 +25,10 @@ pub struct PauseSubscription<'info> {
 }
 
 pub fn handler(ctx: Context<PauseSubscription>) -> Result<()> {
-    let sub       = &mut ctx.accounts.subscription;
-    let plan      = &ctx.accounts.plan;
+    let sub = &mut ctx.accounts.subscription;
+    let plan = &ctx.accounts.plan;
     let authority = ctx.accounts.authority.key();
-    let now       = Clock::get()?.unix_timestamp;
+    let now = Clock::get()?.unix_timestamp;
 
     require!(
         authority == sub.subscriber || authority == plan.merchant,
@@ -39,10 +39,10 @@ pub fn handler(ctx: Context<PauseSubscription>) -> Result<()> {
 
     emit!(SubscriptionPaused {
         subscription: sub.key(),
-        plan:         plan.key(),
-        subscriber:   sub.subscriber,
-        paused_by:    authority,
-        timestamp:    now,
+        plan: plan.key(),
+        subscriber: sub.subscriber,
+        paused_by: authority,
+        timestamp: now,
     });
 
     msg!("[pause_subscription] sub={} by={}", sub.key(), authority);

@@ -30,17 +30,11 @@ pub mod subscription {
     }
 
     // ── Plan lifecycle (merchant) ──────────────────────────────────────────
-    pub fn create_plan(
-        ctx: Context<CreatePlan>,
-        params: CreatePlanParams,
-    ) -> Result<()> {
+    pub fn create_plan(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()> {
         instructions::create_plan::handler(ctx, params)
     }
 
-    pub fn update_plan(
-        ctx: Context<UpdatePlan>,
-        args: UpdatePlanArgs,
-    ) -> Result<()> {
+    pub fn update_plan(ctx: Context<UpdatePlan>, args: UpdatePlanArgs) -> Result<()> {
         instructions::update_plan::handler(ctx, args)
     }
 
@@ -78,7 +72,11 @@ pub mod subscription {
         instructions::execute_payment::handler(ctx)
     }
 
-    pub fn update_config(ctx: Context<UpdateConfig>, new_treasury: Pubkey, new_fee_bps: u16) -> Result<()> {
+    pub fn update_config(
+        ctx: Context<UpdateConfig>,
+        new_treasury: Pubkey,
+        new_fee_bps: u16,
+    ) -> Result<()> {
         instructions::update_config::handler(ctx, new_treasury, new_fee_bps)
     }
 }

@@ -58,16 +58,16 @@ pub struct CreateSubscription<'info> {
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Account<'info, Mint>,
 
-    pub token_program:            Program<'info, Token>,
+    pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
-    pub system_program:           Program<'info, System>,
-    pub rent:                     Sysvar<'info, Rent>,
+    pub system_program: Program<'info, System>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
-    let plan         = &mut ctx.accounts.plan;
+    let plan = &mut ctx.accounts.plan;
     let subscription = &mut ctx.accounts.subscription;
-    let now          = Clock::get()?.unix_timestamp;
+    let now = Clock::get()?.unix_timestamp;
 
     // ── Calculate timing ──────────────────────────────────────────────────────
     let trial_ends_at = if plan.trial_seconds > 0 {
@@ -86,28 +86,30 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
 
     // ── Populate Subscription PDA ─────────────────────────────────────────────
     // CRITICAL: amount_usdc is copied from the Plan PDA, never from user input.
-    subscription.plan                     = plan.key();
-    subscription.subscriber               = ctx.accounts.subscriber.key();
+    subscription.plan = plan.key();
+    subscription.subscriber = ctx.accounts.subscriber.key();
     subscription.subscriber_token_account = ctx.accounts.subscriber_token_account.key();
-    subscription.amount_usdc              = plan.amount_usdc;
-    subscription.next_payment_at          = next_payment_at;
-    subscription.started_at               = now;
-    subscription.trial_ends_at            = trial_ends_at;
-    subscription.last_paid_at             = 0;
-    subscription.ended_at                 = 0;
-    subscription.total_paid               = 0;
-    subscription.payment_count            = 0;
-    subscription.failed_payment_count     = 0;
-    subscription.billing_cycles           = 12;
-    subscription.cycles_remaining         = 12;
-    subscription.status                   = SubscriptionStatus::Active;
-    subscription.bump                     = ctx.bumps.subscription;
+    subscription.amount_usdc = plan.amount_usdc;
+    subscription.next_payment_at = next_payment_at;
+    subscription.started_at = now;
+    subscription.trial_ends_at = trial_ends_at;
+    subscription.last_paid_at = 0;
+    subscription.ended_at = 0;
+    subscription.total_paid = 0;
+    subscription.payment_count = 0;
+    subscription.failed_payment_count = 0;
+    subscription.billing_cycles = 12;
+    subscription.cycles_remaining = 12;
+    subscription.status = SubscriptionStatus::Active;
+    subscription.bump = ctx.bumps.subscription;
 
     // ── Update Plan counters ──────────────────────────────────────────────────
-    plan.active_subscribers = plan.active_subscribers
+    plan.active_subscribers = plan
+        .active_subscribers
         .checked_add(1)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
-    plan.total_subscribers_ever = plan.total_subscribers_ever
+    plan.total_subscribers_ever = plan
+        .total_subscribers_ever
         .checked_add(1)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
@@ -118,7 +120,8 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     let fee_per_cycle = (plan.amount_usdc as u128)
         .saturating_mul(25)
         .saturating_div(10_000) as u64;
-    let total_per_cycle = plan.amount_usdc
+    let total_per_cycle = plan
+        .amount_usdc
         .checked_add(fee_per_cycle)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
     let delegate_amount = total_per_cycle
@@ -129,8 +132,8 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             Approve {
-                to:        ctx.accounts.subscriber_token_account.to_account_info(),
-                delegate:  subscription.to_account_info(),
+                to: ctx.accounts.subscriber_token_account.to_account_info(),
+                delegate: subscription.to_account_info(),
                 authority: ctx.accounts.subscriber.to_account_info(),
             },
         ),
@@ -139,20 +142,22 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
 
     // ── Emit event ────────────────────────────────────────────────────────────
     emit!(SubscriptionCreated {
-        subscription:    subscription.key(),
-        plan:            plan.key(),
-        subscriber:      ctx.accounts.subscriber.key(),
-        amount_usdc:     subscription.amount_usdc,
+        subscription: subscription.key(),
+        plan: plan.key(),
+        subscriber: ctx.accounts.subscriber.key(),
+        amount_usdc: subscription.amount_usdc,
         trial_ends_at,
         next_payment_at,
-        timestamp:       now,
+        timestamp: now,
     });
 
     msg!(
         "[create_subscription] sub={} plan={} subscriber={} amount={} next_at={}",
-        subscription.key(), plan.key(),
+        subscription.key(),
+        plan.key(),
         ctx.accounts.subscriber.key(),
-        subscription.amount_usdc, next_payment_at,
+        subscription.amount_usdc,
+        next_payment_at,
     );
 
     Ok(())
