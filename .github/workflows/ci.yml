@@ -33,7 +33,7 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Solana Ecosystem CLI tools (Solana, Anchor, Surfpool, Node, Yarn)
+      - name: Install Solana Ecosystem CLI tools
         run: |
           curl --proto '=https' --tlsv1.2 -sSfL https://solana-install.solana.workers.dev | bash
           echo "$HOME/.local/share/solana/install/active_release/bin" >> $GITHUB_PATH
@@ -42,7 +42,6 @@ jobs:
         run: |
           rustc --version
           solana --version
-          solana-keygen --version
           anchor --version
           node --version
           yarn --version
@@ -58,9 +57,6 @@ jobs:
 
       - name: Anchor build
         run: anchor build
-
-      # - name: Anchor test (localnet)
-      #   run: anchor test
 
       - name: Sync IDL to SDK
         run: cp target/idl/subscription.json sdk/src/idl.json
@@ -97,6 +93,12 @@ jobs:
       - name: Build SDK
         run: yarn workspace @solana-subscription/sdk build
 
+      - name: Upload SDK dist artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sdk-dist
+          path: sdk/dist/
+
   apps-build:
     name: Apps Build & Type-check
     runs-on: ubuntu-latest
@@ -110,6 +112,12 @@ jobs:
           cache: yarn
 
       - run: yarn install --frozen-lockfile
+
+      - name: Download SDK dist
+        uses: actions/download-artifact@v4
+        with:
+          name: sdk-dist
+          path: sdk/dist/
 
       # - name: Type-check merchant dashboard
       #   run: yarn workspace merchant-dashboard type-check
