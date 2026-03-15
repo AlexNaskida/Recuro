@@ -31,7 +31,7 @@ export default function SettingsPage() {
   const [paused, setPaused] = useState(false);
   const [copied, setCopied] = useState(false);
   const [treasuryAddress, setTreasuryAddress] = useState(TREASURY);
-  const [feePercent, setFeePercent] = useState("—");
+  const [feePercent, setFeePercent] = useState("-");
   const { program } = useAnchorProgram();
   const { resolvedTheme, setTheme } = useTheme();
 
@@ -41,7 +41,7 @@ export default function SettingsPage() {
     async function fetchProtocolConfig() {
       if (!program) {
         setTreasuryAddress(TREASURY);
-        setFeePercent("—");
+        setFeePercent("-");
         return;
       }
 
@@ -75,7 +75,7 @@ export default function SettingsPage() {
         if (!cancelled) {
           console.error("[Settings] failed to fetch protocol config:", err);
           setTreasuryAddress(TREASURY);
-          setFeePercent("—");
+          setFeePercent("-");
         }
       }
     }

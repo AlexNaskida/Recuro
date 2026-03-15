@@ -76,7 +76,6 @@ function SparkLine({ data }: { data: number[] }) {
 }
 
 // ── Chart tooltip ─────────────────────────────────────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ChartTooltipContent = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (

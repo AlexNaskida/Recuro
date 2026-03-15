@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { EventParser } from "@coral-xyz/anchor";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { Badge } from "@/components/ui/badge";
@@ -32,21 +33,57 @@ function unixToDate(unix: number): string {
   return new Date(unix * 1000).toISOString().split("T")[0];
 }
 
+function unixToUtcDateTime(unix: number): string {
+  if (!unix) return "—";
+  return new Date(unix * 1000)
+    .toISOString()
+    .replace("T", " ")
+    .replace(".000Z", " UTC");
+}
+
+function bnToNumber(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (
+    value &&
+    typeof (value as { toNumber?: () => number }).toNumber === "function"
+  ) {
+    return (value as { toNumber: () => number }).toNumber();
+  }
+  return 0;
+}
+
 function truncate(addr: string, start = 6, end = 4): string {
   if (addr.length <= start + end + 3) return addr;
   return addr.slice(0, start) + "..." + addr.slice(-end);
 }
 
-function deriveLogType(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  status: any,
-  _paymentCount: number,
-  lastPaidAt: number,
-): LogEntry["type"] {
-  if (status.cancelled !== undefined) return "SubscriptionCancelled";
-  if (status.expired !== undefined) return "SubscriptionExpired";
-  if (lastPaidAt > 0) return "PaymentExecuted";
-  return "SubscriptionCreated";
+async function fetchProgramSignatures(
+  connection: {
+    getSignaturesForAddress: (
+      address: { toBase58: () => string },
+      options?: { limit?: number; before?: string },
+    ) => Promise<Array<{ signature: string }>>;
+  },
+  programId: { toBase58: () => string },
+) {
+  const allSignatures: Array<{ signature: string }> = [];
+  let before: string | undefined;
+
+  for (let page = 0; page < 5; page += 1) {
+    const batch = await connection.getSignaturesForAddress(programId, {
+      limit: 200,
+      before,
+    });
+
+    if (batch.length === 0) break;
+
+    allSignatures.push(...batch);
+    before = batch[batch.length - 1]?.signature;
+
+    if (batch.length < 200) break;
+  }
+
+  return allSignatures;
 }
 
 const typeConfig: Record<
@@ -186,7 +223,7 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
             value={
               entry.amountUsdc > 0
                 ? `$${entry.amountUsdc.toFixed(4)} USDC`
-                : "—"
+                : "-"
             }
           />
           <DetailRow
@@ -199,7 +236,15 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
             label="Payment #"
             value={entry.paymentCount > 0 ? `${entry.paymentCount}` : "—"}
           />
-          <DetailRow icon={Clock} label="Date" value={entry.timestamp} />
+          <DetailRow
+            icon={Clock}
+            label="Date"
+            value={
+              entry.timestampUnix
+                ? unixToUtcDateTime(Math.floor(entry.timestampUnix / 1000))
+                : entry.timestamp
+            }
+          />
           {entry.raw && (
             <div className="pt-2">
               <a
@@ -252,15 +297,21 @@ export default function Logs() {
 
         // Build plan name map
         const planNames: Record<string, string> = {};
+        const merchantPlanPubkeys = new Set<string>();
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         planAccounts.forEach((a: any) => {
-          planNames[a.publicKey.toBase58()] = a.account.name;
+          const planPubkey = a.publicKey.toBase58();
+          planNames[planPubkey] = a.account.name;
+          merchantPlanPubkeys.add(planPubkey);
         });
 
         // Fetch all subscriptions for merchant's plans
         const connection = program.provider.connection;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const allSubs: any[] = [];
+        type DecodedSubscriptionRow = {
+          publicKey: { toBase58: () => string };
+          account: Record<string, unknown>;
+        };
+        const allSubs: DecodedSubscriptionRow[] = [];
 
         for (const plan of planAccounts) {
           const rawAccounts = await connection.getProgramAccounts(
@@ -295,40 +346,162 @@ export default function Logs() {
           return;
         }
 
-        // Map each subscription to a log entry
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const entries: LogEntry[] = allSubs.map((a: any) => {
-          const acc = a.account;
-          const planPk = acc.plan.toBase58();
-          const lastPaidAt = acc.lastPaidAt.toNumber();
-          const type = deriveLogType(
-            acc.status,
-            acc.paymentCount.toNumber(),
-            lastPaidAt,
-          );
+        const subscriptionState = new Map(
+          allSubs.map((a) => [a.publicKey.toBase58(), a.account]),
+        );
 
-          return {
-            id: a.publicKey.toBase58(),
-            type,
-            subscriber: acc.subscriber.toBase58(),
-            plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
-            planPubkey: planPk,
-            amountUsdc: microToUsdc(acc.amountUsdc),
-            totalPaid: microToUsdc(acc.totalPaid),
-            paymentCount: acc.paymentCount.toNumber(),
-            status: Object.keys(acc.status)[0],
-            timestamp:
-              lastPaidAt > 0
-                ? unixToDate(lastPaidAt)
-                : unixToDate(acc.startedAt.toNumber()),
-            raw: a.publicKey.toBase58(),
-          };
+        const parser = new EventParser(program.programId, program.coder);
+        const signatures = await fetchProgramSignatures(
+          connection,
+          program.programId,
+        );
+        const transactions = await Promise.all(
+          signatures.map(async ({ signature }) => {
+            const tx = await connection.getTransaction(signature, {
+              commitment: "confirmed",
+              maxSupportedTransactionVersion: 0,
+            });
+            return { signature, tx };
+          }),
+        );
+
+        const entries: LogEntry[] = [];
+
+        transactions.forEach(({ signature, tx }) => {
+          const logMessages = tx?.meta?.logMessages;
+          if (!logMessages?.length) return;
+
+          let eventIndex = 0;
+          for (const parsed of parser.parseLogs(logMessages)) {
+            const eventName = parsed.name;
+            const event = parsed.data as Record<string, unknown>;
+            const planPubkey = event.plan?.toString?.() ?? "";
+            if (!merchantPlanPubkeys.has(planPubkey)) continue;
+
+            const subscriptionPubkey = event.subscription?.toString?.() ?? "";
+            const state = subscriptionState.get(subscriptionPubkey);
+            const timestamp = bnToNumber(event.timestamp);
+            const paymentCount =
+              bnToNumber(event.paymentCount) || bnToNumber(state?.paymentCount);
+            const totalPaid = microToUsdc(bnToNumber(state?.totalPaid));
+
+            const base = {
+              id: `${signature}-${eventName}-${eventIndex++}`,
+              subscriber: event.subscriber?.toString?.() ?? "",
+              plan: planNames[planPubkey] ?? planPubkey.slice(0, 8) + "...",
+              planPubkey,
+              amountUsdc:
+                eventName === "PaymentExecuted" ||
+                eventName === "SubscriptionCreated"
+                  ? microToUsdc(bnToNumber(event.amountUsdc))
+                  : 0,
+              totalPaid,
+              paymentCount,
+              status: eventName,
+              timestamp: unixToDate(timestamp),
+              timestampUnix: timestamp > 0 ? timestamp * 1000 : 0,
+              raw: subscriptionPubkey,
+            };
+
+            if (eventName === "PaymentExecuted") {
+              entries.push({ ...base, type: "PaymentExecuted" });
+            } else if (eventName === "PaymentFailed") {
+              entries.push({ ...base, type: "PaymentFailed" });
+            } else if (eventName === "SubscriptionCreated") {
+              entries.push({ ...base, type: "SubscriptionCreated" });
+            } else if (eventName === "SubscriptionCancelled") {
+              entries.push({ ...base, type: "SubscriptionCancelled" });
+            } else if (eventName === "SubscriptionExpired") {
+              entries.push({ ...base, type: "SubscriptionExpired" });
+            }
+          }
         });
 
+        if (entries.length === 0) {
+          // Fall back to current account snapshots when historical event logs are unavailable.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          allSubs.forEach((a: any) => {
+            const acc = a.account;
+            const planPk = acc.plan.toBase58();
+            const subPk = a.publicKey.toBase58();
+            const startedAt = bnToNumber(acc.startedAt);
+            const lastPaidAt = bnToNumber(acc.lastPaidAt);
+            const lastFailedAt = bnToNumber(acc.lastFailedAt);
+            const endedAt = bnToNumber(acc.endedAt);
+            const paymentCount = bnToNumber(acc.paymentCount);
+            const totalFailures = bnToNumber(acc.totalFailures);
+            const base = {
+              subscriber: acc.subscriber.toBase58(),
+              plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
+              planPubkey: planPk,
+              amountUsdc: microToUsdc(acc.amountUsdc),
+              totalPaid: microToUsdc(acc.totalPaid),
+              paymentCount,
+              status: Object.keys(acc.status ?? {})[0] ?? "active",
+              raw: subPk,
+            };
+
+            if (startedAt > 0) {
+              entries.push({
+                ...base,
+                id: `${subPk}-created`,
+                type: "SubscriptionCreated",
+                timestamp: unixToDate(startedAt),
+                timestampUnix: startedAt * 1000,
+              });
+            }
+
+            if (paymentCount > 0 && lastPaidAt > 0) {
+              entries.push({
+                ...base,
+                id: `${subPk}-paid-${lastPaidAt}`,
+                type: "PaymentExecuted",
+                timestamp: unixToDate(lastPaidAt),
+                timestampUnix: lastPaidAt * 1000,
+              });
+            }
+
+            if (totalFailures > 0 && lastFailedAt > 0) {
+              entries.push({
+                ...base,
+                id: `${subPk}-failed-${lastFailedAt}`,
+                type: "PaymentFailed",
+                timestamp: unixToDate(lastFailedAt),
+                timestampUnix: lastFailedAt * 1000,
+              });
+            }
+
+            if (acc.status?.cancelled !== undefined) {
+              const cancelledAt = endedAt > 0 ? endedAt : startedAt;
+              entries.push({
+                ...base,
+                id: `${subPk}-cancelled-${cancelledAt}`,
+                type: "SubscriptionCancelled",
+                timestamp: unixToDate(cancelledAt),
+                timestampUnix: cancelledAt > 0 ? cancelledAt * 1000 : 0,
+              });
+            }
+
+            if (acc.status?.expired !== undefined) {
+              const expiredAt =
+                endedAt > 0 ? endedAt : lastFailedAt || startedAt;
+              entries.push({
+                ...base,
+                id: `${subPk}-expired-${expiredAt}`,
+                type: "SubscriptionExpired",
+                timestamp: unixToDate(expiredAt),
+                timestampUnix: expiredAt > 0 ? expiredAt * 1000 : 0,
+              });
+            }
+          });
+        }
+
         // Sort newest first
-        const sorted = entries.sort((a, b) =>
-          b.timestamp.localeCompare(a.timestamp),
-        );
+        const sorted = entries.sort((a, b) => {
+          const aTs = a.timestampUnix ?? (Date.parse(a.timestamp) || 0);
+          const bTs = b.timestampUnix ?? (Date.parse(b.timestamp) || 0);
+          return bTs - aTs;
+        });
         setLogs(sorted);
         setUsingMock(false);
       } catch (err) {

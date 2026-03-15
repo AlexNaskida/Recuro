@@ -55,6 +55,10 @@ export default function Subscribers() {
     return true;
   });
 
+  const sorted = [...filtered].sort(
+    (a, b) => (b.startedAt ?? 0) - (a.startedAt ?? 0),
+  );
+
   const copyWallet = (wallet: string, idx: number) => {
     navigator.clipboard.writeText(wallet);
     setCopiedIdx(idx);
@@ -125,7 +129,7 @@ export default function Subscribers() {
                     ))}
                   </TableRow>
                 ))
-              : filtered.map((sub, i) => (
+              : sorted.map((sub, i) => (
                   <TableRow key={i}>
                     <TableCell>
                       <Tooltip>

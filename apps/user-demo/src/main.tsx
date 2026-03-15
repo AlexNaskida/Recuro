@@ -22,13 +22,21 @@ const queryClient = new QueryClient({
 });
 const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
 const RPC =
-  import.meta.env.VITE_RPC_ENDPOINT ?? "https://api.devnet.solana.com";
+  import.meta.env.VITE_RPC_URL ??
+  import.meta.env.VITE_RPC_ENDPOINT ??
+  "https://api.devnet.solana.com";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <BrowserRouter>
       <ConnectionProvider endpoint={RPC}>
-        <WalletProvider wallets={wallets} autoConnect>
+        <WalletProvider
+          wallets={wallets}
+          autoConnect
+          onError={(error) => {
+            console.error("[wallet-adapter]", error);
+          }}
+        >
           <WalletModalProvider>
             <QueryClientProvider client={queryClient}>
               <App />

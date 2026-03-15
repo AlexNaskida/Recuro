@@ -28,8 +28,8 @@ const PROGRAM_ID = new PublicKey(
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
-const PLAN_NAME = "Keeper Test";
-const AMOUNT_USDC = 1_000_000; // $1.00 in μUSDC (6 decimals)
+const PLAN_NAME = "Basic";
+const AMOUNT_USDC = 1_000_000; // $1.00 in μUSDC (6 decimals) 9.999_999 would be $9.999999
 const INTERVAL_SECS = 120; // 120 seconds — fires every 2 minutes
 const TRIAL_SECS = 0;
 
@@ -110,8 +110,8 @@ try {
     "\n── Next steps ───────────────────────────────────────────────",
   );
   console.log("1. Subscribe to this plan (from any wallet with devnet USDC)");
-  console.log("2. Run the keeper — it will fire execute_payment every 60s");
-  console.log("   POLL_INTERVAL=30 node keeper.mjs");
+  console.log("2. Run the keeper — it will fire execute_payment every 120s");
+  console.log("   POLL_INTERVAL=120 node keeper.mjs");
 } catch (err) {
   console.error("❌ Error:", err.message);
   if (err.logs) console.error("Logs:\n", err.logs.join("\n"));

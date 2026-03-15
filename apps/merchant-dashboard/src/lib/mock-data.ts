@@ -194,6 +194,7 @@ export interface LogEntry {
   paymentCount: number;
   status: string;
   timestamp: string; // ISO date string from lastPaidAt or startedAt
+  timestampUnix?: number; // milliseconds since epoch for precise sorting
   raw: string; // subscription pubkey for explorer link
 }
 

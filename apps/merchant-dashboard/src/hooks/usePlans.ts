@@ -10,6 +10,7 @@ export interface Plan {
   description: string;
   price: number;
   interval: string;
+  createdAt: number;
   subscribers: number;
   revenue: number;
   feePaid: number;
@@ -33,6 +34,20 @@ function intervalLabel(seconds: number): string {
   return "yearly";
 }
 
+function statusRank(status: Plan["status"]): number {
+  if (status === "active") return 0;
+  if (status === "paused") return 1;
+  return 2;
+}
+
+function sortPlans(plans: Plan[]): Plan[] {
+  return [...plans].sort((a, b) => {
+    const byStatus = statusRank(a.status) - statusRank(b.status);
+    if (byStatus !== 0) return byStatus;
+    return b.createdAt - a.createdAt;
+  });
+}
+
 // export function intervalLabel(seconds: number): string {
 //   if (seconds < 3600)   return `${seconds}s`;         // < 1 hour
 //   if (seconds < 86400)  return `${Math.round(seconds / 3600)}h`;  // < 1 day
@@ -52,13 +67,16 @@ export function usePlans() {
     if (!program || !publicKey) {
       // Not connected — show mock data
       setPlans(
-        mockPlans.map((p) => ({
-          ...p,
-          description: "",
-          feePaid: 0,
-          successfulPayments: 0,
-          pubkey: "",
-        })),
+        sortPlans(
+          mockPlans.map((p, index) => ({
+            ...p,
+            createdAt: Date.now() - index * 60_000,
+            description: "",
+            feePaid: 0,
+            successfulPayments: 0,
+            pubkey: "",
+          })),
+        ),
       );
       setUsingMock(true);
       return;
@@ -74,13 +92,16 @@ export function usePlans() {
       if (accounts.length === 0) {
         // Connected but no on-chain plans yet — show mock with a note
         setPlans(
-          mockPlans.map((p) => ({
-            ...p,
-            description: "",
-            feePaid: 0,
-            successfulPayments: 0,
-            pubkey: "",
-          })),
+          sortPlans(
+            mockPlans.map((p, index) => ({
+              ...p,
+              createdAt: Date.now() - index * 60_000,
+              description: "",
+              feePaid: 0,
+              successfulPayments: 0,
+              pubkey: "",
+            })),
+          ),
         );
         setUsingMock(true);
       } else {
@@ -94,6 +115,7 @@ export function usePlans() {
             description: acc.description ?? "",
             price: microToUsdc(acc.amountUsdc),
             interval: intervalLabel(acc.intervalSeconds.toNumber()),
+            createdAt: acc.createdAt.toNumber() * 1000,
             subscribers: acc.activeSubscribers.toNumber(),
             revenue: microToUsdc(acc.totalRevenue),
             feePaid: microToUsdc(acc.feesPaid),
@@ -101,19 +123,22 @@ export function usePlans() {
             status: decodePlanStatus(acc.status),
           };
         });
-        setPlans(real);
+        setPlans(sortPlans(real));
         setUsingMock(false);
       }
     } catch (err) {
       console.warn("[usePlans] fetch failed, using mock:", err);
       setPlans(
-        mockPlans.map((p) => ({
-          ...p,
-          description: "",
-          feePaid: 0,
-          successfulPayments: 0,
-          pubkey: "",
-        })),
+        sortPlans(
+          mockPlans.map((p, index) => ({
+            ...p,
+            createdAt: Date.now() - index * 60_000,
+            description: "",
+            feePaid: 0,
+            successfulPayments: 0,
+            pubkey: "",
+          })),
+        ),
       );
       setUsingMock(true);
     } finally {

@@ -208,6 +208,20 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         .checked_add(1)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
+    plan.total_revenue = plan
+        .total_revenue
+        .checked_add(plan_amount)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    plan.fees_paid = plan
+        .fees_paid
+        .checked_add(fee)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    plan.successful_payments = plan
+        .successful_payments
+        .checked_add(1)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    plan.updated_at = now;
+
     subscription.cycles_remaining = subscription.cycles_remaining.saturating_sub(1);
 
     if subscription.cycles_remaining == 0 {

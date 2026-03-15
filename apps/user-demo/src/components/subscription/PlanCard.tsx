@@ -5,7 +5,6 @@ import {
   Check,
   CheckCircle2,
   ExternalLink,
-  Loader2,
   Shield,
   Timer,
   Users,

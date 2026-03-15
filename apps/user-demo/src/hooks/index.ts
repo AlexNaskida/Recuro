@@ -2,8 +2,44 @@ import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAnchorWallet, useConnection } from "@solana/wallet-adapter-react";
 import { Connection, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { createUserSdk } from "@/lib/sdk";
-import type { SubscriptionSdk } from "@solana-subscription/sdk";
+import type {
+  SubscriptionAccount,
+  SubscriptionSdk,
+} from "@solana-subscription/sdk";
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function buildOptimisticSubscription(
+  subscriptionPubkey: PublicKey,
+  planPubkey: PublicKey,
+  subscriber: PublicKey,
+): SubscriptionAccount {
+  const now = Math.floor(Date.now() / 1000);
+  return {
+    publicKey: subscriptionPubkey,
+    plan: planPubkey,
+    subscriber,
+    subscriberTokenAccount: subscriber,
+    amountUsdc: new BN(0),
+    intervalSeconds: new BN(0),
+    nextPaymentAt: new BN(now),
+    startedAt: new BN(now),
+    endedAt: new BN(0),
+    lastPaidAt: new BN(0),
+    lastFailedAt: new BN(0),
+    totalPaid: new BN(0),
+    paymentCount: new BN(0),
+    consecutiveFailures: 0,
+    failedPaymentCount: 0,
+    totalFailures: 0,
+    status: "Active",
+    bump: 0,
+  };
+}
 
 // ── SDK factory ───────────────────────────────────────────────────────────────
 export function useSdk(): SubscriptionSdk | null {
@@ -62,7 +98,8 @@ export function useMerchantPlans(merchantPubkey: string | null) {
     queryKey: ["merchant-plans", merchantPubkey],
     queryFn: async () => {
       if (!sdk || !merchantPubkey) return [];
-      return sdk.fetchMerchantPlans(new PublicKey(merchantPubkey));
+      const plans = await sdk.fetchMerchantPlans(new PublicKey(merchantPubkey));
+      return plans.filter((plan) => plan.status !== "Archived");
     },
     enabled: !!merchantPubkey && !!sdk,
     staleTime: 30_000,
@@ -94,10 +131,45 @@ export function useSubscribe() {
       if (!sdk) throw new Error("Wallet not connected");
       return sdk.createSubscription({ planPubkey: new PublicKey(planPubkey) });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["my-subscriptions", wallet?.publicKey.toBase58()],
-      });
+    onSuccess: async (result, variables) => {
+      const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
+
+      if (sdk && wallet) {
+        const optimistic = buildOptimisticSubscription(
+          result.subscriptionPubkey,
+          new PublicKey(variables.planPubkey),
+          wallet.publicKey,
+        );
+
+        queryClient.setQueryData<SubscriptionAccount[]>(queryKey, (prev) => {
+          const current = Array.isArray(prev) ? prev : [];
+          const filtered = current.filter(
+            (s) => s.publicKey.toBase58() !== optimistic.publicKey.toBase58(),
+          );
+          return [optimistic, ...filtered];
+        });
+
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const fresh = await sdk.fetchSubscription(result.subscriptionPubkey);
+          if (fresh) {
+            queryClient.setQueryData<SubscriptionAccount[]>(
+              queryKey,
+              (prev) => {
+                const current = Array.isArray(prev) ? prev : [];
+                const filtered = current.filter(
+                  (s) => s.publicKey.toBase58() !== fresh.publicKey.toBase58(),
+                );
+                return [fresh, ...filtered];
+              },
+            );
+            break;
+          }
+
+          await sleep(350 * (attempt + 1));
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey });
     },
   });
 }

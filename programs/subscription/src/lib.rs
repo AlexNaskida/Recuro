@@ -79,4 +79,8 @@ pub mod subscription {
     ) -> Result<()> {
         instructions::update_config::handler(ctx, new_treasury, new_fee_bps)
     }
+
+    pub fn renew_subscription(ctx: Context<RenewSubscription>) -> Result<()> {
+        instructions::renew_subscription::handler(ctx)
+    }
 }

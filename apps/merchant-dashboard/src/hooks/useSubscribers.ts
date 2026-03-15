@@ -9,11 +9,14 @@ export interface Subscriber {
   plan: string;
   planPubkey: string;
   status: "active" | "paused" | "cancelled" | "expired";
+  startedAt: number;
   started: string;
   lastPayment: string;
   nextPayment: string;
+  amountUsdc: number;
   totalPaid: number;
   paymentCount: number;
+  failedPaymentCount: number;
 }
 
 function decodeSubStatus(raw: Record<string, unknown>): Subscriber["status"] {
@@ -30,13 +33,17 @@ function unixToDate(unix: number): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function toMock(s: any): Subscriber {
+  const startedAt = Date.parse(s.started || "");
   return {
     ...s,
     status:
       s.status === "past_due" ? "active" : (s.status as Subscriber["status"]),
+    startedAt: Number.isNaN(startedAt) ? 0 : startedAt,
     planPubkey: "",
     nextPayment: "—",
+    amountUsdc: 0,
     paymentCount: 0,
+    failedPaymentCount: 0,
   };
 }
 
@@ -132,14 +139,17 @@ export function useSubscribers(planPubkeys?: string[]) {
             plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
             planPubkey: planPk,
             status: decodeSubStatus(acc.status),
+            startedAt: acc.startedAt.toNumber() * 1000,
             started: unixToDate(acc.startedAt.toNumber()),
             lastPayment:
               acc.lastPaidAt.toNumber() > 0
                 ? unixToDate(acc.lastPaidAt.toNumber())
                 : "—",
             nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
+            amountUsdc: microToUsdc(acc.amountUsdc),
             totalPaid: microToUsdc(acc.totalPaid),
             paymentCount: acc.paymentCount.toNumber(),
+            failedPaymentCount: Number(acc.failedPaymentCount ?? 0),
           };
         });
 
@@ -205,14 +215,17 @@ export function useSubscribers(planPubkeys?: string[]) {
           plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
           planPubkey: planPk,
           status: decodeSubStatus(acc.status),
+          startedAt: acc.startedAt.toNumber() * 1000,
           started: unixToDate(acc.startedAt.toNumber()),
           lastPayment:
             acc.lastPaidAt.toNumber() > 0
               ? unixToDate(acc.lastPaidAt.toNumber())
               : "—",
           nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
+          amountUsdc: microToUsdc(acc.amountUsdc),
           totalPaid: microToUsdc(acc.totalPaid),
           paymentCount: acc.paymentCount.toNumber(),
+          failedPaymentCount: Number(acc.failedPaymentCount ?? 0),
         };
       });
 

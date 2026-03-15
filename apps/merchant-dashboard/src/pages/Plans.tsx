@@ -116,6 +116,19 @@ export default function Plans() {
       ? plans
       : plans.filter((plan) => plan.status === statusFilter);
 
+  const sortedPlans = [...filteredPlans].sort((a, b) => {
+    const rank = (status: Plan["status"]) => {
+      if (status === "active") return 0;
+      if (status === "paused") return 1;
+      return 2;
+    };
+
+    const byStatus = rank(a.status) - rank(b.status);
+    if (byStatus !== 0) return byStatus;
+
+    return b.createdAt - a.createdAt;
+  });
+
   const openEditDialog = (plan: Plan) => {
     setEditingPlan(plan);
     setEditName(plan.name);
@@ -457,7 +470,7 @@ export default function Plans() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredPlans.map((plan) => (
+          {sortedPlans.map((plan) => (
             <Card key={plan.id}>
               <CardHeader className="flex flex-row items-start justify-between pb-2">
                 <div>

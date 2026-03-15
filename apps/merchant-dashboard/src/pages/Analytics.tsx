@@ -121,6 +121,15 @@ export default function Analytics() {
 
   const data = useMemo(() => {
     if (usingMock) {
+      const normalizedBreakdown = planBreakdown.map((row: any) => ({
+        plan: row.plan ?? "Unknown",
+        subscribers: Number(row.subscribers ?? 0),
+        mrr: Number(row.mrr ?? 0),
+        revenue: Number(row.revenue ?? row.mrr ?? 0),
+        churn: Number(row.churn ?? 0),
+        avgLifetime: row.avgLifetime ?? "-",
+      }));
+
       return {
         revenueChart: revenueData.map((d) => ({
           month: d.month,
@@ -133,13 +142,16 @@ export default function Analytics() {
           month: d.month,
           "Churn %": d.rate,
         })),
-        breakdown: planBreakdown,
+        breakdown: normalizedBreakdown,
       };
     }
 
     // ── Real calculations ─────────────────────────────────────────────────────
 
-    const totalRevenue = plans.reduce((s, p) => s + p.revenue, 0);
+    const totalRevenue = subscribers.reduce(
+      (sum, sub) => sum + sub.amountUsdc * sub.paymentCount,
+      0,
+    );
     const totalActive = plans.reduce(
       (s, p) => s + (p.status === "active" ? p.subscribers : 0),
       0,
@@ -174,15 +186,22 @@ export default function Analytics() {
             planSubs.length
           : 0;
       const avgLifetime =
-        avgPayments > 0 ? `${avgPayments.toFixed(1)} payments` : "—";
+        avgPayments > 0 ? `${avgPayments.toFixed(1)} payments` : "-";
+      const planRevenue = planSubs.reduce(
+        (sum, sub) => sum + sub.amountUsdc * sub.paymentCount,
+        0,
+      );
+      const planMrr = planSubs
+        .filter((sub) => sub.status === "active")
+        .reduce((sum, sub) => sum + sub.amountUsdc, 0);
 
       return {
         plan: p.name,
-        subscribers: p.subscribers,
-        mrr: p.subscribers * p.price,
+        subscribers: planSubs.filter((sub) => sub.status === "active").length,
+        mrr: planMrr,
         churn: planChurn,
         avgLifetime,
-        revenue: p.revenue,
+        revenue: planRevenue,
       };
     });
 
@@ -382,17 +401,20 @@ export default function Analytics() {
                     <TableCell>{row.subscribers}</TableCell>
                     <TableCell>
                       $
-                      {row.mrr.toLocaleString(undefined, {
+                      {Number(row.mrr ?? 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
                     </TableCell>
                     <TableCell>
                       $
-                      {row.revenue.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
+                      {Number(row.revenue ?? row.mrr ?? 0).toLocaleString(
+                        undefined,
+                        {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        },
+                      )}
                     </TableCell>
                     <TableCell>
                       <span
