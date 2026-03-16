@@ -174,6 +174,58 @@ export function useSubscribe() {
   });
 }
 
+// ── Renew an expired subscription ─────────────────────────────────────────────
+export function useRenewSubscription() {
+  const sdk = useSdk();
+  const wallet = useAnchorWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      subscriptionPubkey,
+      planPubkey,
+    }: {
+      subscriptionPubkey: string;
+      planPubkey: string;
+    }) => {
+      if (!sdk) throw new Error("Wallet not connected");
+      return sdk.renewSubscription(
+        new PublicKey(subscriptionPubkey),
+        new PublicKey(planPubkey),
+      );
+    },
+    onSuccess: async (result) => {
+      const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
+
+      // Poll until the subscription shows as Active on-chain
+      if (sdk) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const fresh = await sdk.fetchSubscription(
+            new PublicKey(result.subscriptionPubkey),
+          );
+          if (fresh && fresh.status === "Active") {
+            queryClient.setQueryData<SubscriptionAccount[]>(
+              queryKey,
+              (prev) => {
+                const current = Array.isArray(prev) ? prev : [];
+                return current.map((s) =>
+                  s.publicKey.toBase58() === fresh.publicKey.toBase58()
+                    ? fresh
+                    : s,
+                );
+              },
+            );
+            break;
+          }
+          await sleep(350 * (attempt + 1));
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+}
+
 // ── Cancel a subscription ─────────────────────────────────────────────────────
 export function useCancelSubscription() {
   const sdk = useSdk();

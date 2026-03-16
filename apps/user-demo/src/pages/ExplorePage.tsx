@@ -42,9 +42,9 @@ function PlanList() {
           mySubscriptions.find(
             (s: SubscriptionAccount) =>
               s.plan.toBase58() === plan.publicKey.toBase58() &&
-              s.status === "Active",
+              (s.status === "Active" || s.status === "Expired"),
           ) ?? undefined;
-
+          
         return (
           <PlanCard
             key={plan.publicKey.toBase58()}

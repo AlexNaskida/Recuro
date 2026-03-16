@@ -2,9 +2,9 @@ import { useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
-  Check,
   CheckCircle2,
   ExternalLink,
+  RefreshCw,
   Shield,
   Timer,
   Users,
@@ -18,7 +18,11 @@ import {
   Skeleton,
   Separator,
 } from "@/components/ui/index";
-import { useSubscribe, useCancelSubscription } from "@/hooks/index";
+import {
+  useSubscribe,
+  useCancelSubscription,
+  useRenewSubscription,
+} from "@/hooks/index";
 import { cn } from "@/lib/utils";
 import {
   SOLSCAN_ACC,
@@ -53,7 +57,7 @@ function StatPill({
   );
 }
 
-// ── Subscribe confirmation dialog ─────────────────────────────────────────────
+// ── Subscribe dialog ──────────────────────────────────────────────────────────
 interface SubscribeDialogProps {
   plan: PlanAccount;
   open: boolean;
@@ -77,9 +81,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
         sig: res.signature,
         subPubkey: res.subscriptionPubkey.toBase58(),
       });
-    } catch {
-      // error shown by mutation
-    }
+    } catch {}
   }
 
   function handleClose() {
@@ -99,7 +101,6 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {result ? (
-            // ── Success state ──────────────────────────────────────────
             <div className="flex flex-col items-center gap-5 text-center py-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
                 <CheckCircle2 className="h-8 w-8 text-emerald-400" />
@@ -107,8 +108,8 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
               <div>
                 <h2 className="text-xl font-bold">You're subscribed!</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your first payment was charged immediately. Future payments
-                  are automated by the keeper network.
+                  First payment charged immediately. Future payments are
+                  automated.
                 </p>
               </div>
               <div className="w-full space-y-2 text-left">
@@ -150,7 +151,6 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
               </Button>
             </div>
           ) : (
-            // ── Confirmation state ─────────────────────────────────────
             <>
               <AlertDialog.Title className="text-lg font-bold">
                 Confirm subscription
@@ -158,8 +158,6 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
               <AlertDialog.Description className="mt-1 text-sm text-muted-foreground">
                 Review the details before authorising the on-chain transaction.
               </AlertDialog.Description>
-
-              {/* Plan summary */}
               <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{plan.name}</span>
@@ -198,8 +196,6 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                   </div>
                 </div>
               </div>
-
-              {/* Security note */}
               <div className="mt-4 flex gap-2.5 rounded-xl border border-brand-500/20 bg-brand-500/5 p-3">
                 <Shield className="h-4 w-4 text-brand-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
@@ -207,12 +203,9 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                     Non-custodial.
                   </span>{" "}
                   Your USDC stays in your wallet. Only the exact plan amount is
-                  pulled each cycle. Cancel any time to immediately revoke
-                  access.
+                  pulled each cycle.
                 </p>
               </div>
-
-              {/* Error */}
               {subscribe.isError && (
                 <div className="mt-3 flex gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
                   <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
@@ -222,7 +215,6 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                   </p>
                 </div>
               )}
-
               <div className="mt-5 flex gap-3">
                 <AlertDialog.Cancel asChild>
                   <Button
@@ -250,7 +242,171 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
   );
 }
 
-// ── Cancel confirmation dialog ────────────────────────────────────────────────
+// ── Renew dialog ──────────────────────────────────────────────────────────────
+interface RenewDialogProps {
+  plan: PlanAccount;
+  subscription: SubscriptionAccount;
+  open: boolean;
+  onClose: () => void;
+}
+
+function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
+  const renew = useRenewSubscription();
+  const [result, setResult] = useState<{ sig: string } | null>(null);
+  const amount = plan.amountUsdc.toNumber();
+  const interval = intervalLabel(plan.intervalSeconds.toNumber());
+
+  async function handleRenew() {
+    try {
+      const res = await renew.mutateAsync({
+        subscriptionPubkey: subscription.publicKey.toBase58(),
+        planPubkey: plan.publicKey.toBase58(),
+      });
+      setResult({ sig: res.signature });
+    } catch {}
+  }
+
+  function handleClose() {
+    setResult(null);
+    renew.reset();
+    onClose();
+  }
+
+  return (
+    <AlertDialog.Root
+      open={open}
+      onOpenChange={(o) => {
+        if (!o) handleClose();
+      }}
+    >
+      <AlertDialog.Portal>
+        <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+          {result ? (
+            <div className="flex flex-col items-center gap-5 text-center py-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
+                <CheckCircle2 className="h-8 w-8 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Subscription renewed!</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  First payment charged immediately. 12 new cycles authorised.
+                </p>
+              </div>
+              <div className="rounded-xl bg-surface-3 p-3 w-full text-left">
+                <p className="text-[11px] text-muted-foreground mb-1">
+                  Transaction
+                </p>
+                <a
+                  href={SOLSCAN_TX(result.sig)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-xs text-brand-400 hover:underline flex items-center gap-1"
+                >
+                  {truncate(result.sig, 20, 6)}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+              <Button
+                variant="surface"
+                className="w-full"
+                onClick={handleClose}
+              >
+                Done
+              </Button>
+            </div>
+          ) : (
+            <>
+              <AlertDialog.Title className="text-lg font-bold">
+                Renew subscription?
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-1 text-sm text-muted-foreground">
+                Your subscription expired. Renewing will charge immediately and
+                authorise 12 new cycles.
+              </AlertDialog.Description>
+              <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-semibold">{plan.name}</span>
+                  <span className="text-xl font-bold text-emerald-400">
+                    {formatUSDC(amount)}{" "}
+                    <span className="text-sm font-normal text-muted-foreground">
+                      / {interval}
+                    </span>
+                  </span>
+                </div>
+                <Separator />
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">First charge</span>
+                    <span>Immediately on confirm</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">New cycles</span>
+                    <span>12 months</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Total authorised
+                    </span>
+                    <span className="text-amber-400">
+                      {formatUSDC(amount * 12)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">
+                      Previous total paid
+                    </span>
+                    <span className="text-muted-foreground">
+                      {formatUSDC(subscription.totalPaid?.toNumber?.() ?? 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 flex gap-2.5 rounded-xl border border-brand-500/20 bg-brand-500/5 p-3">
+                <Shield className="h-4 w-4 text-brand-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground">
+                  <span className="text-foreground font-medium">
+                    Non-custodial.
+                  </span>{" "}
+                  Same subscription PDA reused — no new account created.
+                </p>
+              </div>
+              {renew.isError && (
+                <div className="mt-3 flex gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
+                  <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-red-400">
+                    {(renew.error as Error)?.message ?? "Transaction failed"}
+                  </p>
+                </div>
+              )}
+              <div className="mt-5 flex gap-3">
+                <AlertDialog.Cancel asChild>
+                  <Button
+                    variant="surface"
+                    className="flex-1"
+                    disabled={renew.isPending}
+                  >
+                    Cancel
+                  </Button>
+                </AlertDialog.Cancel>
+                <Button
+                  className="flex-1"
+                  loading={renew.isPending}
+                  onClick={handleRenew}
+                >
+                  {renew.isPending ? "Renewing…" : "Renew subscription"}
+                  {!renew.isPending && <RefreshCw className="h-4 w-4" />}
+                </Button>
+              </div>
+            </>
+          )}
+        </AlertDialog.Content>
+      </AlertDialog.Portal>
+    </AlertDialog.Root>
+  );
+}
+
+// ── Cancel dialog ─────────────────────────────────────────────────────────────
 interface CancelDialogProps {
   plan: PlanAccount;
   subscription: SubscriptionAccount;
@@ -273,9 +429,7 @@ function CancelDialog({
     try {
       await cancel.mutateAsync(subscription.publicKey.toBase58());
       setDone(true);
-    } catch {
-      // error shown by mutation
-    }
+    } catch {}
   }
 
   function handleClose() {
@@ -295,16 +449,14 @@ function CancelDialog({
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {done ? (
-            // ── Cancelled state ────────────────────────────────────────
             <div className="flex flex-col items-center gap-5 text-center py-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/20">
-                <Check className="h-8 w-8 text-green-400" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
+                <XCircle className="h-8 w-8 text-red-400" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Subscription cancelled</h2>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Your delegate approval has been revoked on-chain. No further
-                  payments will be taken.
+                  Delegate revoked on-chain. No further payments will be taken.
                 </p>
               </div>
               <Button
@@ -316,7 +468,6 @@ function CancelDialog({
               </Button>
             </div>
           ) : (
-            // ── Confirm cancel state ───────────────────────────────────
             <>
               <AlertDialog.Title className="text-lg font-bold">
                 Cancel subscription?
@@ -324,8 +475,6 @@ function CancelDialog({
               <AlertDialog.Description className="mt-1 text-sm text-muted-foreground">
                 This is irreversible. You can re-subscribe at any time.
               </AlertDialog.Description>
-
-              {/* Plan summary */}
               <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{plan.name}</span>
@@ -354,8 +503,6 @@ function CancelDialog({
                   </div>
                 </div>
               </div>
-
-              {/* Warning */}
               <div className="mt-4 flex gap-2.5 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
                 <AlertCircle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
@@ -363,12 +510,10 @@ function CancelDialog({
                   <span className="text-foreground font-medium">
                     immediately revoke
                   </span>{" "}
-                  the USDC delegate on-chain. The keeper cannot charge you after
-                  this point.
+                  the USDC delegate. The keeper cannot charge you after this
+                  point.
                 </p>
               </div>
-
-              {/* Error */}
               {cancel.isError && (
                 <div className="mt-3 flex gap-2 rounded-xl border border-red-500/20 bg-red-500/5 p-3">
                   <AlertCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
@@ -377,7 +522,6 @@ function CancelDialog({
                   </p>
                 </div>
               )}
-
               <div className="mt-5 flex gap-3">
                 <AlertDialog.Cancel asChild>
                   <Button
@@ -409,7 +553,7 @@ function CancelDialog({
 interface PlanCardProps {
   plan: PlanAccount;
   isSubscribed?: boolean;
-  subscription?: SubscriptionAccount; // required when isSubscribed=true
+  subscription?: SubscriptionAccount;
 }
 
 export function PlanCard({
@@ -418,6 +562,7 @@ export function PlanCard({
   subscription,
 }: PlanCardProps) {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
+  const [renewOpen, setRenewOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
   const amount = plan.amountUsdc.toNumber();
@@ -427,12 +572,18 @@ export function PlanCard({
   const active = plan.activeSubscribers.toNumber();
   const isFull = capacity > 0 && active >= capacity;
 
+  const isExpired = subscription?.status === "Expired";
+  const isCancelled = subscription?.status === "Cancelled";
+  const isActive = isSubscribed && subscription?.status === "Active";
+
   return (
     <>
       <Card
         className={cn(
           "group flex flex-col transition-all duration-300 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/10",
-          isSubscribed && "border-emerald-500/40 bg-emerald-500/5",
+          isActive && "border-emerald-500/40 bg-emerald-500/5",
+          isExpired && "border-amber-500/40 bg-amber-500/5",
+          isCancelled && "border-surface-4",
         )}
       >
         {/* Header */}
@@ -449,8 +600,12 @@ export function PlanCard({
               <ExternalLink className="h-2.5 w-2.5" />
             </a>
           </div>
-          {isSubscribed ? (
+          {isActive ? (
             <Badge variant="active">Subscribed</Badge>
+          ) : isExpired ? (
+            <Badge variant="expired">Expired</Badge>
+          ) : isCancelled ? (
+            <Badge variant="cancelled">Cancelled</Badge>
           ) : isFull ? (
             <Badge variant="expired">Full</Badge>
           ) : (
@@ -472,18 +627,18 @@ export function PlanCard({
               {trial / 86400}-day free trial
             </p>
           )}
-          {isSubscribed && subscription && (
+          {isActive && subscription && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {/* Replace with the correct property or remove if not available */}
-              {"cyclesRemaining" in subscription
-                ? ((subscription as any).cyclesRemaining ?? "—")
-                : "—"}{" "}
-              cycles remaining
+              {(subscription as any).cyclesRemaining ?? "—"} cycles remaining
+            </p>
+          )}
+          {isExpired && (
+            <p className="mt-1 text-xs text-amber-400">
+              Subscription expired - renew to continue
             </p>
           )}
         </div>
 
-        {/* Description */}
         {plan.description && (
           <div className="px-5 pb-4">
             <p className="text-sm text-muted-foreground line-clamp-2">
@@ -508,7 +663,7 @@ export function PlanCard({
 
         {/* CTA */}
         <div className="p-4 pt-0 space-y-2">
-          {isSubscribed ? (
+          {isActive ? (
             <>
               <Button variant="surface" size="lg" className="w-full" disabled>
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
@@ -526,6 +681,15 @@ export function PlanCard({
                 </Button>
               )}
             </>
+          ) : isExpired && subscription ? (
+            <Button
+              size="lg"
+              className="w-full bg-amber-500/90 hover:bg-amber-500"
+              onClick={() => setRenewOpen(true)}
+            >
+              <RefreshCw className="h-4 w-4" />
+              Renew subscription
+            </Button>
           ) : (
             <Button
               size="lg"
@@ -546,7 +710,16 @@ export function PlanCard({
         onClose={() => setSubscribeOpen(false)}
       />
 
-      {subscription && (
+      {subscription && isExpired && (
+        <RenewDialog
+          plan={plan}
+          subscription={subscription}
+          open={renewOpen}
+          onClose={() => setRenewOpen(false)}
+        />
+      )}
+
+      {subscription && isActive && (
         <CancelDialog
           plan={plan}
           subscription={subscription}
@@ -558,7 +731,7 @@ export function PlanCard({
   );
 }
 
-// ── Skeleton card ──────────────────────────────────────────────────────────────
+// ── Skeleton ──────────────────────────────────────────────────────────────────
 export function PlanCardSkeleton() {
   return (
     <Card className="p-5 space-y-4">
