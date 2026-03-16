@@ -17,6 +17,7 @@ import {
   XCircle,
   PlusCircle,
   MinusCircle,
+  Pause,
   Clock,
   DollarSign,
   Wallet,
@@ -112,6 +113,12 @@ const typeConfig: Record<
     icon: PlusCircle,
     color: "text-blue-500",
     badge: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+  },
+  SubscriptionPaused: {
+    label: "Subscription Paused",
+    icon: Pause,
+    color: "text-amber-500",
+    badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   },
   SubscriptionCancelled: {
     label: "Subscription Cancelled",
@@ -409,6 +416,8 @@ export default function Logs() {
               entries.push({ ...base, type: "PaymentFailed" });
             } else if (eventName === "SubscriptionCreated") {
               entries.push({ ...base, type: "SubscriptionCreated" });
+            } else if (eventName === "SubscriptionPaused") {
+              entries.push({ ...base, type: "SubscriptionPaused" });
             } else if (eventName === "SubscriptionCancelled") {
               entries.push({ ...base, type: "SubscriptionCancelled" });
             } else if (eventName === "SubscriptionExpired") {
@@ -482,6 +491,17 @@ export default function Logs() {
               });
             }
 
+            if (acc.status?.paused !== undefined) {
+              const pausedAt = lastPaidAt > 0 ? lastPaidAt : startedAt;
+              entries.push({
+                ...base,
+                id: `${subPk}-paused-${pausedAt}`,
+                type: "SubscriptionPaused",
+                timestamp: unixToDate(pausedAt),
+                timestampUnix: pausedAt > 0 ? pausedAt * 1000 : 0,
+              });
+            }
+
             if (acc.status?.expired !== undefined) {
               const expiredAt =
                 endedAt > 0 ? endedAt : lastFailedAt || startedAt;
@@ -547,6 +567,7 @@ export default function Logs() {
           "PaymentExecuted",
           "PaymentFailed",
           "SubscriptionCreated",
+          "SubscriptionPaused",
           "SubscriptionCancelled",
           "SubscriptionExpired",
         ].map((t) => (

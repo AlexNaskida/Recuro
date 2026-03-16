@@ -34,9 +34,9 @@ pub struct CreateSubscription<'info> {
     )]
     pub plan: Account<'info, Plan>,
 
-    /// New Subscription PDA — one per (plan, subscriber) pair
+    /// Subscription PDA — created on first subscribe, reused on re-subscribe after cancel/expiry
     #[account(
-        init,
+        init_if_needed,
         payer = subscriber,
         space = 8 + Subscription::INIT_SPACE,
         seeds = [SEED_SUBSCRIPTION, plan.key().as_ref(), subscriber.key().as_ref()],
@@ -68,6 +68,16 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     let plan = &mut ctx.accounts.plan;
     let subscription = &mut ctx.accounts.subscription;
     let now = Clock::get()?.unix_timestamp;
+
+    // ── Guard: block re-subscribe if a non-terminal subscription exists ───────
+    // started_at == 0 means the account was just created (init_if_needed path).
+    if subscription.started_at != 0 {
+        require!(
+            subscription.status == SubscriptionStatus::Cancelled
+                || subscription.status == SubscriptionStatus::Expired,
+            SubscriptionError::ActiveSubscriptionExists
+        );
+    }
 
     // ── Calculate timing ──────────────────────────────────────────────────────
     let trial_ends_at = if plan.trial_seconds > 0 {

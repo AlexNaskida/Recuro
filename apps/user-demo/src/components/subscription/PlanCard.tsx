@@ -690,8 +690,8 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
                   <Button
                     variant="outline"
                     size="sm"
-                    loading={isMutatingPause && pause.isPending}
-                    disabled={isMutatingPause}
+                    loading={pause.isPending}
+                    disabled={pause.isPending}
                     onClick={() =>
                       pause.mutate(subscription.publicKey.toBase58())
                     }
@@ -712,6 +712,11 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
                   </Button>
                 )}
               </div>
+              {(pause.isError || resume.isError) && (
+                <p className="text-xs text-red-400 mt-2">
+                  {((pause.error || resume.error) as Error)?.message}
+                </p>
+              )}
             </>
           ) : isPaused && subscription ? (
             <>
@@ -719,8 +724,8 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
                 size="lg"
                 variant="surface"
                 className="w-full"
-                loading={isMutatingPause && resume.isPending}
-                disabled={isMutatingPause}
+                loading={resume.isPending}
+                disabled={resume.isPending}
                 onClick={() => resume.mutate(subscription.publicKey.toBase58())}
               >
                 <Play className="h-4 w-4" />
@@ -784,7 +789,7 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
         />
       )}
 
-      {subscription && isActive && (
+      {subscription && (isActive || isPaused) && (
         <CancelDialog
           plan={plan}
           subscription={subscription}

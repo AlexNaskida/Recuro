@@ -121,6 +121,13 @@ export const subscribers = [
 
 export const events = [
   {
+    type: "SubscriptionPaused",
+    wallet: "6yQm...A2Kd",
+    plan: "Pro",
+    amount: 0,
+    time: "4 min ago",
+  },
+  {
     type: "PaymentExecuted",
     wallet: "9WzD...wsG",
     plan: "Pro",
@@ -184,6 +191,7 @@ export interface LogEntry {
     | "PaymentExecuted"
     | "PaymentFailed"
     | "SubscriptionCreated"
+    | "SubscriptionPaused"
     | "SubscriptionCancelled"
     | "SubscriptionExpired";
   subscriber: string;
@@ -262,6 +270,19 @@ export const MOCK_LOGS: LogEntry[] = [
     paymentCount: 3,
     status: "cancelled",
     timestamp: "2026-03-09",
+    raw: "",
+  },
+  {
+    id: "mock-6",
+    type: "SubscriptionPaused",
+    subscriber: "6yQmW9wY...A2Kd",
+    plan: "Pro",
+    planPubkey: "",
+    amountUsdc: 0,
+    totalPaid: 59.98,
+    paymentCount: 2,
+    status: "paused",
+    timestamp: "2026-03-14",
     raw: "",
   },
 ];

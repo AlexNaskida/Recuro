@@ -7,7 +7,12 @@ import { useMySubscriptions } from "@/hooks/index";
 
 export function MySubscriptionsPage() {
   const wallet = useAnchorWallet();
-  const { data: subs = [], isLoading, refetch, isFetching } = useMySubscriptions();
+  const {
+    data: subs = [],
+    isLoading,
+    refetch,
+    isFetching,
+  } = useMySubscriptions();
 
   if (!wallet) {
     return (
@@ -26,8 +31,13 @@ export function MySubscriptionsPage() {
     );
   }
 
-  const active    = subs.filter((s) => s.status === "Active" || s.status === "PastDue");
-  const inactive  = subs.filter((s) => s.status === "Cancelled" || s.status === "Expired");
+  const active = subs.filter(
+    (s) =>
+      s.status === "Active" || s.status === "Paused" || s.status === "PastDue",
+  );
+  const inactive = subs.filter(
+    (s) => s.status === "Cancelled" || s.status === "Expired",
+  );
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-10 space-y-8 animate-fade-in">
@@ -36,7 +46,9 @@ export function MySubscriptionsPage() {
         <div>
           <h1 className="text-2xl font-bold">My Subscriptions</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {isLoading ? "Loading…" : `${active.length} active · ${inactive.length} inactive`}
+            {isLoading
+              ? "Loading…"
+              : `${active.length} active · ${inactive.length} inactive`}
           </p>
         </div>
         <Button
@@ -45,7 +57,9 @@ export function MySubscriptionsPage() {
           onClick={() => refetch()}
           disabled={isFetching}
         >
-          <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`} />
+          <RefreshCw
+            className={`h-3.5 w-3.5 ${isFetching ? "animate-spin" : ""}`}
+          />
           Refresh
         </Button>
       </div>

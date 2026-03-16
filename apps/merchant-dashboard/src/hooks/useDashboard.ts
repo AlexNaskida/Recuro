@@ -65,6 +65,12 @@ function formatDelta(current: number, prev: number): string {
   return (pct >= 0 ? "+" : "") + pct.toFixed(1) + "%";
 }
 
+function dateToMillis(date: string): number {
+  if (!date || date === "—") return 0;
+  const ms = Date.parse(date);
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
 // Build a plausible 7-point sparkline ending at `current`
 function buildSparkline(current: number, variance = 0.15): number[] {
   const points = Array.from({ length: 7 }, (_, i) => {
@@ -241,21 +247,35 @@ export function useDashboard(): DashboardData {
 
     // Recent activity — derive from subscribers (last payment date)
     const recentEvents = subscribers
-      .filter((s) => s.lastPayment !== "—")
-      .sort((a, b) => b.lastPayment.localeCompare(a.lastPayment))
+      .map((s) => {
+        const lastPaymentMs = dateToMillis(s.lastPayment);
+        const startedMs = dateToMillis(s.started);
+        const eventMs =
+          s.status === "paused"
+            ? Math.max(lastPaymentMs, startedMs)
+            : lastPaymentMs || startedMs;
+
+        return {
+          type:
+            s.status === "paused"
+              ? "SubscriptionPaused"
+              : s.status === "cancelled"
+                ? "SubscriptionCancelled"
+                : s.status === "expired"
+                  ? "SubscriptionExpired"
+                  : "PaymentExecuted",
+          wallet: s.wallet.slice(0, 4) + "..." + s.wallet.slice(-4),
+          plan: s.plan,
+          amount: s.amountUsdc > 0 ? parseFloat(s.amountUsdc.toFixed(2)) : 0,
+          time:
+            eventMs > 0 ? new Date(eventMs).toISOString().slice(0, 10) : "—",
+          eventMs,
+        };
+      })
+      .filter((e) => e.eventMs > 0)
+      .sort((a, b) => b.eventMs - a.eventMs)
       .slice(0, 6)
-      .map((s) => ({
-        type:
-          s.status === "cancelled"
-            ? "SubscriptionCancelled"
-            : s.status === "expired"
-              ? "SubscriptionExpired"
-              : "PaymentExecuted",
-        wallet: s.wallet.slice(0, 4) + "..." + s.wallet.slice(-4),
-        plan: s.plan,
-        amount: s.amountUsdc > 0 ? parseFloat(s.amountUsdc.toFixed(2)) : 0,
-        time: s.lastPayment,
-      }));
+      .map(({ eventMs, ...event }) => event);
 
     // Revenue delta vs prev period — approximate as 85% of current (no history)
     const prevRevenue = totalRevenue * 0.85;

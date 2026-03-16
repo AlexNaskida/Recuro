@@ -21,6 +21,8 @@ pub enum SubscriptionError {
     TrialExceedsInterval,
 
     // ── Subscription validation ───────────────────────────────────────────────
+    #[msg("An active or paused subscription already exists for this plan")]
+    ActiveSubscriptionExists,
     #[msg("Subscription is not in Active status")]
     SubscriptionNotActive,
     #[msg("Subscription is paused — resume before performing this action")]

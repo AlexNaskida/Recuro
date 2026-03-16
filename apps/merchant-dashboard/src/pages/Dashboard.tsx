@@ -102,6 +102,7 @@ const ChartTooltipContent = ({ active, payload, label }: any) => {
 const eventIcons: Record<string, { color: string; icon: string }> = {
   PaymentExecuted: { color: "text-success", icon: "↗" },
   SubscriptionCreated: { color: "text-primary", icon: "+" },
+  SubscriptionPaused: { color: "text-amber-500", icon: "∥" },
   PaymentFailed: { color: "text-destructive", icon: "!" },
   SubscriptionCancelled: { color: "text-warning", icon: "−" },
   SubscriptionExpired: { color: "text-muted-foreground", icon: "×" },

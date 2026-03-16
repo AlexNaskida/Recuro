@@ -29,10 +29,6 @@ pub struct DeletePlan<'info> {
 
 pub fn handler(ctx: Context<DeletePlan>) -> Result<()> {
     require!(
-        ctx.accounts.plan.active_subscribers == 0,
-        SubscriptionError::PlanHasActiveSubscribers
-    );
-    require!(
         ctx.accounts.plan.status == PlanStatus::Archived,
         SubscriptionError::PlanNotArchived
     );
@@ -46,9 +42,6 @@ pub fn handler(ctx: Context<DeletePlan>) -> Result<()> {
         timestamp: now,
     });
 
-    msg!(
-        "[delete_plan] plan={} permanently closed",
-        ctx.accounts.plan.key()
-    );
+    msg!("[delete_plan] plan={} closed, rent returned to merchant", ctx.accounts.plan.key());
     Ok(())
 }

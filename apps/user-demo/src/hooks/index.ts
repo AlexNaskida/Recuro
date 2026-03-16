@@ -256,7 +256,7 @@ export function usePauseSubscription() {
       if (!sdk) throw new Error("Wallet not connected");
       return sdk.pauseSubscription(new PublicKey(subscriptionPubkey));
     },
-    onSuccess: (_result, subscriptionPubkey) => {
+    onSuccess: async (_result, subscriptionPubkey) => {
       const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
 
       queryClient.setQueryData<SubscriptionAccount[]>(queryKey, (prev) => {
@@ -267,6 +267,28 @@ export function usePauseSubscription() {
             : sub,
         );
       });
+
+      if (sdk) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const fresh = await sdk.fetchSubscription(
+            new PublicKey(subscriptionPubkey),
+          );
+          if (fresh?.status === "Paused") {
+            queryClient.setQueryData<SubscriptionAccount[]>(
+              queryKey,
+              (prev) => {
+                const current = Array.isArray(prev) ? prev : [];
+                return current.map((sub) =>
+                  sub.publicKey.toBase58() === subscriptionPubkey ? fresh : sub,
+                );
+              },
+            );
+            break;
+          }
+
+          await sleep(350 * (attempt + 1));
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey });
     },
@@ -284,7 +306,7 @@ export function useResumeSubscription() {
       if (!sdk) throw new Error("Wallet not connected");
       return sdk.resumeSubscription(new PublicKey(subscriptionPubkey));
     },
-    onSuccess: (_result, subscriptionPubkey) => {
+    onSuccess: async (_result, subscriptionPubkey) => {
       const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
 
       queryClient.setQueryData<SubscriptionAccount[]>(queryKey, (prev) => {
@@ -295,6 +317,28 @@ export function useResumeSubscription() {
             : sub,
         );
       });
+
+      if (sdk) {
+        for (let attempt = 0; attempt < 8; attempt += 1) {
+          const fresh = await sdk.fetchSubscription(
+            new PublicKey(subscriptionPubkey),
+          );
+          if (fresh?.status === "Active") {
+            queryClient.setQueryData<SubscriptionAccount[]>(
+              queryKey,
+              (prev) => {
+                const current = Array.isArray(prev) ? prev : [];
+                return current.map((sub) =>
+                  sub.publicKey.toBase58() === subscriptionPubkey ? fresh : sub,
+                );
+              },
+            );
+            break;
+          }
+
+          await sleep(350 * (attempt + 1));
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey });
     },
