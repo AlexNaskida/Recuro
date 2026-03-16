@@ -50,6 +50,10 @@ pub mod subscription {
         instructions::archive_plan::handler(ctx)
     }
 
+    pub fn delete_plan(ctx: Context<DeletePlan>) -> Result<()> {
+        instructions::delete_plan::handler(ctx)
+    }
+
     // ── Subscription lifecycle (subscriber) ───────────────────────────────
     pub fn create_subscription(ctx: Context<CreateSubscription>) -> Result<()> {
         instructions::create_subscription::handler(ctx)

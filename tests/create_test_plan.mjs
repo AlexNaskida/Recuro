@@ -29,7 +29,7 @@ const PROGRAM_ID = new PublicKey(
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
 const PLAN_NAME = "Basic";
-const AMOUNT_USDC = 1_000_000; // $1.00 in μUSDC (6 decimals) 9.999_999 would be $9.999999
+const AMOUNT_USDC = 2_000_000; // $2.00 in μUSDC (6 decimals) 9.999_999 would be $9.999999
 const INTERVAL_SECS = 120; // 120 seconds — fires every 2 minutes
 const TRIAL_SECS = 0;
 

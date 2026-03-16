@@ -61,4 +61,9 @@ pub enum SubscriptionError {
     ArithmeticOverflow,
     #[msg("Arithmetic underflow — value would go below zero")]
     ArithmeticUnderflow,
+    // ── Plan deletion ─────────────────────────────────────────────────────────
+    #[msg("Plan must be archived before it can be deleted")]
+    PlanNotArchived,
+    #[msg("Plan still has active subscribers and cannot be deleted")]
+    PlanHasActiveSubscribers,
 }
