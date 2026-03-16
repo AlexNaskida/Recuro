@@ -39,17 +39,20 @@ function PlanList() {
     <div className="space-y-4">
       {plans.map((plan) => {
         const userSub =
-          mySubscriptions.find(
-            (s: SubscriptionAccount) =>
-              s.plan.toBase58() === plan.publicKey.toBase58() &&
-              (s.status === "Active" || s.status === "Expired"),
-          ) ?? undefined;
-          
+          mySubscriptions
+            .filter(
+              (s: SubscriptionAccount) =>
+                s.plan.toBase58() === plan.publicKey.toBase58(),
+            )
+            .sort(
+              (a: SubscriptionAccount, b: SubscriptionAccount) =>
+                b.startedAt.toNumber() - a.startedAt.toNumber(),
+            )[0] ?? undefined;
+
         return (
           <PlanCard
             key={plan.publicKey.toBase58()}
             plan={plan}
-            isSubscribed={!!userSub}
             subscription={userSub}
           />
         );

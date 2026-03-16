@@ -4,6 +4,8 @@ import {
   ArrowRight,
   CheckCircle2,
   ExternalLink,
+  Pause,
+  Play,
   RefreshCw,
   Shield,
   Timer,
@@ -21,6 +23,8 @@ import {
 import {
   useSubscribe,
   useCancelSubscription,
+  usePauseSubscription,
+  useResumeSubscription,
   useRenewSubscription,
 } from "@/hooks/index";
 import { cn } from "@/lib/utils";
@@ -552,18 +556,15 @@ function CancelDialog({
 // ── Plan Card ─────────────────────────────────────────────────────────────────
 interface PlanCardProps {
   plan: PlanAccount;
-  isSubscribed?: boolean;
   subscription?: SubscriptionAccount;
 }
 
-export function PlanCard({
-  plan,
-  isSubscribed = false,
-  subscription,
-}: PlanCardProps) {
+export function PlanCard({ plan, subscription }: PlanCardProps) {
   const [subscribeOpen, setSubscribeOpen] = useState(false);
   const [renewOpen, setRenewOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const pause = usePauseSubscription();
+  const resume = useResumeSubscription();
 
   const amount = plan.amountUsdc.toNumber();
   const interval = intervalLabel(plan.intervalSeconds.toNumber());
@@ -572,9 +573,11 @@ export function PlanCard({
   const active = plan.activeSubscribers.toNumber();
   const isFull = capacity > 0 && active >= capacity;
 
+  const isPaused = subscription?.status === "Paused";
   const isExpired = subscription?.status === "Expired";
   const isCancelled = subscription?.status === "Cancelled";
-  const isActive = isSubscribed && subscription?.status === "Active";
+  const isActive = subscription?.status === "Active";
+  const isMutatingPause = pause.isPending || resume.isPending;
 
   return (
     <>
@@ -582,6 +585,7 @@ export function PlanCard({
         className={cn(
           "group flex flex-col transition-all duration-300 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/10",
           isActive && "border-emerald-500/40 bg-emerald-500/5",
+          isPaused && "border-amber-500/40 bg-amber-500/5",
           isExpired && "border-amber-500/40 bg-amber-500/5",
           isCancelled && "border-surface-4",
         )}
@@ -602,6 +606,8 @@ export function PlanCard({
           </div>
           {isActive ? (
             <Badge variant="active">Subscribed</Badge>
+          ) : isPaused ? (
+            <Badge variant="past_due">Paused</Badge>
           ) : isExpired ? (
             <Badge variant="expired">Expired</Badge>
           ) : isCancelled ? (
@@ -632,9 +638,19 @@ export function PlanCard({
               {(subscription as any).cyclesRemaining ?? "—"} cycles remaining
             </p>
           )}
+          {isPaused && (
+            <p className="mt-1 text-xs text-amber-400">
+              Subscription paused - resume to continue billing
+            </p>
+          )}
           {isExpired && (
             <p className="mt-1 text-xs text-amber-400">
               Subscription expired - renew to continue
+            </p>
+          )}
+          {isCancelled && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Subscription cancelled - subscribe again to start over
             </p>
           )}
         </div>
@@ -669,17 +685,56 @@ export function PlanCard({
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 Already subscribed
               </Button>
-              {subscription && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                  onClick={() => setCancelOpen(true)}
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  Cancel subscription
-                </Button>
-              )}
+              <div className="grid grid-cols-2 gap-2">
+                {subscription && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    loading={isMutatingPause && pause.isPending}
+                    disabled={isMutatingPause}
+                    onClick={() =>
+                      pause.mutate(subscription.publicKey.toBase58())
+                    }
+                  >
+                    <Pause className="h-3.5 w-3.5" />
+                    Pause
+                  </Button>
+                )}
+                {subscription && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                    onClick={() => setCancelOpen(true)}
+                  >
+                    <XCircle className="h-3.5 w-3.5" />
+                    Cancel
+                  </Button>
+                )}
+              </div>
+            </>
+          ) : isPaused && subscription ? (
+            <>
+              <Button
+                size="lg"
+                variant="surface"
+                className="w-full"
+                loading={isMutatingPause && resume.isPending}
+                disabled={isMutatingPause}
+                onClick={() => resume.mutate(subscription.publicKey.toBase58())}
+              >
+                <Play className="h-4 w-4" />
+                Resume subscription
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                onClick={() => setCancelOpen(true)}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                Cancel subscription
+              </Button>
             </>
           ) : isExpired && subscription ? (
             <Button
@@ -689,6 +744,16 @@ export function PlanCard({
             >
               <RefreshCw className="h-4 w-4" />
               Renew subscription
+            </Button>
+          ) : isCancelled ? (
+            <Button
+              size="lg"
+              variant="surface"
+              className="w-full"
+              onClick={() => setSubscribeOpen(true)}
+            >
+              Subscribe again
+              <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button

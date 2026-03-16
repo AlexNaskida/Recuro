@@ -244,3 +244,59 @@ export function useCancelSubscription() {
     },
   });
 }
+
+// ── Pause a subscription ─────────────────────────────────────────────────────
+export function usePauseSubscription() {
+  const sdk = useSdk();
+  const wallet = useAnchorWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (subscriptionPubkey: string) => {
+      if (!sdk) throw new Error("Wallet not connected");
+      return sdk.pauseSubscription(new PublicKey(subscriptionPubkey));
+    },
+    onSuccess: (_result, subscriptionPubkey) => {
+      const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
+
+      queryClient.setQueryData<SubscriptionAccount[]>(queryKey, (prev) => {
+        const current = Array.isArray(prev) ? prev : [];
+        return current.map((sub) =>
+          sub.publicKey.toBase58() === subscriptionPubkey
+            ? { ...sub, status: "Paused" }
+            : sub,
+        );
+      });
+
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+}
+
+// ── Resume a paused subscription ─────────────────────────────────────────────
+export function useResumeSubscription() {
+  const sdk = useSdk();
+  const wallet = useAnchorWallet();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (subscriptionPubkey: string) => {
+      if (!sdk) throw new Error("Wallet not connected");
+      return sdk.resumeSubscription(new PublicKey(subscriptionPubkey));
+    },
+    onSuccess: (_result, subscriptionPubkey) => {
+      const queryKey = ["my-subscriptions", wallet?.publicKey.toBase58()];
+
+      queryClient.setQueryData<SubscriptionAccount[]>(queryKey, (prev) => {
+        const current = Array.isArray(prev) ? prev : [];
+        return current.map((sub) =>
+          sub.publicKey.toBase58() === subscriptionPubkey
+            ? { ...sub, status: "Active" }
+            : sub,
+        );
+      });
+
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+}
