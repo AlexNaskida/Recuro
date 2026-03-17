@@ -22,6 +22,9 @@ pub struct UnarchivePlan<'info> {
 pub fn handler(ctx: Context<UnarchivePlan>) -> Result<()> {
     ctx.accounts.plan.status = PlanStatus::Active;
     ctx.accounts.plan.updated_at = Clock::get()?.unix_timestamp;
-    msg!("[unarchive_plan] plan={} -> active", ctx.accounts.plan.key());
+    msg!(
+        "[unarchive_plan] plan={} -> active",
+        ctx.accounts.plan.key()
+    );
     Ok(())
 }
