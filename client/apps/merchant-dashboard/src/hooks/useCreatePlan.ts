@@ -9,7 +9,7 @@ import {
 } from "@solana/spl-token";
 import BN from "bn.js";
 import { getPlanPDA, usdcToMicro } from "@/lib/pda";
-import { USDC_MINT } from "@/lib/constants";
+import { USDC_MINT } from "@/lib/config";
 
 export interface CreatePlanInput {
   name: string;

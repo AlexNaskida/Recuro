@@ -6,7 +6,7 @@ All changes made to wire real Solana wallet adapter + on-chain data.
 
 ## New Files
 
-### `src/lib/constants.ts`
+### `src/lib/config.ts`
 
 Central config. **Update `PROGRAM_ID` after `anchor deploy`.**
 
@@ -157,7 +157,7 @@ Connect Wallet button was a no-op. Disconnect was a no-op.
    cp target/idl/subscription.json src/lib/idl.json
    ```
 
-2. Update program ID in `src/lib/constants.ts`:
+2. Update program ID in `src/lib/config.ts`:
 
    ```ts
    export const PROGRAM_ID = "YOUR_REAL_PROGRAM_ID_HERE";

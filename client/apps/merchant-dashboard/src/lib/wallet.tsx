@@ -8,15 +8,19 @@ import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { RPC_URL } from "./constants";
+import { RPC_URL } from "@/lib/config";
 
 // Default styles for the wallet modal
 import "@solana/wallet-adapter-react-ui/styles.css";
 
-export function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
+export function SolanaWalletProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const wallets = useMemo(
     () => [new PhantomWalletAdapter(), new SolflareWalletAdapter()],
-    []
+    [],
   );
 
   return (
