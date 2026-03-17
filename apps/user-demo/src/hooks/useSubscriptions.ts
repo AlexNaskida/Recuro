@@ -86,7 +86,7 @@ export function useSubscribe() {
 
   return useMutation({
     mutationFn: async (planPubkey: string) => {
-      if (!sdk) throw new Error("Connect your wallet first");
+      if (!sdk || !wallet) throw new Error("Connect your wallet first");
       return sdk.createSubscription({ planPubkey: new PublicKey(planPubkey) });
     },
     onSuccess: async (result, planPubkey) => {
@@ -142,7 +142,7 @@ export function useCancelSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Connect your wallet first");
+      if (!sdk || !wallet) throw new Error("Connect your wallet first");
       return sdk.cancelSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: () => {
@@ -163,7 +163,7 @@ export function usePauseSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Connect your wallet first");
+      if (!sdk || !wallet) throw new Error("Connect your wallet first");
       return sdk.pauseSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: () => {
@@ -184,7 +184,7 @@ export function useResumeSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Connect your wallet first");
+      if (!sdk || !wallet) throw new Error("Connect your wallet first");
       return sdk.resumeSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: () => {

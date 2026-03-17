@@ -128,7 +128,7 @@ export function useSubscribe() {
 
   return useMutation({
     mutationFn: async ({ planPubkey }: { planPubkey: string }) => {
-      if (!sdk) throw new Error("Wallet not connected");
+      if (!sdk || !wallet) throw new Error("Wallet not connected");
       return sdk.createSubscription({ planPubkey: new PublicKey(planPubkey) });
     },
     onSuccess: async (result, variables) => {
@@ -188,7 +188,7 @@ export function useRenewSubscription() {
       subscriptionPubkey: string;
       planPubkey: string;
     }) => {
-      if (!sdk) throw new Error("Wallet not connected");
+      if (!sdk || !wallet) throw new Error("Wallet not connected");
       return sdk.renewSubscription(
         new PublicKey(subscriptionPubkey),
         new PublicKey(planPubkey),
@@ -234,7 +234,7 @@ export function useCancelSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Wallet not connected");
+      if (!sdk || !wallet) throw new Error("Wallet not connected");
       return sdk.cancelSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: () => {
@@ -253,7 +253,7 @@ export function usePauseSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Wallet not connected");
+      if (!sdk || !wallet) throw new Error("Wallet not connected");
       return sdk.pauseSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: async (_result, subscriptionPubkey) => {
@@ -303,7 +303,7 @@ export function useResumeSubscription() {
 
   return useMutation({
     mutationFn: async (subscriptionPubkey: string) => {
-      if (!sdk) throw new Error("Wallet not connected");
+      if (!sdk || !wallet) throw new Error("Wallet not connected");
       return sdk.resumeSubscription(new PublicKey(subscriptionPubkey));
     },
     onSuccess: async (_result, subscriptionPubkey) => {

@@ -42,6 +42,9 @@ pub fn handler(ctx: Context<DeletePlan>) -> Result<()> {
         timestamp: now,
     });
 
-    msg!("[delete_plan] plan={} closed, rent returned to merchant", ctx.accounts.plan.key());
+    msg!(
+        "[delete_plan] plan={} closed, rent returned to merchant",
+        ctx.accounts.plan.key()
+    );
     Ok(())
 }
