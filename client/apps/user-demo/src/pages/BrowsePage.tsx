@@ -8,38 +8,21 @@ import { PublicKey } from "@solana/web3.js";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ExternalLink, Search, Zap, ShieldCheck, Clock } from "lucide-react";
+import { Card, Button, Input, Badge, Skeleton } from "@/components/ui/index";
+import { usePlan, useSubscribe, useMySubscriptions } from "@/hooks";
+import { cn, formatTs } from "@/lib/utils";
 import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardFooter,
-  Button,
-  Input,
-  Badge,
-  Skeleton,
-} from "@/components/ui";
-import {
-  usePlan,
-  useSubscribe,
-  useMySubscriptions,
-} from "@/hooks/useSubscriptions";
-import {
-  cn,
   formatUSDC,
   intervalLabel,
   truncate,
   SOLSCAN_ACC,
   CLUSTER,
-} from "@/lib/utils";
-import { formatTs } from "@/lib/utils";
+} from "@/constants";
+import { FEATURED_PLANS } from "@/lib/config";
+import type { SubscriptionAccount } from "@solana-subscription/sdk";
 
 // Demo plans to showcase — in production these come from an off-chain registry
 // or the merchant shares the plan PDA address with customers.
-const FEATURED_PLANS: string[] = (import.meta.env.VITE_FEATURED_PLANS ?? "")
-  .split(",")
-  .filter(Boolean);
 
 // ── Plan Detail Card ──────────────────────────────────────────────────────────
 function PlanDetail({ planPubkey }: { planPubkey: string }) {
@@ -49,11 +32,13 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
   const wallet = useAnchorWallet();
 
   const isSubscribed = mySubs?.some(
-    (s) => s.plan.toBase58() === planPubkey && s.status === "Active",
+    (s: SubscriptionAccount) =>
+      s.plan.toBase58() === planPubkey && s.status === "Active",
   );
 
   const isPaused = mySubs?.some(
-    (s) => s.plan.toBase58() === planPubkey && s.status === "Paused",
+    (s: SubscriptionAccount) =>
+      s.plan.toBase58() === planPubkey && s.status === "Paused",
   );
 
   const handleSubscribe = async () => {
@@ -64,14 +49,14 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
+        <div className="p-6">
           <Skeleton className="h-6 w-48 mb-2" />
           <Skeleton className="h-4 w-72" />
-        </CardHeader>
-        <CardContent className="space-y-4">
+        </div>
+        <div className="px-6 pb-6 space-y-4">
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-10 w-full" />
-        </CardContent>
+        </div>
       </Card>
     );
   }
@@ -79,18 +64,17 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
   if (error || !plan) {
     return (
       <Card className="border-[hsl(var(--destructive)/0.3)]">
-        <CardContent className="pt-6">
+        <div className="pt-6 px-6 pb-6">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             {error
               ? "Could not load plan — check the address."
               : "Plan not found."}
           </p>
-        </CardContent>
+        </div>
       </Card>
     );
   }
 
-  const amountUsdc = plan.amountUsdc.toNumber() / 1_000_000;
   const interval = intervalLabel(plan.intervalSeconds.toNumber());
   const trialDays = plan.trialSeconds.toNumber() / 86_400;
   const hasCapacity =
@@ -99,10 +83,10 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
 
   const statusVariant =
     plan.status === "Active"
-      ? "success"
+      ? "default"
       : plan.status === "Paused"
-        ? "warning"
-        : "muted";
+        ? "past_due"
+        : "expired";
 
   return (
     <Card
@@ -113,21 +97,21 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
           : "",
       )}
     >
-      <CardHeader>
+      <div className="p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <CardTitle className="text-xl">{plan.name}</CardTitle>
+            <h3 className="text-xl font-semibold">{plan.name}</h3>
             {plan.description && (
-              <CardDescription className="mt-1.5 leading-relaxed">
+              <p className="text-sm text-muted-foreground mt-1.5 leading-relaxed">
                 {plan.description}
-              </CardDescription>
+              </p>
             )}
           </div>
           <Badge variant={statusVariant}>{plan.status}</Badge>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="space-y-5">
+      <div className="px-6 pb-6 space-y-5">
         {/* Pricing */}
         <div className="flex items-end gap-2">
           <span
@@ -200,9 +184,9 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
             </a>
           </div>
         </div>
-      </CardContent>
+      </div>
 
-      <CardFooter className="flex flex-col gap-3">
+      <div className="px-6 pb-6 flex flex-col gap-3">
         {!wallet ? (
           <WalletMultiButton style={{ width: "100%" }} />
         ) : isSubscribed ? (
@@ -241,14 +225,13 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
             Cancel anytime.
           </p>
         )}
-      </CardFooter>
+      </div>
     </Card>
   );
 }
 
 // ── Browse Page ───────────────────────────────────────────────────────────────
 export function BrowsePage() {
-  const [search, setSearch] = useState("");
   const [lookupKey, setLookupKey] = useState<string | null>(null);
   const [inputVal, setInputVal] = useState("");
 
@@ -298,14 +281,14 @@ export function BrowsePage() {
         <PlanDetail planPubkey={displayKey} />
       ) : (
         <Card>
-          <CardContent className="pt-6 flex flex-col items-center gap-4 py-12">
+          <div className="pt-6 flex flex-col items-center gap-4 py-12 px-6">
             <div className="h-12 w-12 rounded-full bg-[hsl(var(--muted))] flex items-center justify-center">
               <Search className="h-5 w-5 text-[hsl(var(--muted-foreground))]" />
             </div>
             <p className="text-sm text-[hsl(var(--muted-foreground))] text-center max-w-xs">
               Enter a Plan PDA address above to view and subscribe to a plan.
             </p>
-          </CardContent>
+          </div>
         </Card>
       )}
 
