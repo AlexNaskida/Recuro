@@ -2,7 +2,7 @@
 
 > **Non-custodial, on-chain recurring USDC subscriptions powered by Solana + Clockwork.**
 
-Funds stay in the subscriber's wallet until payment time. Billing is fully automated by Clockwork threads — no backend, no custodian, no cron jobs.
+Funds stay in the subscriber's wallet until payment time. Billing is fully automated by self-hosted on-chain thread - no backend, no custodian, no cron jobs.
 
 ---
 
@@ -29,7 +29,7 @@ Funds stay in the subscriber's wallet until payment time. Billing is fully autom
 │  └──────────────────────┘   └──────────────────────────┘ │
 │                                                           │
 │  ┌──────────────────────┐                                 │
-│  │  Clockwork Thread    │ fires execute_payment() cron    │
+│  │  Self-hosted Thread  │ fires execute_payment() cron    │
 │  └──────────────────────┘                                 │
 └──────────────────────────────────────────────────────────┘
 ```
@@ -40,7 +40,7 @@ Funds stay in the subscriber's wallet until payment time. Billing is fully autom
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Non-custodial**   | Subscriber's USDC stays in their wallet. Only an SPL delegate approval is granted to the Subscription PDA, which authorises the exact plan amount per cycle.             |
 | **Price integrity** | The `amount_usdc` field on the Subscription PDA is **copied from the Plan PDA** at creation time by the program. No user-supplied amount is ever accepted for transfers. |
-| **Fully automated** | Clockwork threads execute `execute_payment()` on-chain. There is no off-chain backend, cron job, or relayer required for billing.                                        |
+| **Fully automated** | self-hosted on-chain threads execute `execute_payment()` on-chain. There is no off-chain backend, cron job, or relayer required for billing.                             |
 | **Auto-expiry**     | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned.                                                                             |
 | **Protocol fee**    | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA.                                                                        |
 
@@ -290,9 +290,9 @@ The SPL delegate approval is granted **to the Subscription PDA** (not the progra
 - The subscriber can revoke the approval at any time from any SPL-aware wallet.
 - If the approval is revoked, the next payment fails gracefully and the failure counter increments.
 
-### Clockwork thread authority
+### self-hosted on-chain thread authority
 
-`execute_payment` can only be called by the Clockwork thread that was registered at subscription creation. The instruction verifies the thread authority against the `subscription.thread` field — preventing any other caller from triggering payments.
+`execute_payment` can only be called by the self-hosted on-chain thread that was registered at subscription creation. The instruction verifies the thread authority against the `subscription.thread` field — preventing any other caller from triggering payments.
 
 ---
 
