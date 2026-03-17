@@ -9,40 +9,56 @@ import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ExternalLink, Search, Zap, ShieldCheck, Clock } from "lucide-react";
 import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter,
-  Button, Input, Badge, Skeleton,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+  Button,
+  Input,
+  Badge,
+  Skeleton,
 } from "@/components/ui";
-import { usePlan, useSubscribe, useMySubscriptions } from "@/hooks/useSubscriptions";
 import {
-  cn, formatUSDC, intervalLabel, truncate,
-  SOLSCAN_ACC, CLUSTER,
+  usePlan,
+  useSubscribe,
+  useMySubscriptions,
+} from "@/hooks/useSubscriptions";
+import {
+  cn,
+  formatUSDC,
+  intervalLabel,
+  truncate,
+  SOLSCAN_ACC,
+  CLUSTER,
 } from "@/lib/utils";
 import { formatTs } from "@/lib/utils";
 
 // Demo plans to showcase — in production these come from an off-chain registry
 // or the merchant shares the plan PDA address with customers.
-const FEATURED_PLANS: string[] = (
-  import.meta.env.VITE_FEATURED_PLANS ?? ""
-).split(",").filter(Boolean);
+const FEATURED_PLANS: string[] = (import.meta.env.VITE_FEATURED_PLANS ?? "")
+  .split(",")
+  .filter(Boolean);
 
 // ── Plan Detail Card ──────────────────────────────────────────────────────────
 function PlanDetail({ planPubkey }: { planPubkey: string }) {
   const { data: plan, isLoading, error } = usePlan(planPubkey);
-  const { data: mySubs }                 = useMySubscriptions();
-  const subscribe                        = useSubscribe();
-  const wallet                           = useAnchorWallet();
+  const { data: mySubs } = useMySubscriptions();
+  const subscribe = useSubscribe();
+  const wallet = useAnchorWallet();
 
   const isSubscribed = mySubs?.some(
-    (s) => s.plan.toBase58() === planPubkey && s.status === "Active"
+    (s) => s.plan.toBase58() === planPubkey && s.status === "Active",
   );
 
   const isPaused = mySubs?.some(
-    (s) => s.plan.toBase58() === planPubkey && s.status === "Paused"
+    (s) => s.plan.toBase58() === planPubkey && s.status === "Paused",
   );
 
   const handleSubscribe = async () => {
     if (!wallet) return;
-    await subscribe.mutateAsync(planPubkey);
+    await subscribe.mutateAsync({ planPubkey });
   };
 
   if (isLoading) {
@@ -65,28 +81,38 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
       <Card className="border-[hsl(var(--destructive)/0.3)]">
         <CardContent className="pt-6">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
-            {error ? "Could not load plan — check the address." : "Plan not found."}
+            {error
+              ? "Could not load plan — check the address."
+              : "Plan not found."}
           </p>
         </CardContent>
       </Card>
     );
   }
 
-  const amountUsdc    = plan.amountUsdc.toNumber() / 1_000_000;
-  const interval      = intervalLabel(plan.intervalSeconds.toNumber());
-  const trialDays     = plan.trialSeconds.toNumber() / 86_400;
-  const hasCapacity   = plan.maxSubscribers.toNumber() === 0 ||
+  const amountUsdc = plan.amountUsdc.toNumber() / 1_000_000;
+  const interval = intervalLabel(plan.intervalSeconds.toNumber());
+  const trialDays = plan.trialSeconds.toNumber() / 86_400;
+  const hasCapacity =
+    plan.maxSubscribers.toNumber() === 0 ||
     plan.activeSubscribers.toNumber() < plan.maxSubscribers.toNumber();
 
   const statusVariant =
-    plan.status === "Active"   ? "success" :
-    plan.status === "Paused"   ? "warning" : "muted";
+    plan.status === "Active"
+      ? "success"
+      : plan.status === "Paused"
+        ? "warning"
+        : "muted";
 
   return (
-    <Card className={cn(
-      "transition-all duration-200",
-      isSubscribed ? "border-[hsl(var(--success)/0.4)] shadow-[0_0_20px_hsl(var(--success)/0.1)]" : ""
-    )}>
+    <Card
+      className={cn(
+        "transition-all duration-200",
+        isSubscribed
+          ? "border-[hsl(var(--success)/0.4)] shadow-[0_0_20px_hsl(var(--success)/0.1)]"
+          : "",
+      )}
+    >
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -104,11 +130,15 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
       <CardContent className="space-y-5">
         {/* Pricing */}
         <div className="flex items-end gap-2">
-          <span className="text-4xl font-bold tracking-tight num"
-            style={{ fontFamily: "var(--font-display)" }}>
+          <span
+            className="text-4xl font-bold tracking-tight num"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             {formatUSDC(plan.amountUsdc.toNumber())}
           </span>
-          <span className="text-[hsl(var(--muted-foreground))] pb-1">/ {interval}</span>
+          <span className="text-[hsl(var(--muted-foreground))] pb-1">
+            / {interval}
+          </span>
         </div>
 
         {/* Features grid */}
@@ -136,7 +166,9 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
         {/* Plan metadata */}
         <div className="rounded-xl bg-[hsl(var(--muted))] p-4 text-xs space-y-2">
           <div className="flex justify-between">
-            <span className="text-[hsl(var(--muted-foreground))]">Subscribers</span>
+            <span className="text-[hsl(var(--muted-foreground))]">
+              Subscribers
+            </span>
             <span className="font-medium num">
               {plan.activeSubscribers.toNumber()}
               {plan.maxSubscribers.toNumber() > 0 &&
@@ -148,11 +180,15 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
             <span className="font-mono">{plan.planId.toNumber()}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-[hsl(var(--muted-foreground))]">Deployed</span>
+            <span className="text-[hsl(var(--muted-foreground))]">
+              Deployed
+            </span>
             <span>{formatTs(plan.createdAt.toNumber())}</span>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-[hsl(var(--muted-foreground))]">Plan address</span>
+            <span className="text-[hsl(var(--muted-foreground))]">
+              Plan address
+            </span>
             <a
               href={SOLSCAN_ACC(planPubkey)}
               target="_blank"
@@ -188,8 +224,8 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
             {!hasCapacity
               ? "Plan is full"
               : subscribe.isPending
-              ? "Confirming on-chain…"
-              : `Subscribe for ${formatUSDC(plan.amountUsdc.toNumber())}/${interval}`}
+                ? "Confirming on-chain…"
+                : `Subscribe for ${formatUSDC(plan.amountUsdc.toNumber())}/${interval}`}
           </Button>
         )}
 
@@ -214,7 +250,7 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
 export function BrowsePage() {
   const [search, setSearch] = useState("");
   const [lookupKey, setLookupKey] = useState<string | null>(null);
-  const [inputVal, setInputVal]   = useState("");
+  const [inputVal, setInputVal] = useState("");
 
   const handleLookup = () => {
     try {
@@ -231,7 +267,10 @@ export function BrowsePage() {
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-8 animate-[fade-in_0.35s_ease-out]">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           Browse Plans
         </h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
