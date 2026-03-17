@@ -27,7 +27,7 @@ From the monorepo root:
 
 ```sh
 pnpm install
-pnpm --filter ./apps/merchant-dashboard dev
+pnpm --filter ./client/apps/merchant-dashboard dev
 ```
 
 Then open the local URL printed in the terminal.
@@ -35,13 +35,13 @@ Then open the local URL printed in the terminal.
 ## Build
 
 ```sh
-pnpm --filter ./apps/merchant-dashboard build
+pnpm --filter ./client/apps/merchant-dashboard build
 ```
 
 ## Preview Production Build
 
 ```sh
-pnpm --filter ./apps/merchant-dashboard preview
+pnpm --filter ./client/apps/merchant-dashboard preview
 ```
 
 ## Project Structure

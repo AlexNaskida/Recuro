@@ -36,13 +36,13 @@ Funds stay in the subscriber's wallet until payment time. Billing is fully autom
 
 ### Key design decisions
 
-| Decision | Reasoning |
-|---|---|
-| **Non-custodial** | Subscriber's USDC stays in their wallet. Only an SPL delegate approval is granted to the Subscription PDA, which authorises the exact plan amount per cycle. |
+| Decision            | Reasoning                                                                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Non-custodial**   | Subscriber's USDC stays in their wallet. Only an SPL delegate approval is granted to the Subscription PDA, which authorises the exact plan amount per cycle.             |
 | **Price integrity** | The `amount_usdc` field on the Subscription PDA is **copied from the Plan PDA** at creation time by the program. No user-supplied amount is ever accepted for transfers. |
-| **Fully automated** | Clockwork threads execute `execute_payment()` on-chain. There is no off-chain backend, cron job, or relayer required for billing. |
-| **Auto-expiry** | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned. |
-| **Protocol fee** | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA. |
+| **Fully automated** | Clockwork threads execute `execute_payment()` on-chain. There is no off-chain backend, cron job, or relayer required for billing.                                        |
+| **Auto-expiry**     | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned.                                                                             |
+| **Protocol fee**    | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA.                                                                        |
 
 ---
 
@@ -80,7 +80,8 @@ solana-subscription-sdk/
 │           ├── analytics.ts         # Analytics aggregation
 │           └── format.ts            # USDC formatting, interval labels
 │
-├── apps/
+├── client/
+│   └── apps/
 │   ├── merchant-dashboard/          # React + Vite + shadcn/ui (port 3001)
 │   │   └── src/
 │   │       ├── App.tsx              # Router setup; landing page
@@ -122,13 +123,13 @@ solana-subscription-sdk/
 
 ### Prerequisites
 
-| Tool | Version |
-|---|---|
-| Rust + Cargo | 1.75+ |
-| Solana CLI | 1.18+ |
-| Anchor CLI | 0.29+ |
-| Node.js | 20+ |
-| Yarn | 1.22+ |
+| Tool         | Version |
+| ------------ | ------- |
+| Rust + Cargo | 1.75+   |
+| Solana CLI   | 1.18+   |
+| Anchor CLI   | 0.29+   |
+| Node.js      | 20+     |
+| Yarn         | 1.22+   |
 
 ### 1 — Install dependencies
 
@@ -175,7 +176,7 @@ anchor deploy --provider.cluster devnet
 # Note the program ID from the output, then update:
 #   Anchor.toml         → [programs.devnet]
 #   programs/subscription/src/lib.rs → declare_id!(...)
-#   apps/*/.env.local   → VITE_PROGRAM_ID=...
+#   client/apps/*/.env.local   → VITE_PROGRAM_ID=...
 
 # Rebuild and redeploy with correct ID
 anchor build && anchor deploy --provider.cluster devnet
@@ -192,7 +193,7 @@ yarn dev:merchant   # http://localhost:3001
 yarn dev:user       # http://localhost:3000
 ```
 
-Copy `apps/merchant-dashboard/.env.example` → `.env.local` and fill in your deployed values before running.
+Copy `client/apps/merchant-dashboard/.env.example` → `.env.local` and fill in your deployed values before running.
 
 ---
 
@@ -203,18 +204,20 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import { SubscriptionSdk } from "@solana-subscription/sdk";
 
 // 1. Instantiate
-const provider = new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+const provider = new AnchorProvider(connection, wallet, {
+  commitment: "confirmed",
+});
 const sdk = new SubscriptionSdk(provider, { cluster: "devnet" });
 
 // 2. Create a plan (merchant)
 const { planPubkey, signature } = await sdk.createPlan({
-  planId:       Date.now(),
-  name:         "Pro Monthly",
-  description:  "Full access to all features",
-  amountUsdc:   9.99,          // human USDC — SDK converts to micro-USDC
+  planId: Date.now(),
+  name: "Pro Monthly",
+  description: "Full access to all features",
+  amountUsdc: 9.99, // human USDC — SDK converts to micro-USDC
   intervalDays: 30,
-  trialDays:    7,              // 7-day free trial
-  maxSubscribers: 0,            // unlimited
+  trialDays: 7, // 7-day free trial
+  maxSubscribers: 0, // unlimited
 });
 
 // 3. Subscribe (user)
@@ -230,9 +233,9 @@ const mySubs = await sdk.fetchSubscriberSubscriptions(subscriberPublicKey);
 
 // 6. Analytics
 const analytics = await sdk.getAnalytics(merchantPublicKey);
-console.log(analytics.totalRevenue);         // human USDC
+console.log(analytics.totalRevenue); // human USDC
 console.log(analytics.activeSubscriptions);
-console.log(analytics.churnRate);            // %
+console.log(analytics.churnRate); // %
 
 // 7. Real-time event listeners
 const id = sdk.onPaymentExecuted((event, slot, signature) => {
@@ -246,10 +249,13 @@ await sdk.removeEventListener(id);
 ### PDA derivation
 
 ```typescript
-import { getPlanPDA, getSubscriptionPDA } from "@solana-subscription/sdk/utils/pda";
+import {
+  getPlanPDA,
+  getSubscriptionPDA,
+} from "@solana-subscription/sdk/utils/pda";
 
 const planPda = getPlanPDA(merchantPublicKey, planId, programId);
-const subPda  = getSubscriptionPDA(planPda, subscriberPublicKey, programId);
+const subPda = getSubscriptionPDA(planPda, subscriberPublicKey, programId);
 ```
 
 ---
@@ -258,15 +264,15 @@ const subPda  = getSubscriptionPDA(planPda, subscriberPublicKey, programId);
 
 All events are emitted via Anchor's event system and indexed by the SDK's `onXxx` listeners.
 
-| Event | Emitted when |
-|---|---|
-| `PlanCreated` | Merchant deploys a new plan |
-| `PlanUpdated` | Merchant updates plan metadata |
-| `SubscriptionCreated` | User subscribes to a plan |
-| `PaymentExecuted` | Clockwork successfully transfers USDC |
-| `PaymentFailed` | Transfer fails (low balance, revoked delegate, etc.) |
-| `SubscriptionCancelled` | Subscriber or merchant cancels |
-| `SubscriptionExpired` | Auto-closed after 3 consecutive failures |
+| Event                   | Emitted when                                         |
+| ----------------------- | ---------------------------------------------------- |
+| `PlanCreated`           | Merchant deploys a new plan                          |
+| `PlanUpdated`           | Merchant updates plan metadata                       |
+| `SubscriptionCreated`   | User subscribes to a plan                            |
+| `PaymentExecuted`       | Clockwork successfully transfers USDC                |
+| `PaymentFailed`         | Transfer fails (low balance, revoked delegate, etc.) |
+| `SubscriptionCancelled` | Subscriber or merchant cancels                       |
+| `SubscriptionExpired`   | Auto-closed after 3 consecutive failures             |
 
 ---
 

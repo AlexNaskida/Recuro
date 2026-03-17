@@ -1,16 +1,24 @@
-import { useMemo } from "react";
+import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
-import { PROGRAM_ID } from "@/lib/constants";
 import IDL from "@/lib/idl.json";
 
-export function useAnchorProgram() {
+type MerchantProgramContextValue = {
+  provider: AnchorProvider | null;
+  program: Program | null;
+  connected: boolean;
+};
+
+const MerchantProgramContext =
+  createContext<MerchantProgramContextValue | null>(null);
+
+export function MerchantProgramProvider({ children }: { children: ReactNode }) {
   const { connection } = useConnection();
   const wallet = useWallet();
 
   const provider = useMemo(() => {
     if (!wallet.publicKey || !wallet.signTransaction) return null;
+
     return new AnchorProvider(
       connection,
       {
@@ -29,6 +37,7 @@ export function useAnchorProgram() {
 
   const program = useMemo(() => {
     if (!provider) return null;
+
     try {
       return new Program(IDL as any, provider);
     } catch (e) {
@@ -37,5 +46,22 @@ export function useAnchorProgram() {
     }
   }, [provider]);
 
-  return { provider, program, connected: !!wallet.publicKey };
+  return (
+    <MerchantProgramContext.Provider
+      value={{ provider, program, connected: !!wallet.publicKey }}
+    >
+      {children}
+    </MerchantProgramContext.Provider>
+  );
+}
+
+export function useMerchantProgramContext() {
+  const context = useContext(MerchantProgramContext);
+  if (!context) {
+    throw new Error(
+      "useAnchorProgram must be used within MerchantProgramProvider",
+    );
+  }
+
+  return context;
 }

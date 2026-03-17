@@ -5,28 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -38,18 +22,13 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Plus,
-  MoreVertical,
-  Loader2,
-  Users,
-  DollarSign,
-  AlertCircle,
-} from "lucide-react";
+import { Plus, Loader2, Users, DollarSign, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { type Plan, usePlans } from "@/hooks/usePlans";
 import { useCreatePlan } from "@/hooks/useCreatePlan";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
+import { PlanActionsMenu } from "@/components/plans/PlanActionsMenu";
+import { DeletePlanConfirmDialog } from "@/components/plans/DeletePlanConfirmDialog";
 
 export default function Plans() {
   const { connected, publicKey } = useWallet();
@@ -360,6 +339,7 @@ export default function Plans() {
       toast.success("Plan deleted", {
         description: `Tx: ${signature.slice(0, 8)}...`,
       });
+      setDeleteConfirmPlan(null);
       await refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -568,80 +548,20 @@ export default function Plans() {
                   <Badge variant="outline" className={statusStyle(plan.status)}>
                     {plan.status}
                   </Badge>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {plan.status === "archived" ? (
-                        <>
-                          <DropdownMenuItem
-                            onClick={() => handleUnarchivePlan(plan.pubkey)}
-                            disabled={
-                              !plan.pubkey || unarchivingPlanId === plan.pubkey
-                            }
-                          >
-                            {unarchivingPlanId === plan.pubkey
-                              ? "Unarchiving..."
-                              : "Unarchive"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => setDeleteConfirmPlan(plan)}
-                            disabled={
-                              !plan.pubkey || deletingPlanId === plan.pubkey
-                            }
-                            className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
-                          >
-                            {deletingPlanId === plan.pubkey
-                              ? "Deleting..."
-                              : "Delete"}
-                          </DropdownMenuItem>
-                        </>
-                      ) : (
-                        <>
-                          <DropdownMenuItem
-                            onClick={() => openEditDialog(plan)}
-                            disabled={!plan.pubkey}
-                          >
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() =>
-                              plan.status === "paused"
-                                ? handleResumePlan(plan.pubkey)
-                                : handlePausePlan(plan.pubkey)
-                            }
-                            disabled={
-                              !plan.pubkey ||
-                              pausingPlanId === plan.pubkey ||
-                              resumingPlanId === plan.pubkey
-                            }
-                          >
-                            {pausingPlanId === plan.pubkey
-                              ? "Pausing..."
-                              : resumingPlanId === plan.pubkey
-                                ? "Resuming..."
-                                : plan.status === "paused"
-                                  ? "Resume"
-                                  : "Pause"}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleArchivePlan(plan.pubkey)}
-                            disabled={
-                              !plan.pubkey || archivingPlanId === plan.pubkey
-                            }
-                            className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
-                          >
-                            {archivingPlanId === plan.pubkey
-                              ? "Archiving..."
-                              : "Archive"}
-                          </DropdownMenuItem>
-                        </>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <PlanActionsMenu
+                    plan={plan}
+                    pausingPlanId={pausingPlanId}
+                    resumingPlanId={resumingPlanId}
+                    archivingPlanId={archivingPlanId}
+                    unarchivingPlanId={unarchivingPlanId}
+                    deletingPlanId={deletingPlanId}
+                    onEdit={openEditDialog}
+                    onPause={handlePausePlan}
+                    onResume={handleResumePlan}
+                    onArchive={handleArchivePlan}
+                    onUnarchive={handleUnarchivePlan}
+                    onDeleteRequest={setDeleteConfirmPlan}
+                  />
                 </div>
               </CardHeader>
               <CardContent className="space-y-2">
@@ -666,50 +586,14 @@ export default function Plans() {
         </div>
       )}
 
-      <AlertDialog
-        open={!!deleteConfirmPlan}
+      <DeletePlanConfirmDialog
+        plan={deleteConfirmPlan}
+        deleting={!!deletingPlanId}
         onOpenChange={(open) => {
           if (!open && !deletingPlanId) setDeleteConfirmPlan(null);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete archived plan?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently close the plan account and return rent to
-              your wallet. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {deleteConfirmPlan && (
-            <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
-              <p className="font-medium text-foreground">
-                {deleteConfirmPlan.name}
-              </p>
-              <p className="mt-1 font-mono break-all">
-                {deleteConfirmPlan.pubkey}
-              </p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={!!deletingPlanId}>
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              disabled={!deleteConfirmPlan?.pubkey || !!deletingPlanId}
-              onClick={(e) => {
-                e.preventDefault();
-                if (!deleteConfirmPlan?.pubkey) return;
-                void handleDeletePlan(deleteConfirmPlan.pubkey).then(() => {
-                  setDeleteConfirmPlan(null);
-                });
-              }}
-            >
-              {deletingPlanId ? "Deleting..." : "Delete Plan"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={handleDeletePlan}
+      />
     </div>
   );
 }

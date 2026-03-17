@@ -4,8 +4,8 @@
   "private": true,
   "workspaces": [
     "sdk",
-    "apps/merchant-dashboard",
-    "apps/user-demo"
+    "client/apps/merchant-dashboard",
+    "client/apps/user-demo"
   ],
   "scripts": {
     "dev": "concurrently \"yarn workspace merchant-dashboard dev\" \"yarn workspace user-demo dev\"",
