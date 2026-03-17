@@ -1,9 +1,19 @@
 import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogContent,
@@ -55,6 +65,11 @@ export default function Plans() {
   const [pausingPlanId, setPausingPlanId] = useState<string | null>(null);
   const [resumingPlanId, setResumingPlanId] = useState<string | null>(null);
   const [archivingPlanId, setArchivingPlanId] = useState<string | null>(null);
+  const [unarchivingPlanId, setUnarchivingPlanId] = useState<string | null>(
+    null,
+  );
+  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
+  const [deleteConfirmPlan, setDeleteConfirmPlan] = useState<Plan | null>(null);
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "paused" | "archived"
   >("all");
@@ -287,6 +302,73 @@ export default function Plans() {
     }
   };
 
+  const handleUnarchivePlan = async (planPubkey: string) => {
+    if (!program || !publicKey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    if (!planPubkey) {
+      toast.error("Cannot unarchive mock plan");
+      return;
+    }
+
+    setUnarchivingPlanId(planPubkey);
+    try {
+      const signature = await program.methods
+        .unarchivePlan()
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(planPubkey),
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan unarchived", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Unarchive failed", { description: message });
+    } finally {
+      setUnarchivingPlanId(null);
+    }
+  };
+
+  const handleDeletePlan = async (planPubkey: string) => {
+    if (!program || !publicKey) {
+      toast.error("Connect wallet first");
+      return;
+    }
+
+    if (!planPubkey) {
+      toast.error("Cannot delete mock plan");
+      return;
+    }
+
+    setDeletingPlanId(planPubkey);
+    try {
+      const signature = await program.methods
+        .deletePlan()
+        .accounts({
+          merchant: publicKey,
+          plan: new PublicKey(planPubkey),
+          systemProgram: SystemProgram.programId,
+        })
+        .rpc({ commitment: "confirmed" });
+
+      toast.success("Plan deleted", {
+        description: `Tx: ${signature.slice(0, 8)}...`,
+      });
+      await refetch();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Delete failed", { description: message });
+    } finally {
+      setDeletingPlanId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Mock data banner */}
@@ -493,44 +575,71 @@ export default function Plans() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onClick={() => openEditDialog(plan)}
-                        disabled={!plan.pubkey || plan.status === "archived"}
-                      >
-                        Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() =>
-                          plan.status === "paused"
-                            ? handleResumePlan(plan.pubkey)
-                            : handlePausePlan(plan.pubkey)
-                        }
-                        disabled={
-                          !plan.pubkey ||
-                          plan.status === "archived" ||
-                          pausingPlanId === plan.pubkey ||
-                          resumingPlanId === plan.pubkey
-                        }
-                      >
-                        {pausingPlanId === plan.pubkey
-                          ? "Pausing..."
-                          : resumingPlanId === plan.pubkey
-                            ? "Resuming..."
-                            : plan.status === "paused"
-                              ? "Resume"
-                              : "Pause"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleArchivePlan(plan.pubkey)}
-                        disabled={
-                          !plan.pubkey || archivingPlanId === plan.pubkey
-                        }
-                        className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
-                      >
-                        {archivingPlanId === plan.pubkey
-                          ? "Archiving..."
-                          : "Archive"}
-                      </DropdownMenuItem>
+                      {plan.status === "archived" ? (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => handleUnarchivePlan(plan.pubkey)}
+                            disabled={
+                              !plan.pubkey || unarchivingPlanId === plan.pubkey
+                            }
+                          >
+                            {unarchivingPlanId === plan.pubkey
+                              ? "Unarchiving..."
+                              : "Unarchive"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setDeleteConfirmPlan(plan)}
+                            disabled={
+                              !plan.pubkey || deletingPlanId === plan.pubkey
+                            }
+                            className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
+                          >
+                            {deletingPlanId === plan.pubkey
+                              ? "Deleting..."
+                              : "Delete"}
+                          </DropdownMenuItem>
+                        </>
+                      ) : (
+                        <>
+                          <DropdownMenuItem
+                            onClick={() => openEditDialog(plan)}
+                            disabled={!plan.pubkey}
+                          >
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              plan.status === "paused"
+                                ? handleResumePlan(plan.pubkey)
+                                : handlePausePlan(plan.pubkey)
+                            }
+                            disabled={
+                              !plan.pubkey ||
+                              pausingPlanId === plan.pubkey ||
+                              resumingPlanId === plan.pubkey
+                            }
+                          >
+                            {pausingPlanId === plan.pubkey
+                              ? "Pausing..."
+                              : resumingPlanId === plan.pubkey
+                                ? "Resuming..."
+                                : plan.status === "paused"
+                                  ? "Resume"
+                                  : "Pause"}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleArchivePlan(plan.pubkey)}
+                            disabled={
+                              !plan.pubkey || archivingPlanId === plan.pubkey
+                            }
+                            className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
+                          >
+                            {archivingPlanId === plan.pubkey
+                              ? "Archiving..."
+                              : "Archive"}
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -556,6 +665,51 @@ export default function Plans() {
           ))}
         </div>
       )}
+
+      <AlertDialog
+        open={!!deleteConfirmPlan}
+        onOpenChange={(open) => {
+          if (!open && !deletingPlanId) setDeleteConfirmPlan(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete archived plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently close the plan account and return rent to
+              your wallet. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {deleteConfirmPlan && (
+            <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground">
+              <p className="font-medium text-foreground">
+                {deleteConfirmPlan.name}
+              </p>
+              <p className="mt-1 font-mono break-all">
+                {deleteConfirmPlan.pubkey}
+              </p>
+            </div>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!deletingPlanId}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700"
+              disabled={!deleteConfirmPlan?.pubkey || !!deletingPlanId}
+              onClick={(e) => {
+                e.preventDefault();
+                if (!deleteConfirmPlan?.pubkey) return;
+                void handleDeletePlan(deleteConfirmPlan.pubkey).then(() => {
+                  setDeleteConfirmPlan(null);
+                });
+              }}
+            >
+              {deletingPlanId ? "Deleting..." : "Delete Plan"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

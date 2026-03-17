@@ -50,6 +50,10 @@ pub mod subscription {
         instructions::archive_plan::handler(ctx)
     }
 
+    pub fn unarchive_plan(ctx: Context<UnarchivePlan>) -> Result<()> {
+        instructions::unarchive_plan::handler(ctx)
+    }
+
     pub fn delete_plan(ctx: Context<DeletePlan>) -> Result<()> {
         instructions::delete_plan::handler(ctx)
     }

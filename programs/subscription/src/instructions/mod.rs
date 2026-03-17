@@ -11,6 +11,7 @@ pub mod pause_subscription;
 pub mod renew_subscription;
 pub mod resume_plan;
 pub mod resume_subscription;
+pub mod unarchive_plan;
 pub mod update_config;
 pub mod update_plan;
 
@@ -26,5 +27,6 @@ pub use pause_subscription::*;
 pub use renew_subscription::*;
 pub use resume_plan::*;
 pub use resume_subscription::*;
+pub use unarchive_plan::*;
 pub use update_config::*;
 pub use update_plan::*;

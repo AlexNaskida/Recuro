@@ -17,7 +17,7 @@ export function Topbar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
             <Zap className="h-4 w-4 text-white" />
           </div>
-          <span className="font-semibold tracking-tight">SubFlow</span>
+          <span className="font-semibold tracking-tight">Netflix</span>
           <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-400">
             Devnet
           </span>

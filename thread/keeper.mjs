@@ -392,7 +392,7 @@ async function poll(config) {
     return;
   }
 
-  log("info", `Poll #${stats.polls} — ${due.length} payment(s) due`);
+  log("info", `Poll #${stats.polls} - ${due.length} payment(s) due`);
 
   for (const { publicKey, account } of due) {
     // Skip subscriptions that have permanently failed this session

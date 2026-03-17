@@ -301,4 +301,4 @@ The SPL delegate approval is granted **to the Subscription PDA** (not the progra
 
 ## License
 
-MIT © 2024 SubFlow
+MIT © 2026 Netflix

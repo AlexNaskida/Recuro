@@ -24,7 +24,7 @@ export function Shell() {
           </div>
           <div>
             <p className="text-sm font-semibold leading-none" style={{ fontFamily: "var(--font-display)" }}>
-              SubFlow
+              Netflix
             </p>
             <p className="text-[11px] text-[hsl(var(--muted-foreground))] mt-0.5">Subscriber</p>
           </div>
