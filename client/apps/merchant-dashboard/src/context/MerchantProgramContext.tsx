@@ -39,6 +39,7 @@ export function MerchantProgramProvider({ children }: { children: ReactNode }) {
     if (!provider) return null;
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return new Program(IDL as any, provider);
     } catch (e) {
       console.error("Failed to init Anchor program:", e);
@@ -55,6 +56,7 @@ export function MerchantProgramProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useMerchantProgramContext() {
   const context = useContext(MerchantProgramContext);
   if (!context) {
