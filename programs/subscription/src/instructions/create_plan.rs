@@ -21,8 +21,8 @@ pub struct CreatePlanParams {
     pub description: String,
     pub amount_usdc: u64, // micro-units (1 USDC = 1_000_000)
     pub interval_seconds: i64,
-    pub trial_seconds: i64,   // 0 = no trial
-    pub max_subscribers: u64, // 0 = unlimited
+    pub trial_seconds: i64,                       // 0 = no trial
+    pub max_subscribers: u64,                     // 0 = unlimited
     pub merchant_receive_address: Option<Pubkey>, // Optional: where merchant receives funds. Defaults to merchant signer if not provided.
 }
 
