@@ -60,6 +60,7 @@ export default function Plans() {
   const [interval, setInterval] = useState("monthly");
   const [trialDays, setTrialDays] = useState("0");
   const [maxSubs, setMaxSubs] = useState("0");
+  const [merchantReceiveAddress, setMerchantReceiveAddress] = useState("");
 
   const intervalToDays: Record<string, number> = {
     weekly: 7,
@@ -75,6 +76,12 @@ export default function Plans() {
       return;
     }
     try {
+      const normalizedReceiveAddress = merchantReceiveAddress.trim();
+      if (normalizedReceiveAddress) {
+        // Validate client-side so users get immediate feedback before wallet popup.
+        new PublicKey(normalizedReceiveAddress);
+      }
+
       const sig = await createPlan({
         name,
         description,
@@ -82,6 +89,7 @@ export default function Plans() {
         intervalDays: intervalToDays[interval] ?? 30,
         trialDays: parseInt(trialDays) || 0,
         maxSubscribers: parseInt(maxSubs) || 0,
+        merchantReceiveAddress: normalizedReceiveAddress || undefined,
       });
       toast.success("Plan deployed!", {
         description: `Tx: ${sig?.slice(0, 8)}...`,
@@ -91,6 +99,7 @@ export default function Plans() {
       setDescription("");
       setPrice("");
       setInterval("monthly");
+      setMerchantReceiveAddress("");
       refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -466,6 +475,18 @@ export default function Plans() {
                     onChange={(e) => setMaxSubs(e.target.value)}
                   />
                 </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Merchant Receive Address (optional)</Label>
+                <Input
+                  placeholder="Defaults to your connected wallet address"
+                  value={merchantReceiveAddress}
+                  onChange={(e) => setMerchantReceiveAddress(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Leave empty to use the plan deployer wallet as the receive
+                  address.
+                </p>
               </div>
               <Button type="submit" className="w-full" disabled={deploying}>
                 {deploying && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

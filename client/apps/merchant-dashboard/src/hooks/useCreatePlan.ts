@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import {
@@ -18,11 +18,11 @@ export interface CreatePlanInput {
   intervalDays: number;
   trialDays: number;
   maxSubscribers: number;
+  merchantReceiveAddress?: string;
 }
 
 export function useCreatePlan() {
   const { publicKey } = useWallet();
-  const { connection } = useConnection();
   const { program } = useAnchorProgram();
   const [loading, setLoading] = useState(false);
 
@@ -48,6 +48,9 @@ export function useCreatePlan() {
           intervalSeconds: new BN(input.intervalDays * 86_400),
           trialSeconds: new BN(input.trialDays * 86_400),
           maxSubscribers: new BN(input.maxSubscribers),
+          merchantReceiveAddress: input.merchantReceiveAddress
+            ? new PublicKey(input.merchantReceiveAddress)
+            : null,
         })
         .accounts({
           merchant: publicKey,

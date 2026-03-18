@@ -23,6 +23,7 @@ pub struct CreatePlanParams {
     pub interval_seconds: i64,
     pub trial_seconds: i64,   // 0 = no trial
     pub max_subscribers: u64, // 0 = unlimited
+    pub merchant_receive_address: Option<Pubkey>, // Optional: where merchant receives funds. Defaults to merchant signer if not provided.
 }
 
 // ────────────────────────────────────────────────────────────
@@ -96,6 +97,10 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     plan.merchant = ctx.accounts.merchant.key();
     plan.merchant_token_account = ctx.accounts.merchant_token_account.key();
     plan.usdc_mint = ctx.accounts.usdc_mint.key();
+    // merchant_receive_address defaults to the deployer/signer if not provided
+    plan.merchant_receive_address = params
+        .merchant_receive_address
+        .unwrap_or_else(|| ctx.accounts.merchant.key());
     plan.plan_id = params.plan_id;
     plan.name = params.name.clone();
     plan.description = params.description.clone();
@@ -115,6 +120,7 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     emit!(PlanCreated {
         plan: plan.key(),
         merchant: ctx.accounts.merchant.key(),
+        merchant_receive_address: plan.merchant_receive_address,
         plan_id: params.plan_id,
         name: params.name,
         amount_usdc: params.amount_usdc,

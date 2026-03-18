@@ -1,21 +1,29 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { PROGRAM_ID, SEED_PLAN, SEED_SUBSCRIPTION, SEED_CONFIG } from "./constants";
+import { SEED_PLAN, SEED_SUBSCRIPTION, SEED_CONFIG } from "./constants";
+import { PROGRAM_ID } from "@/lib/config";
 
 const programId = new PublicKey(PROGRAM_ID);
 
 export function getPlanPDA(merchant: PublicKey, planId: BN): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
-    [Buffer.from(SEED_PLAN), merchant.toBuffer(), planId.toArrayLike(Buffer, "le", 8)],
-    programId
+    [
+      Buffer.from(SEED_PLAN),
+      merchant.toBuffer(),
+      planId.toArrayLike(Buffer, "le", 8),
+    ],
+    programId,
   );
   return pda;
 }
 
-export function getSubscriptionPDA(plan: PublicKey, subscriber: PublicKey): PublicKey {
+export function getSubscriptionPDA(
+  plan: PublicKey,
+  subscriber: PublicKey,
+): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(SEED_SUBSCRIPTION), plan.toBuffer(), subscriber.toBuffer()],
-    programId
+    programId,
   );
   return pda;
 }
@@ -23,7 +31,7 @@ export function getSubscriptionPDA(plan: PublicKey, subscriber: PublicKey): Publ
 export function getConfigPDA(): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(SEED_CONFIG)],
-    programId
+    programId,
   );
   return pda;
 }

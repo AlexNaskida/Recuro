@@ -6,6 +6,7 @@ pub struct Plan {
     pub merchant: Pubkey,               // 32
     pub merchant_token_account: Pubkey, // 32
     pub usdc_mint: Pubkey,              // 32
+    pub merchant_receive_address: Pubkey, // 32 — where funds go (defaults to merchant signer if not specified)
     pub plan_id: u64,                   // 8
     pub name: String,                   // 4 + 64
     pub description: String,            // 4 + 256
@@ -25,9 +26,10 @@ pub struct Plan {
 }
 
 impl Plan {
-    pub const INIT_SPACE: usize = 32
-        + 32
-        + 32
+    pub const INIT_SPACE: usize = 32  // merchant
+        + 32  // merchant_token_account
+        + 32  // usdc_mint
+        + 32  // merchant_receive_address
         + 8
         + (4 + MAX_PLAN_NAME_LEN)
         + (4 + MAX_PLAN_DESC_LEN)
@@ -70,6 +72,7 @@ pub enum PlanStatus {
 pub struct PlanCreated {
     pub plan: Pubkey,
     pub merchant: Pubkey,
+    pub merchant_receive_address: Pubkey,
     pub plan_id: u64,
     pub name: String,
     pub amount_usdc: u64,

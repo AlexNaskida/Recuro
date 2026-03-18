@@ -10,6 +10,7 @@ pub struct UpdatePlanArgs {
     pub name: Option<String>,
     pub description: Option<String>,
     pub max_subscribers: Option<u64>,
+    pub merchant_receive_address: Option<Pubkey>, // Optional: change where merchant receives funds
 }
 
 #[derive(Accounts)]
@@ -46,6 +47,9 @@ pub fn handler(ctx: Context<UpdatePlan>, args: UpdatePlanArgs) -> Result<()> {
     }
     if let Some(max) = args.max_subscribers {
         plan.max_subscribers = max;
+    }
+    if let Some(receive_addr) = args.merchant_receive_address {
+        plan.merchant_receive_address = receive_addr;
     }
 
     plan.updated_at = now;
