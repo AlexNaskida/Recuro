@@ -1,7 +1,7 @@
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { Connection } from "@solana/web3.js";
 import type { AnchorWallet } from "@solana/wallet-adapter-react";
-import { SubscriptionSdk } from "@solana-subscription/sdk";
+import { SubscriptionSdk } from "@recuro/sdk";
 import { CLUSTER, PROGRAM_ID, USDC_MINT } from "../constants";
 
 export function createUserSdk(

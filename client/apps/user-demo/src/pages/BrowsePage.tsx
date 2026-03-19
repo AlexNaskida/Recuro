@@ -19,7 +19,7 @@ import {
   CLUSTER,
 } from "@/constants";
 import { FEATURED_PLANS } from "@/lib/config";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import type { SubscriptionAccount } from "@recuro/sdk";
 
 // Demo plans to showcase — in production these come from an off-chain registry
 // or the merchant shares the plan PDA address with customers.

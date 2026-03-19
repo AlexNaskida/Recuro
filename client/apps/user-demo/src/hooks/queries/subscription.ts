@@ -3,7 +3,7 @@ import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { useSdk } from "@/hooks/useSdk";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import type { SubscriptionAccount } from "@recuro/sdk";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

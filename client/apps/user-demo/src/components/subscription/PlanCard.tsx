@@ -38,7 +38,7 @@ import {
 import type {
   PlanAccount,
   SubscriptionAccount,
-} from "@solana-subscription/sdk";
+} from "@recuro/sdk";
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 function StatPill({

@@ -110,7 +110,7 @@ export default function DashboardLayout({
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
             S
           </div>
-          <span className="text-lg font-semibold text-foreground">SubPay</span>
+          <span className="text-lg font-semibold text-foreground">Recuro</span>
         </div>
 
         <div className="px-4 pb-2">

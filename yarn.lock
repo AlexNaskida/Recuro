@@ -1726,6 +1726,12 @@
   dependencies:
     merge-options "^3.0.4"
 
+"@recuro/sdk@file:sdk":
+  version "1.0.0"
+  dependencies:
+    "@coral-xyz/anchor" "^0.32.0"
+    bn.js "^5.2.1"
+
 "@remix-run/router@1.23.2":
   version "1.23.2"
   resolved "https://registry.npmjs.org/@remix-run/router/-/router-1.23.2.tgz"

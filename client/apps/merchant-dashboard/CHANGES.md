@@ -1,4 +1,4 @@
-# SubPay Hub
+# Recuro Hub
 
 All changes made to wire real Solana wallet adapter + on-chain data.
 

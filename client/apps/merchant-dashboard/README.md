@@ -1,4 +1,4 @@
-# SubPay Merchant Dashboard
+# Recuro Merchant Dashboard
 
 Merchant-facing dashboard for managing recurring USDC subscriptions on Solana.
 
@@ -53,5 +53,5 @@ pnpm --filter ./client/apps/merchant-dashboard preview
 
 ## Notes
 
-- This app is part of the `solana-subscription-sdk` workspace.
+- This app is part of the `recuro-sdk` workspace.
 - Ensure the SDK package is installed/built in the workspace before running the dashboard if local package linking is used.

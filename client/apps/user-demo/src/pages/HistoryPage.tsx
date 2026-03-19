@@ -4,17 +4,29 @@
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { ExternalLink, CheckCircle2, AlertCircle } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Skeleton } from "@/components/ui";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+} from "@/components/ui";
 import { useMySubscriptions, usePlan } from "@/hooks/useSubscriptions";
-import { formatUSDC, formatTs, formatTsRelative, truncate, SOLSCAN_ACC } from "@/lib/utils";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import {
+  formatUSDC,
+  formatTs,
+  formatTsRelative,
+  truncate,
+  SOLSCAN_ACC,
+} from "@/lib/utils";
+import type { SubscriptionAccount } from "@recuro/sdk";
 
 // ── Payment summary per subscription ─────────────────────────────────────────
-function SubPaymentSummary({ sub }: { sub: SubscriptionAccount }) {
+function RecuroPaymentSummary({ sub }: { sub: SubscriptionAccount }) {
   const { data: plan } = usePlan(sub.plan.toBase58());
-  const count          = sub.paymentCount.toNumber();
-  const totalPaid      = sub.totalPaid.toNumber();
-  const lastPaid       = sub.lastPaidAt.toNumber();
+  const count = sub.paymentCount.toNumber();
+  const totalPaid = sub.totalPaid.toNumber();
+  const lastPaid = sub.lastPaidAt.toNumber();
 
   if (count === 0) return null;
 
@@ -29,13 +41,16 @@ function SubPaymentSummary({ sub }: { sub: SubscriptionAccount }) {
             {plan?.name ?? truncate(sub.plan.toBase58())}
           </p>
           <p className="text-xs text-[hsl(var(--muted-foreground))]">
-            {count} payment{count !== 1 ? "s" : ""} · Last {formatTsRelative(lastPaid)}
+            {count} payment{count !== 1 ? "s" : ""} · Last{" "}
+            {formatTsRelative(lastPaid)}
           </p>
         </div>
       </div>
       <div className="text-right shrink-0">
         <p className="text-sm font-semibold num">{formatUSDC(totalPaid)}</p>
-        <p className="text-xs text-[hsl(var(--muted-foreground))]">total paid</p>
+        <p className="text-xs text-[hsl(var(--muted-foreground))]">
+          total paid
+        </p>
       </div>
     </div>
   );
@@ -43,17 +58,25 @@ function SubPaymentSummary({ sub }: { sub: SubscriptionAccount }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export function HistoryPage() {
-  const wallet            = useAnchorWallet();
+  const wallet = useAnchorWallet();
   const { data: subs, isLoading } = useMySubscriptions();
 
   const withPayments = subs?.filter((s) => s.paymentCount.toNumber() > 0) ?? [];
-  const grandTotal   = withPayments.reduce((sum, s) => sum + s.totalPaid.toNumber(), 0);
-  const totalPayments = withPayments.reduce((sum, s) => sum + s.paymentCount.toNumber(), 0);
+  const grandTotal = withPayments.reduce(
+    (sum, s) => sum + s.totalPaid.toNumber(),
+    0,
+  );
+  const totalPayments = withPayments.reduce(
+    (sum, s) => sum + s.paymentCount.toNumber(),
+    0,
+  );
 
   if (!wallet) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8">
-        <p className="text-[hsl(var(--muted-foreground))]">Connect your wallet to view history</p>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Connect your wallet to view history
+        </p>
         <WalletMultiButton />
       </div>
     );
@@ -62,7 +85,10 @@ export function HistoryPage() {
   return (
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-6 animate-[fade-in_0.35s_ease-out]">
       <div>
-        <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
+        <h1
+          className="text-2xl font-bold"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           Payment History
         </h1>
         <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
@@ -100,15 +126,18 @@ export function HistoryPage() {
         <CardContent className="pt-0">
           {isLoading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => <Skeleton key={i} className="h-14 w-full" />)}
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-14 w-full" />
+              ))}
             </div>
           ) : withPayments.length === 0 ? (
             <div className="py-8 text-center text-sm text-[hsl(var(--muted-foreground))]">
-              No payments yet. Payments appear here after your first billing cycle.
+              No payments yet. Payments appear here after your first billing
+              cycle.
             </div>
           ) : (
             withPayments.map((sub) => (
-              <SubPaymentSummary key={sub.publicKey.toBase58()} sub={sub} />
+              <RecuroPaymentSummary key={sub.publicKey.toBase58()} sub={sub} />
             ))
           )}
         </CardContent>
@@ -125,8 +154,9 @@ export function HistoryPage() {
                   Failed payment detected
                 </p>
                 <p className="text-xs text-[hsl(var(--muted-foreground))] mt-0.5">
-                  One or more subscriptions have payment failures. Ensure your USDC balance
-                  is sufficient to avoid automatic cancellation after 3 failures.
+                  One or more subscriptions have payment failures. Ensure your
+                  USDC balance is sufficient to avoid automatic cancellation
+                  after 3 failures.
                 </p>
               </div>
             </div>

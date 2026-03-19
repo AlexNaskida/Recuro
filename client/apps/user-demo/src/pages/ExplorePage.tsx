@@ -2,7 +2,7 @@ import { Zap } from "lucide-react";
 import { Card } from "@/components/ui/index";
 import { PlanCard, PlanCardSkeleton } from "@/components/subscription/PlanCard";
 import { useMySubscriptions, useMerchantPlans } from "@/hooks/index";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import type { SubscriptionAccount } from "@recuro/sdk";
 import { MERCHANT } from "@/lib/config";
 
 // ── Plan list — auto-fetches all plans for the merchant ───────────────────────

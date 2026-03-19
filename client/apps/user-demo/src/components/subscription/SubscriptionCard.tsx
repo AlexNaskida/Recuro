@@ -11,7 +11,7 @@ import {
   SOLSCAN_ACC, SOLSCAN_TX, formatUSDC, intervalLabel, truncate,
 } from "@/constants";
 import { formatTs, formatTsRelative } from "@/lib/utils";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import type { SubscriptionAccount } from "@recuro/sdk";
 
 type SubStatus = "Active" | "Cancelled" | "Expired" | "PastDue";
 

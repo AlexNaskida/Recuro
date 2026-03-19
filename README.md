@@ -49,7 +49,7 @@ Funds stay in the subscriber's wallet until payment time. Billing is fully autom
 ## Repository layout
 
 ```
-solana-subscription-sdk/
+recuro-sdk/
 ├── programs/subscription/           # Anchor / Rust smart contract
 │   └── src/
 │       ├── lib.rs                   # Program entrypoint; all instruction handlers
@@ -69,7 +69,7 @@ solana-subscription-sdk/
 │           ├── cancel_subscription.rs
 │           └── charge_now.rs
 │
-├── sdk/                             # TypeScript SDK (@solana-subscription/sdk)
+├── sdk/                             # TypeScript SDK (@recuro/sdk)
 │   └── src/
 │       ├── SubscriptionSdk.ts       # Main SDK class
 │       ├── types.ts                 # Full TypeScript type definitions
@@ -201,7 +201,7 @@ Copy `client/apps/merchant-dashboard/.env.example` → `.env.local` and fill in 
 
 ```typescript
 import { AnchorProvider } from "@coral-xyz/anchor";
-import { SubscriptionSdk } from "@solana-subscription/sdk";
+import { SubscriptionSdk } from "@recuro/sdk";
 
 // 1. Instantiate
 const provider = new AnchorProvider(connection, wallet, {
@@ -249,10 +249,7 @@ await sdk.removeEventListener(id);
 ### PDA derivation
 
 ```typescript
-import {
-  getPlanPDA,
-  getSubscriptionPDA,
-} from "@solana-subscription/sdk/utils/pda";
+import { getPlanPDA, getSubscriptionPDA } from "@recuro/sdk/utils/pda";
 
 const planPda = getPlanPDA(merchantPublicKey, planId, programId);
 const subPda = getSubscriptionPDA(planPda, subscriberPublicKey, programId);

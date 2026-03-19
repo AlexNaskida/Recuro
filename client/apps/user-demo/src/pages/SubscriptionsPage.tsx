@@ -21,7 +21,7 @@ import {
   cn, formatUSDC, intervalLabel, truncate,
   formatTs, formatTsRelative, SOLSCAN_ACC, SOLSCAN_TX,
 } from "@/lib/utils";
-import type { SubscriptionAccount } from "@solana-subscription/sdk";
+import type { SubscriptionAccount } from "@recuro/sdk";
 
 // ── Subscription row ──────────────────────────────────────────────────────────
 function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {

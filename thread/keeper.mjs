@@ -1,5 +1,5 @@
 /**
- * SubPay Keeper — Production Payment Executor
+ * Recuro Keeper — Production Payment Executor
  *
  * Watches all active subscriptions on-chain and calls execute_payment
  * when next_payment_at is reached. Runs as a daemon, retries on failure.
@@ -431,7 +431,7 @@ function sleep(ms) {
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 async function main() {
-  log("info", "SubPay Keeper starting", {
+  log("info", "Recuro Keeper starting", {
     keeper: keeperKeypair.publicKey.toBase58(),
     programId: PROGRAM_ID.toBase58(),
     rpc: RPC_URL.replace(/[?&]api-key=[^&]+/, "&api-key=***"),
