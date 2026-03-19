@@ -29,13 +29,13 @@ export default {
           foreground: "hsl(var(--destructive-foreground))",
         },
         brand: {
-          400: "#FF6B6B",
-          500: "#E50914",
-          600: "#D00710",
-          700: "#B8000C",
+          400: "#F59CA3",
+          500: "#E85A66",
+          600: "#D94C59",
+          700: "#BF3E4A",
         },
         netflix: {
-          red: "#E50914",
+          red: "#E85A66",
           black: "#141414",
           darkGray: "#221F1F",
           gray: "#564D4D",
@@ -84,7 +84,7 @@ export default {
         "pulse-dot": "pulse-dot 2s ease-in-out infinite",
       },
       backgroundImage: {
-        "gradient-brand": "linear-gradient(135deg, #E50914 0%, #B8000C 100%)",
+        "gradient-brand": "linear-gradient(135deg, #E85A66 0%, #BF3E4A 100%)",
         "gradient-card": "linear-gradient(145deg, #141414 0%, #221F1F 100%)",
       },
     },

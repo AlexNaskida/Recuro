@@ -8,7 +8,7 @@
     --foreground: 210 40% 98%;
     --card: 0 0% 13%;
     --card-foreground: 210 40% 98%;
-    --primary: 357 92% 48%;
+    --primary: 355 75% 63%;
     --primary-foreground: 210 40% 98%;
     --secondary: 0 0% 16%;
     --secondary-foreground: 210 40% 98%;
@@ -18,7 +18,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 0 0% 24%;
     --input: 0 0% 18%;
-    --ring: 357 92% 48%;
+    --ring: 355 75% 63%;
     --radius: 0.625rem;
   }
   * {
@@ -50,6 +50,6 @@
     padding: 10px 20px !important;
   }
   .wallet-adapter-button:hover {
-    border-color: #e50914 !important;
+    border-color: #e85a66 !important;
   }
 }

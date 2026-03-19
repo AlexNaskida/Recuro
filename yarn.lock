@@ -1719,10 +1719,10 @@
   dependencies:
     merge-options "^3.0.4"
 
-"@recuro/sdk@^0.1.0":
-  version "0.1.0"
-  resolved "https://registry.yarnpkg.com/@recuro/sdk/-/sdk-0.1.0.tgz#b03a28de44792528a6e9281d59d968fce45dc261"
-  integrity sha512-/NIVBMoG/62DWfERdKdhPEapManYj6nhfrROkZCPVVkSAX3PEnK2FY9TDgiidBGZACanzgUA+of3QQaN1McQcw==
+"@recuro/sdk@^0.1.1":
+  version "0.1.1"
+  resolved "https://registry.yarnpkg.com/@recuro/sdk/-/sdk-0.1.1.tgz#7271cba2918f2611cda25c59eb2e4ff5c9b3c7ea"
+  integrity sha512-vbo6y/7PGvE5pyOoJ5imKJ2NWXEBz+gEIGzgvJFXZC6RnPIgxtaPTuJNYVypOdRWBdTDba6mfnpg1FlkBsFQwg==
   dependencies:
     "@coral-xyz/anchor" "^0.32.0"
     bn.js "^5.2.1"
