@@ -63,61 +63,65 @@ function PlanList() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 export function ExplorePage() {
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 space-y-10 animate-fade-in">
-      {/* Hero */}
-      <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-sm text-brand-400">
-          <Zap className="h-3.5 w-3.5" />
-          Non-custodial USDC subscriptions
-        </div>
-        <h1 className="text-4xl font-bold leading-tight">
-          Subscribe to anything,{" "}
-          <span className="bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent">
-            on-chain.
-          </span>
-        </h1>
-        <p className="text-muted-foreground max-w-md mx-auto">
-          Browse available subscription plans below. Your USDC stays in your
-          wallet until payment time.
-        </p>
-      </div>
-
-      {/* How it works */}
-      <div className="grid grid-cols-3 gap-4 text-center">
-        {[
-          {
-            step: "1",
-            title: "Browse plans",
-            body: "All available plans are loaded automatically.",
-          },
-          {
-            step: "2",
-            title: "Subscribe",
-            body: "Approve an SPL delegate — one transaction.",
-          },
-          {
-            step: "3",
-            title: "Relax",
-            body: "Keeper handles billing. Cancel any time.",
-          },
-        ].map(({ step, title, body }) => (
-          <div
-            key={step}
-            className="rounded-2xl border border-surface-4 bg-surface-2 p-4 space-y-2"
-          >
-            <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-brand-500/15 text-sm font-bold text-brand-400">
-              {step}
-            </div>
-            <p className="font-semibold text-sm">{title}</p>
-            <p className="text-xs text-muted-foreground">{body}</p>
+    <div className="min-h-screen bg-netflix-black">
+      <div className="mx-auto max-w-3xl px-4 py-10 space-y-8 animate-fade-in">
+        {/* Hero card */}
+        <Card className="p-6 space-y-4 border-netflix-gray bg-netflix-darkGray">
+          <div className="inline-flex items-center gap-2 rounded-full border border-netflix-red/40 bg-netflix-red/10 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-netflix-red">
+            <Zap className="h-3.5 w-3.5" />
+            Recuro Memberships
           </div>
-        ))}
-      </div>
+          <div>
+            <h1 className="text-3xl md:text-4xl font-black leading-tight text-white">
+              Discover plans, keep control.
+            </h1>
+            <p className="mt-2 text-sm text-gray-300 leading-relaxed">
+              Subscribe on-chain with non-custodial USDC payments and clear,
+              predictable renewals.
+            </p>
+          </div>
+        </Card>
 
-      {/* Plans */}
-      <div className="rounded-2xl border border-surface-4 bg-surface-2 p-6">
-        <h2 className="font-semibold mb-4">Available Plans</h2>
-        <PlanList />
+        {/* Feature cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {[
+            {
+              title: "Non-custodial",
+              desc: "Funds stay in your wallet.",
+            },
+            {
+              title: "Cancelable",
+              desc: "Revoke anytime on-chain.",
+            },
+            {
+              title: "Transparent",
+              desc: "Plan terms are immutable.",
+            },
+          ].map((feature) => (
+            <Card
+              key={feature.title}
+              className="p-4 border-netflix-gray bg-netflix-darkGray hover:border-netflix-red/40 transition-colors"
+            >
+              <h3 className="text-sm font-semibold text-white">
+                {feature.title}
+              </h3>
+              <p className="mt-1 text-xs text-gray-400">{feature.desc}</p>
+            </Card>
+          ))}
+        </div>
+
+        {/* Plans section */}
+        <section className="space-y-3">
+          <div>
+            <h2 className="text-xl font-bold text-white">Featured Plans</h2>
+            <p className="text-sm text-gray-400">
+              Browse and subscribe to available memberships
+            </p>
+          </div>
+          <Card className="p-5 border-netflix-gray bg-netflix-darkGray">
+            <PlanList />
+          </Card>
+        </section>
       </div>
     </div>
   );

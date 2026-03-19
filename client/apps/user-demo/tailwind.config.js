@@ -1,23 +1,44 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   darkMode: ["class"],
-  content:  ["./index.html", "./src/**/*.{ts,tsx}"],
+  content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
-        border:     "hsl(var(--border))",
+        border: "hsl(var(--border))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        primary:    { DEFAULT: "hsl(var(--primary))", foreground: "hsl(var(--primary-foreground))" },
-        secondary:  { DEFAULT: "hsl(var(--secondary))", foreground: "hsl(var(--secondary-foreground))" },
-        muted:      { DEFAULT: "hsl(var(--muted))", foreground: "hsl(var(--muted-foreground))" },
-        card:       { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },
-        destructive: { DEFAULT: "hsl(var(--destructive))", foreground: "hsl(var(--destructive-foreground))" },
+        primary: {
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
+        },
+        secondary: {
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
+        },
+        muted: {
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
+        },
+        card: {
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
+        },
+        destructive: {
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
+        },
         brand: {
-          400: "#818cf8",
-          500: "#6366f1",
-          600: "#4f46e5",
-          700: "#4338ca",
+          400: "#FF6B6B",
+          500: "#E50914",
+          600: "#D00710",
+          700: "#B8000C",
+        },
+        netflix: {
+          red: "#E50914",
+          black: "#141414",
+          darkGray: "#221F1F",
+          gray: "#564D4D",
         },
         emerald: {
           400: "#34d399",
@@ -28,10 +49,10 @@ export default {
           500: "#f59e0b",
         },
         surface: {
-          1: "#0a0f1e",
-          2: "#0f172a",
-          3: "#1e293b",
-          4: "#334155",
+          1: "#0F0F0F",
+          2: "#1A1A1A",
+          3: "#2D2D2D",
+          4: "#3D3D3D",
         },
       },
       borderRadius: {
@@ -46,27 +67,25 @@ export default {
       keyframes: {
         "fade-in": {
           from: { opacity: "0", transform: "translateY(8px)" },
-          to:   { opacity: "1", transform: "translateY(0)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
         shimmer: {
-          "0%":   { backgroundPosition: "-200% 0" },
+          "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
         "pulse-dot": {
           "0%, 100%": { opacity: "1" },
-          "50%":      { opacity: "0.3" },
+          "50%": { opacity: "0.3" },
         },
       },
       animation: {
-        "fade-in":  "fade-in 0.35s ease-out",
-        shimmer:    "shimmer 2s linear infinite",
+        "fade-in": "fade-in 0.35s ease-out",
+        shimmer: "shimmer 2s linear infinite",
         "pulse-dot": "pulse-dot 2s ease-in-out infinite",
       },
       backgroundImage: {
-        "gradient-brand":
-          "linear-gradient(135deg, #6366f1 0%, #10b981 100%)",
-        "gradient-card":
-          "linear-gradient(145deg, #0f172a 0%, #0a0f1e 100%)",
+        "gradient-brand": "linear-gradient(135deg, #E50914 0%, #B8000C 100%)",
+        "gradient-card": "linear-gradient(145deg, #141414 0%, #221F1F 100%)",
       },
     },
   },

@@ -3,16 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "workspaces": [
-    "sdk",
-    "client/apps/merchant-dashboard",
-    "client/apps/user-demo"
+    "client/apps/*"
   ],
   "scripts": {
     "dev": "concurrently \"yarn workspace merchant-dashboard dev\" \"yarn workspace user-demo dev\"",
     "dev:merchant": "yarn workspace merchant-dashboard dev",
     "dev:user": "yarn workspace user-demo dev",
-    "build": "yarn workspace @recuro/sdk build && concurrently \"yarn workspace merchant-dashboard build\" \"yarn workspace user-demo build\"",
-    "build:sdk": "yarn workspace @recuro/sdk build",
+    "build": "concurrently \"yarn workspace merchant-dashboard build\" \"yarn workspace user-demo build\"",
+    "build:sdk": "yarn --cwd sdk build",
     "type-check": "yarn workspaces run type-check",
     "lint": "yarn workspaces run lint",
     "test": "anchor test",

@@ -4,27 +4,29 @@ import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { to: "/",             label: "Explore"       },
+  { to: "/", label: "Explore" },
   { to: "/subscriptions", label: "My Subscriptions" },
 ] as const;
 
 export function Topbar() {
   return (
-    <header className="sticky top-0 z-30 border-b border-surface-4 bg-surface-1/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+    <header className="sticky top-0 z-30 border-b border-netflix-gray bg-netflix-black shadow-2xl">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
         {/* Brand */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-brand">
-            <Zap className="h-4 w-4 text-white" />
+        <div className="flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-netflix-red">
+            <Zap className="h-5 w-5 text-white font-bold" />
           </div>
-          <span className="font-semibold tracking-tight">Netflix</span>
-          <span className="rounded-full border border-brand-500/30 bg-brand-500/10 px-2 py-0.5 text-[10px] font-medium text-brand-400">
+          <span className="text-2xl font-black tracking-tighter text-white">
+            Netflix
+          </span>
+          <span className="hidden sm:block rounded-full border border-netflix-red/40 bg-netflix-red/10 px-2.5 py-1 text-[11px] font-bold text-netflix-red uppercase tracking-wider">
             Devnet
           </span>
         </div>
 
         {/* Nav */}
-        <nav className="hidden sm:flex gap-1">
+        <nav className="hidden sm:flex gap-0.5">
           {NAV.map(({ to, label }) => (
             <NavLink
               key={to}
@@ -32,10 +34,10 @@ export function Topbar() {
               end
               className={({ isActive }) =>
                 cn(
-                  "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  "rounded-lg px-4 py-2 text-sm font-semibold transition-all",
                   isActive
-                    ? "bg-brand-500/10 text-brand-400"
-                    : "text-muted-foreground hover:text-foreground hover:bg-surface-3"
+                    ? "bg-netflix-red/20 text-netflix-red"
+                    : "text-gray-300 hover:text-white hover:bg-netflix-darkGray/50",
                 )
               }
             >

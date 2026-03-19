@@ -67,57 +67,19 @@ jobs:
           name: subscription-idl
           path: target/idl/subscription.json
 
-  sdk-build:
-    name: SDK Build & Type-check
+  apps-build:
+    name: Apps Build & Type-check
     runs-on: ubuntu-latest
     needs: anchor-build-and-test
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download IDL
-        uses: actions/download-artifact@v4
-        with:
-          name: subscription-idl
-          path: sdk/src/
-
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
 
       - run: yarn install --frozen-lockfile
-
-      - name: Type-check SDK
-        run: yarn workspace @solana-subscription/sdk type-check
-
-      - name: Build SDK
-        run: yarn workspace @solana-subscription/sdk build
-
-      - name: Upload SDK dist artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sdk-dist
-          path: sdk/dist/
-
-  apps-build:
-    name: Apps Build & Type-check
-    runs-on: ubuntu-latest
-    needs: sdk-build
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: yarn
-
-      - run: yarn install --frozen-lockfile
-
-      - name: Download SDK dist
-        uses: actions/download-artifact@v4
-        with:
-          name: sdk-dist
-          path: sdk/dist/
 
       # - name: Type-check merchant dashboard
       #   run: yarn workspace merchant-dashboard type-check

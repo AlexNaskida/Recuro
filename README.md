@@ -199,6 +199,12 @@ Copy `client/apps/merchant-dashboard/.env.example` → `.env.local` and fill in 
 
 ## SDK usage
 
+Install the SDK:
+
+```bash
+yarn add @recuro/sdk
+```
+
 ```typescript
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { SubscriptionSdk } from "@recuro/sdk";

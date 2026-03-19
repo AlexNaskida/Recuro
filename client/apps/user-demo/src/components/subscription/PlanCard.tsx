@@ -35,10 +35,7 @@ import {
   intervalLabel,
   truncate,
 } from "@/constants";
-import type {
-  PlanAccount,
-  SubscriptionAccount,
-} from "@recuro/sdk";
+import type { PlanAccount, SubscriptionAccount } from "@recuro/sdk";
 
 // ── Stat pill ─────────────────────────────────────────────────────────────────
 function StatPill({
@@ -51,7 +48,7 @@ function StatPill({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-surface-3 px-3 py-2.5">
+    <div className="flex items-center gap-2 rounded-xl bg-netflix-darkGray px-3 py-2.5">
       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <div className="min-w-0">
         <p className="text-[10px] text-muted-foreground">{label}</p>
@@ -103,7 +100,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
     >
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-netflix-gray bg-netflix-darkGray p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {result ? (
             <div className="flex flex-col items-center gap-5 text-center py-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
@@ -125,7 +122,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                     href={SOLSCAN_ACC(result.subPubkey)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-xs text-brand-400 hover:underline flex items-center gap-1"
+                    className="font-mono text-xs text-netflix-red hover:underline flex items-center gap-1"
                   >
                     {truncate(result.subPubkey, 20, 6)}
                     <ExternalLink className="h-3 w-3" />
@@ -139,7 +136,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                     href={SOLSCAN_TX(result.sig)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-mono text-xs text-brand-400 hover:underline flex items-center gap-1"
+                    className="font-mono text-xs text-netflix-red hover:underline flex items-center gap-1"
                   >
                     {truncate(result.sig, 20, 6)}
                     <ExternalLink className="h-3 w-3" />
@@ -162,7 +159,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
               <AlertDialog.Description className="mt-1 text-sm text-muted-foreground">
                 Review the details before authorising the on-chain transaction.
               </AlertDialog.Description>
-              <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
+              <div className="mt-5 rounded-xl border border-netflix-gray bg-surface-3 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{plan.name}</span>
                   <span className="text-xl font-bold text-emerald-400">
@@ -200,8 +197,8 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 flex gap-2.5 rounded-xl border border-brand-500/20 bg-brand-500/5 p-3">
-                <Shield className="h-4 w-4 text-brand-400 mt-0.5 shrink-0" />
+              <div className="mt-4 flex gap-2.5 rounded-xl border border-netflix-red/20 bg-netflix-red/5 p-3">
+                <Shield className="h-4 w-4 text-netflix-red mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
                   <span className="text-foreground font-medium">
                     Non-custodial.
@@ -285,7 +282,7 @@ function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
     >
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-netflix-gray bg-netflix-darkGray p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {result ? (
             <div className="flex flex-col items-center gap-5 text-center py-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
@@ -305,7 +302,7 @@ function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
                   href={SOLSCAN_TX(result.sig)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-mono text-xs text-brand-400 hover:underline flex items-center gap-1"
+                  className="font-mono text-xs text-netflix-red hover:underline flex items-center gap-1"
                 >
                   {truncate(result.sig, 20, 6)}
                   <ExternalLink className="h-3 w-3" />
@@ -328,7 +325,7 @@ function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
                 Your subscription expired. Renewing will charge immediately and
                 authorise 12 new cycles.
               </AlertDialog.Description>
-              <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
+              <div className="mt-5 rounded-xl border border-netflix-gray bg-surface-3 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{plan.name}</span>
                   <span className="text-xl font-bold text-emerald-400">
@@ -366,8 +363,8 @@ function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
                   </div>
                 </div>
               </div>
-              <div className="mt-4 flex gap-2.5 rounded-xl border border-brand-500/20 bg-brand-500/5 p-3">
-                <Shield className="h-4 w-4 text-brand-400 mt-0.5 shrink-0" />
+              <div className="mt-4 flex gap-2.5 rounded-xl border border-netflix-red/20 bg-netflix-red/5 p-3">
+                <Shield className="h-4 w-4 text-netflix-red mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground">
                   <span className="text-foreground font-medium">
                     Non-custodial.
@@ -451,7 +448,7 @@ function CancelDialog({
     >
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-surface-4 bg-surface-2 p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+        <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-netflix-gray bg-netflix-darkGray p-6 shadow-2xl data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
           {done ? (
             <div className="flex flex-col items-center gap-5 text-center py-4">
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-500/20">
@@ -479,7 +476,7 @@ function CancelDialog({
               <AlertDialog.Description className="mt-1 text-sm text-muted-foreground">
                 This is irreversible. You can re-subscribe at any time.
               </AlertDialog.Description>
-              <div className="mt-5 rounded-xl border border-surface-4 bg-surface-3 p-4 space-y-3">
+              <div className="mt-5 rounded-xl border border-netflix-gray bg-surface-3 p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="font-semibold">{plan.name}</span>
                   <span className="text-lg font-bold text-muted-foreground line-through">
@@ -583,11 +580,11 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
     <>
       <Card
         className={cn(
-          "group flex flex-col transition-all duration-300 hover:border-brand-500/40 hover:shadow-xl hover:shadow-brand-500/10",
+          "group flex flex-col transition-all duration-300 hover:border-netflix-red/40 hover:shadow-xl hover:shadow-netflix-red/20",
           isActive && "border-emerald-500/40 bg-emerald-500/5",
           isPaused && "border-amber-500/40 bg-amber-500/5",
           isExpired && "border-amber-500/40 bg-amber-500/5",
-          isCancelled && "border-surface-4",
+          isCancelled && "border-netflix-gray",
         )}
       >
         {/* Header */}
@@ -598,7 +595,7 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
               href={SOLSCAN_ACC(plan.publicKey.toBase58())}
               target="_blank"
               rel="noopener noreferrer"
-              className="font-mono text-[11px] text-muted-foreground hover:text-brand-400 transition-colors flex items-center gap-1"
+              className="font-mono text-[11px] text-muted-foreground hover:text-netflix-red transition-colors flex items-center gap-1"
             >
               {truncate(plan.publicKey.toBase58())}
               <ExternalLink className="h-2.5 w-2.5" />
@@ -763,7 +760,7 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
           ) : (
             <Button
               size="lg"
-              className="w-full group-hover:shadow-lg group-hover:shadow-brand-500/20 transition-shadow"
+              className="w-full group-hover:shadow-lg group-hover:shadow-netflix-red/20 transition-shadow"
               disabled={isFull}
               onClick={() => setSubscribeOpen(true)}
             >

@@ -17,6 +17,8 @@ import {
   LogOut,
   HelpCircle,
   X,
+  BookOpen,
+  ExternalLink,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -145,6 +147,33 @@ export default function DashboardLayout({
               {managementNav.map((item) => (
                 <NavItem key={item.path} item={item} />
               ))}
+            </div>
+          </div>
+          <div>
+            <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              Resources
+            </p>
+            <div className="space-y-0.5">
+              <a
+                href="https://recuro.gitbook.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                Documentation
+                <ExternalLink className="h-3 w-3 ml-auto" />
+              </a>
+              <a
+                href="https://github.com/AlexNaskida/recuro-sdk"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <BookOpen className="h-4 w-4" />
+                GitHub
+                <ExternalLink className="h-3 w-3 ml-auto" />
+              </a>
             </div>
           </div>
         </nav>

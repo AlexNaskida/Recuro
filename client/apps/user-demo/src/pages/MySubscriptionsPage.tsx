@@ -17,7 +17,7 @@ export function MySubscriptionsPage() {
   if (!wallet) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-20 text-center space-y-5 animate-fade-in">
-        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl border border-surface-4 bg-surface-2">
+        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-2xl border border-netflix-gray bg-netflix-darkGray">
           <Inbox className="h-7 w-7 text-muted-foreground" />
         </div>
         <div>
@@ -87,7 +87,7 @@ export function MySubscriptionsPage() {
       {/* Empty state */}
       {!isLoading && subs.length === 0 && (
         <Card className="p-10 text-center space-y-4 border-dashed">
-          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-surface-3">
+          <div className="flex h-14 w-14 mx-auto items-center justify-center rounded-2xl bg-netflix-darkGray">
             <Inbox className="h-6 w-6 text-muted-foreground" />
           </div>
           <div>
