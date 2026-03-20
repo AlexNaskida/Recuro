@@ -1,0 +1,22 @@
+name: Sync SDK to public repo
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sdk/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push sdk/ to recuro-sdk repo
+        run: |
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
+          git subtree push --prefix=sdk public-sdk main
