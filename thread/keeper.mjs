@@ -29,7 +29,7 @@ import { resolve } from "path";
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const PROGRAM_ID = new PublicKey(
-  "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq",
+  "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 

@@ -24,7 +24,7 @@ import { homedir } from "os";
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const PROGRAM_ID = new PublicKey(
-  "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq",
+  "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
@@ -35,7 +35,7 @@ const TRIAL_SECS = 0;
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
-const idl = JSON.parse(readFileSync("../target/idl/subscription.json", "utf8"));
+const idl = JSON.parse(readFileSync("./target/idl/subscription.json", "utf8"));
 const keypair = Keypair.fromSecretKey(
   Uint8Array.from(
     JSON.parse(readFileSync(homedir() + "/.config/solana/id.json", "utf8")),
@@ -88,6 +88,7 @@ try {
       intervalSeconds: new BN(INTERVAL_SECS),
       trialSeconds: new BN(TRIAL_SECS),
       maxSubscribers: new BN(0),
+      merchantReceiveAddress: null,
     })
     .accounts({
       merchant: keypair.publicKey,

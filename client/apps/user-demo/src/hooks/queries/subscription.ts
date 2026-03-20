@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
+import { Buffer } from "buffer";
 import BN from "bn.js";
 import { useSdk } from "@/hooks/useSdk";
 import type { SubscriptionAccount } from "@recuro/sdk";
@@ -79,6 +80,12 @@ export function useMerchantPlans(merchantPubkey: string | null) {
     queryKey: SUBSCRIPTION_QUERY_KEYS.merchantPlans(merchantPubkey),
     queryFn: async () => {
       if (!sdk || !merchantPubkey) return [];
+      const toSafeNumber = (bn: BN): number | null => {
+        const raw = bn.toString(10);
+        const num = Number(raw);
+        return Number.isSafeInteger(num) ? num : null;
+      };
+
       const plans = await sdk.fetchMerchantPlans(new PublicKey(merchantPubkey));
 
       // First remove archived and dedupe by pubkey.
@@ -90,16 +97,31 @@ export function useMerchantPlans(merchantPubkey: string | null) {
         ).values(),
       );
 
-      // Prefer valid-looking plans, but never return empty because of strict guards.
+      // Only keep plans that satisfy PDA seeds and have sane business fields.
       const valid = base.filter((plan) => {
-        const amount = plan.amountUsdc.toNumber();
-        const interval = plan.intervalSeconds.toNumber();
+        const [expectedPlanPda] = PublicKey.findProgramAddressSync(
+          [
+            Buffer.from("plan"),
+            plan.merchant.toBuffer(),
+            plan.planId.toArrayLike(Buffer, "le", 8),
+          ],
+          sdk.programId,
+        );
+
+        const seedValid = expectedPlanPda.equals(plan.publicKey);
+        const amount = toSafeNumber(plan.amountUsdc);
+        const interval = toSafeNumber(plan.intervalSeconds);
         const hasName = !!plan.name?.trim();
-        return hasName && amount > 0 && interval > 0;
+        return seedValid && hasName && (amount ?? 0) > 0 && (interval ?? 0) > 0;
       });
 
-      // Fallback: if strict validation removes all entries, return base list.
-      return valid.length > 0 ? valid : base;
+      if (base.length > 0 && valid.length === 0) {
+        console.warn(
+          "[user-demo] all plans were filtered out (seed-invalid or zero/blank fields)",
+        );
+      }
+
+      return valid;
     },
     enabled: !!merchantPubkey && !!sdk,
     staleTime: 30_000,
@@ -127,7 +149,55 @@ export function useSubscribe() {
   return useMutation({
     mutationFn: async ({ planPubkey }: { planPubkey: string }) => {
       if (!sdk || !wallet) throw new Error("Wallet not connected");
-      return sdk.createSubscription({ planPubkey: new PublicKey(planPubkey) });
+
+      const boundProgramId = (sdk.program as any)?.programId as
+        | PublicKey
+        | undefined;
+      if (!boundProgramId || !boundProgramId.equals(sdk.programId)) {
+        throw new Error(
+          `SDK program binding mismatch. bound=${boundProgramId?.toBase58() ?? "unknown"} expected=${sdk.programId.toBase58()}. Restart dev server and hard refresh.`,
+        );
+      }
+
+      const plan = new PublicKey(planPubkey);
+      const info = await sdk.provider.connection.getAccountInfo(
+        plan,
+        "confirmed",
+      );
+      if (!info) {
+        throw new Error(
+          "Plan account not found on devnet. Use a newly created plan.",
+        );
+      }
+
+      if (!info.owner.equals(sdk.programId)) {
+        throw new Error(
+          `Selected plan belongs to another program (${info.owner.toBase58()}). Use a plan owned by ${sdk.programId.toBase58()}.`,
+        );
+      }
+
+      const decodedPlan = await sdk.fetchPlan(plan);
+      if (!decodedPlan) {
+        throw new Error(
+          `Plan could not be decoded by program ${sdk.programId.toBase58()}. Submitted=${plan.toBase58()} owner=${info.owner.toBase58()}.`,
+        );
+      }
+
+      const [expectedPlanPda] = PublicKey.findProgramAddressSync(
+        [
+          Buffer.from("plan"),
+          decodedPlan.merchant.toBuffer(),
+          decodedPlan.planId.toArrayLike(Buffer, "le", 8),
+        ],
+        sdk.programId,
+      );
+      if (!expectedPlanPda.equals(plan)) {
+        throw new Error(
+          `Plan PDA mismatch. submitted=${plan.toBase58()} expected=${expectedPlanPda.toBase58()} program=${sdk.programId.toBase58()}.`,
+        );
+      }
+
+      return sdk.createSubscription({ planPubkey: plan });
     },
     onSuccess: async (result, variables) => {
       const queryKey = SUBSCRIPTION_QUERY_KEYS.my(wallet?.publicKey.toBase58());

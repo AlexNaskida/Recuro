@@ -1,4 +1,4 @@
-export const PROGRAM_ID = "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq";
+export const PROGRAM_ID = "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr";
 
 export const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 

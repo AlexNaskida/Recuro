@@ -11,7 +11,7 @@ const keypair = anchor.web3.Keypair.fromSecretKey(
 );
 
 const PROGRAM_ID = new anchor.web3.PublicKey(
-  "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq",
+  "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const connection = new anchor.web3.Connection(
   "https://api.devnet.solana.com",

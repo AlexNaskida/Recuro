@@ -4,7 +4,7 @@ import { readFileSync } from "fs";
 import { homedir } from "os";
 
 const PROGRAM_ID = new PublicKey(
-  "HoTMwTrd7g4fGBX547LzGbH9FKju8QNVFAd9FGMLHRxq",
+  "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const NEW_TREASURY = new PublicKey(
   "G3DGfs821mhkCxJyvaoXVQ86G2HahiR913phA9Nn3NxM",

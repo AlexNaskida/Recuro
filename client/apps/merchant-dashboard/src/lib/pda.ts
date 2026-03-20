@@ -41,8 +41,17 @@ export function truncateWallet(addr: string): string {
 }
 
 export function microToUsdc(micro: BN | number): number {
-  const n = typeof micro === "number" ? micro : micro.toNumber();
-  return n / 1_000_000;
+  if (typeof micro === "number") return micro / 1_000_000;
+
+  const raw = micro.toString(10);
+  const negative = raw.startsWith("-");
+  const digits = negative ? raw.slice(1) : raw;
+  const padded = digits.padStart(7, "0");
+  const whole = padded.slice(0, -6);
+  const fraction = padded.slice(-6);
+  const parsed = Number(`${negative ? "-" : ""}${whole}.${fraction}`);
+
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 export function usdcToMicro(usdc: number): BN {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { PublicKey } from "@solana/web3.js";
 import { useAnchorProgram } from "./useAnchorProgram";
 import { microToUsdc } from "@/lib/pda";
 import { plans as mockPlans } from "@/lib/mock-data";
@@ -96,10 +97,38 @@ export function usePlans() {
 
     setLoading(true);
     try {
+      const connection = program.provider.connection;
+      const rawAccounts = await connection.getProgramAccounts(
+        program.programId,
+        {
+          filters: [
+            { dataSize: 562 },
+            { memcmp: { offset: 8, bytes: publicKey.toBase58() } },
+          ],
+        },
+      );
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const accounts = await (program.account as any).plan.all([
-        { memcmp: { offset: 8, bytes: publicKey.toBase58() } },
-      ]);
+      const accounts: Array<{ publicKey: any; account: any }> = [];
+      for (const { pubkey, account } of rawAccounts) {
+        try {
+          const decoded = program.coder.accounts.decode("plan", account.data);
+          accounts.push({ publicKey: pubkey, account: decoded });
+        } catch {
+          console.warn(
+            "[usePlans] skipping undecodable plan:",
+            pubkey.toBase58(),
+          );
+        }
+      }
+
+      console.debug("[usePlans] plan fetch", {
+        merchant: publicKey.toBase58(),
+        programId: program.programId.toBase58(),
+        rpcEndpoint: connection.rpcEndpoint,
+        rawCount: rawAccounts.length,
+        decodedCount: accounts.length,
+      });
 
       if (accounts.length === 0) {
         if (SHOW_MOCK_DATA) {
@@ -125,34 +154,62 @@ export function usePlans() {
           setUsingMock(false);
         }
       } else {
+        const real: Plan[] = [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const real: Plan[] = accounts.map((a: any) => {
-          const acc = a.account;
-          const deployer =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc.merchant as any)?.toBase58?.() ?? publicKey.toBase58();
-          const merchantReceiveAddress =
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (acc.merchantReceiveAddress as any)?.toBase58?.() ?? deployer;
+        for (const a of accounts as any[]) {
+          try {
+            const acc = a.account;
 
-          return {
-            id: a.publicKey.toBase58(),
-            pubkey: a.publicKey.toBase58(),
-            name: acc.name,
-            description: acc.description ?? "",
-            price: microToUsdc(acc.amountUsdc),
-            interval: intervalLabel(acc.intervalSeconds.toNumber()),
-            intervalSeconds: acc.intervalSeconds.toNumber(),
-            createdAt: acc.createdAt.toNumber() * 1000,
-            subscribers: acc.activeSubscribers.toNumber(),
-            revenue: microToUsdc(acc.totalRevenue),
-            feePaid: microToUsdc(acc.feesPaid),
-            successfulPayments: acc.successfulPayments.toNumber(),
-            status: decodePlanStatus(acc.status),
-            deployer,
-            merchantReceiveAddress,
-          };
-        });
+            // Keep only plans whose PDA matches ["plan", merchant, plan_id].
+            // This prevents stale/misaligned accounts from causing ConstraintSeeds errors later.
+            const [expectedPlanPda] = PublicKey.findProgramAddressSync(
+              [
+                Buffer.from("plan"),
+                acc.merchant.toBuffer(),
+                acc.planId.toArrayLike(Buffer, "le", 8),
+              ],
+              program.programId,
+            );
+            if (!expectedPlanPda.equals(a.publicKey)) {
+              console.warn(
+                "[usePlans] skipping seed-invalid plan:",
+                a.publicKey.toBase58(),
+              );
+              continue;
+            }
+
+            const deployer =
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (acc.merchant as any)?.toBase58?.() ?? publicKey.toBase58();
+            const merchantReceiveAddress =
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (acc.merchantReceiveAddress as any)?.toBase58?.() ?? deployer;
+
+            real.push({
+              id: a.publicKey.toBase58(),
+              pubkey: a.publicKey.toBase58(),
+              name: acc.name,
+              description: acc.description ?? "",
+              price: microToUsdc(acc.amountUsdc),
+              interval: intervalLabel(acc.intervalSeconds.toNumber()),
+              intervalSeconds: acc.intervalSeconds.toNumber(),
+              createdAt: acc.createdAt.toNumber() * 1000,
+              subscribers: acc.activeSubscribers.toNumber(),
+              revenue: microToUsdc(acc.totalRevenue),
+              feePaid: microToUsdc(acc.feesPaid),
+              successfulPayments: acc.successfulPayments.toNumber(),
+              status: decodePlanStatus(acc.status),
+              deployer,
+              merchantReceiveAddress,
+            });
+          } catch {
+            console.warn(
+              "[usePlans] skipping plan with invalid numeric fields:",
+              a.publicKey.toBase58(),
+            );
+          }
+        }
+
         setPlans(sortPlans(real));
         setUsingMock(false);
       }
