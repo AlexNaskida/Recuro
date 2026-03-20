@@ -1,4 +1,13 @@
-import { MoreVertical } from "lucide-react";
+import {
+  Archive,
+  CirclePause,
+  CirclePlay,
+  Info,
+  MoreVertical,
+  Pencil,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -15,6 +24,7 @@ type PlanActionsMenuProps = {
   archivingPlanId: string | null;
   unarchivingPlanId: string | null;
   deletingPlanId: string | null;
+  onInfo: (plan: Plan) => void;
   onEdit: (plan: Plan) => void;
   onPause: (planPubkey: string) => void;
   onResume: (planPubkey: string) => void;
@@ -30,6 +40,7 @@ export function PlanActionsMenu({
   archivingPlanId,
   unarchivingPlanId,
   deletingPlanId,
+  onInfo,
   onEdit,
   onPause,
   onResume,
@@ -45,12 +56,17 @@ export function PlanActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={() => onInfo(plan)}>
+          <Info className="mr-2 h-4 w-4" />
+          Info
+        </DropdownMenuItem>
         {plan.status === "archived" ? (
           <>
             <DropdownMenuItem
               onClick={() => onUnarchive(plan.pubkey)}
               disabled={!plan.pubkey || unarchivingPlanId === plan.pubkey}
             >
+              <RotateCcw className="mr-2 h-4 w-4" />
               {unarchivingPlanId === plan.pubkey
                 ? "Unarchiving..."
                 : "Unarchive"}
@@ -60,6 +76,7 @@ export function PlanActionsMenu({
               disabled={!plan.pubkey || deletingPlanId === plan.pubkey}
               className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
             >
+              <Trash2 className="mr-2 h-4 w-4" />
               {deletingPlanId === plan.pubkey ? "Deleting..." : "Delete"}
             </DropdownMenuItem>
           </>
@@ -69,6 +86,7 @@ export function PlanActionsMenu({
               onClick={() => onEdit(plan)}
               disabled={!plan.pubkey}
             >
+              <Pencil className="mr-2 h-4 w-4" />
               Edit
             </DropdownMenuItem>
             <DropdownMenuItem
@@ -83,6 +101,11 @@ export function PlanActionsMenu({
                 resumingPlanId === plan.pubkey
               }
             >
+              {plan.status === "paused" ? (
+                <CirclePlay className="mr-2 h-4 w-4" />
+              ) : (
+                <CirclePause className="mr-2 h-4 w-4" />
+              )}
               {pausingPlanId === plan.pubkey
                 ? "Pausing..."
                 : resumingPlanId === plan.pubkey
@@ -96,6 +119,7 @@ export function PlanActionsMenu({
               disabled={!plan.pubkey || archivingPlanId === plan.pubkey}
               className="text-red-500 focus:text-red-600 dark:text-red-500 dark:focus:text-red-600"
             >
+              <Archive className="mr-2 h-4 w-4" />
               {archivingPlanId === plan.pubkey ? "Archiving..." : "Archive"}
             </DropdownMenuItem>
           </>

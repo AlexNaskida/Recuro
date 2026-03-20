@@ -128,52 +128,57 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto px-3 pt-2 space-y-4">
-          <div>
-            <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Main menu
-            </p>
-            <div className="space-y-0.5">
-              {mainNav.map((item) => (
-                <NavItem key={item.path} item={item} />
-              ))}
+        <nav className="flex-1 overflow-y-auto px-3 pt-2">
+          <div className="flex min-h-full flex-col">
+            <div className="space-y-4">
+              <div>
+                <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Main menu
+                </p>
+                <div className="space-y-0.5">
+                  {mainNav.map((item) => (
+                    <NavItem key={item.path} item={item} />
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  Management
+                </p>
+                <div className="space-y-0.5">
+                  {managementNav.map((item) => (
+                    <NavItem key={item.path} item={item} />
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
-          <div>
-            <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Management
-            </p>
-            <div className="space-y-0.5">
-              {managementNav.map((item) => (
-                <NavItem key={item.path} item={item} />
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              Resources
-            </p>
-            <div className="space-y-0.5">
-              <a
-                href="https://recuro.gitbook.io"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                <BookOpen className="h-4 w-4" />
-                Documentation
-                <ExternalLink className="h-3 w-3 ml-auto" />
-              </a>
-              <a
-                href="https://github.com/AlexNaskida/recuro-sdk"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-              >
-                <BookOpen className="h-4 w-4" />
-                GitHub
-                <ExternalLink className="h-3 w-3 ml-auto" />
-              </a>
+
+            <div className="mt-auto -mx-3 border-t border-border px-3 pt-4 pb-2">
+              <p className="px-3 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Resources
+              </p>
+              <div className="space-y-0.5">
+                <a
+                  href="https://recuro.gitbook.io"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Documentation
+                  <ExternalLink className="h-3 w-3 ml-auto" />
+                </a>
+                <a
+                  href="https://github.com/AlexNaskida/recuro-sdk"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  GitHub
+                  <ExternalLink className="h-3 w-3 ml-auto" />
+                </a>
+              </div>
             </div>
           </div>
         </nav>

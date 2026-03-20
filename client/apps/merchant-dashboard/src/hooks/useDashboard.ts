@@ -8,6 +8,7 @@ import {
   subscriberSparkline as mockSubscriberSparkline,
   successSparkline as mockSuccessSparkline,
 } from "@/lib/mock-data";
+import { SHOW_MOCK_DATA } from "@/lib/config";
 
 export interface DashboardData {
   // KPI cards
@@ -108,7 +109,7 @@ export function useDashboard(): DashboardData {
     usingMock: subsMock,
   } = useSubscribers();
 
-  const usingMock = plansMock || subsMock;
+  const usingMock = SHOW_MOCK_DATA && (plansMock || subsMock);
   const loading = plansLoading || subsLoading;
 
   return useMemo(() => {
@@ -216,7 +217,7 @@ export function useDashboard(): DashboardData {
       successfulPmts > 0 || totalFailed > 0
         ? ((successfulPmts / (successfulPmts + totalFailed)) * 100).toFixed(1) +
           "%"
-        : "—";
+        : "0%";
 
     // MRR = sum of active subscription amounts
     const mrr = subscribers

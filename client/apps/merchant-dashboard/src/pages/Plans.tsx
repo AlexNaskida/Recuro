@@ -29,6 +29,7 @@ import { useCreatePlan } from "@/hooks/useCreatePlan";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { PlanActionsMenu } from "@/components/plans/PlanActionsMenu";
 import { DeletePlanConfirmDialog } from "@/components/plans/DeletePlanConfirmDialog";
+import { PlanInfoDialog } from "@/components/plans/PlanInfoDialog";
 
 export default function Plans() {
   const { connected, publicKey } = useWallet();
@@ -49,6 +50,7 @@ export default function Plans() {
   );
   const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const [deleteConfirmPlan, setDeleteConfirmPlan] = useState<Plan | null>(null);
+  const [infoPlan, setInfoPlan] = useState<Plan | null>(null);
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "paused" | "archived"
   >("all");
@@ -576,6 +578,7 @@ export default function Plans() {
                     archivingPlanId={archivingPlanId}
                     unarchivingPlanId={unarchivingPlanId}
                     deletingPlanId={deletingPlanId}
+                    onInfo={setInfoPlan}
                     onEdit={openEditDialog}
                     onPause={handlePausePlan}
                     onResume={handleResumePlan}
@@ -614,6 +617,14 @@ export default function Plans() {
           if (!open && !deletingPlanId) setDeleteConfirmPlan(null);
         }}
         onConfirm={handleDeletePlan}
+      />
+
+      <PlanInfoDialog
+        plan={infoPlan}
+        open={!!infoPlan}
+        onOpenChange={(open) => {
+          if (!open) setInfoPlan(null);
+        }}
       />
     </div>
   );

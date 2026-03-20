@@ -3,6 +3,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
 import { microToUsdc } from "@/lib/pda";
 import { subscribers as mockSubs } from "@/lib/mock-data";
+import { SHOW_MOCK_DATA } from "@/lib/config";
 
 export interface Subscriber {
   wallet: string;
@@ -56,8 +57,13 @@ export function useSubscribers(planPubkeys?: string[]) {
 
   const fetchSubscribers = useCallback(async () => {
     if (!program || !publicKey) {
-      setSubscribers(mockSubs.map(toMock));
-      setUsingMock(true);
+      if (SHOW_MOCK_DATA) {
+        setSubscribers(mockSubs.map(toMock));
+        setUsingMock(true);
+      } else {
+        setSubscribers([]);
+        setUsingMock(false);
+      }
       return;
     }
 
@@ -84,8 +90,13 @@ export function useSubscribers(planPubkeys?: string[]) {
         });
 
         if (resolvedPlanPubkeys.length === 0) {
-          setSubscribers(mockSubs.map(toMock));
-          setUsingMock(true);
+          if (SHOW_MOCK_DATA) {
+            setSubscribers(mockSubs.map(toMock));
+            setUsingMock(true);
+          } else {
+            setSubscribers([]);
+            setUsingMock(false);
+          }
           return;
         }
 
@@ -124,8 +135,13 @@ export function useSubscribers(planPubkeys?: string[]) {
         }
 
         if (allSubs.length === 0) {
-          setSubscribers(mockSubs.map(toMock));
-          setUsingMock(true);
+          if (SHOW_MOCK_DATA) {
+            setSubscribers(mockSubs.map(toMock));
+            setUsingMock(true);
+          } else {
+            setSubscribers([]);
+            setUsingMock(false);
+          }
           return;
         }
 
@@ -201,8 +217,13 @@ export function useSubscribers(planPubkeys?: string[]) {
       }
 
       if (allSubs.length === 0) {
-        setSubscribers(mockSubs.map(toMock));
-        setUsingMock(true);
+        if (SHOW_MOCK_DATA) {
+          setSubscribers(mockSubs.map(toMock));
+          setUsingMock(true);
+        } else {
+          setSubscribers([]);
+          setUsingMock(false);
+        }
         return;
       }
 
@@ -232,9 +253,15 @@ export function useSubscribers(planPubkeys?: string[]) {
       setSubscribers(real);
       setUsingMock(false);
     } catch (err) {
-      console.warn("[useSubscribers] fetch failed, using mock:", err);
-      setSubscribers(mockSubs.map(toMock));
-      setUsingMock(true);
+      if (SHOW_MOCK_DATA) {
+        console.warn("[useSubscribers] fetch failed, using mock:", err);
+        setSubscribers(mockSubs.map(toMock));
+        setUsingMock(true);
+      } else {
+        console.warn("[useSubscribers] fetch failed, mock disabled:", err);
+        setSubscribers([]);
+        setUsingMock(false);
+      }
     } finally {
       setLoading(false);
     }

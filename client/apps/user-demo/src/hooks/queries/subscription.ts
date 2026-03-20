@@ -80,7 +80,26 @@ export function useMerchantPlans(merchantPubkey: string | null) {
     queryFn: async () => {
       if (!sdk || !merchantPubkey) return [];
       const plans = await sdk.fetchMerchantPlans(new PublicKey(merchantPubkey));
-      return plans.filter((plan) => plan.status !== "Archived");
+
+      // First remove archived and dedupe by pubkey.
+      const base = Array.from(
+        new Map(
+          plans
+            .filter((plan) => plan.status !== "Archived")
+            .map((plan) => [plan.publicKey.toBase58(), plan]),
+        ).values(),
+      );
+
+      // Prefer valid-looking plans, but never return empty because of strict guards.
+      const valid = base.filter((plan) => {
+        const amount = plan.amountUsdc.toNumber();
+        const interval = plan.intervalSeconds.toNumber();
+        const hasName = !!plan.name?.trim();
+        return hasName && amount > 0 && interval > 0;
+      });
+
+      // Fallback: if strict validation removes all entries, return base list.
+      return valid.length > 0 ? valid : base;
     },
     enabled: !!merchantPubkey && !!sdk,
     staleTime: 30_000,
