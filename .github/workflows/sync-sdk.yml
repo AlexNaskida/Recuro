@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'sdk/**'
+      - "sdk/**"
 
 jobs:
   sync:
@@ -17,12 +17,10 @@ jobs:
 
       - name: Configure git
         run: |
-          git config user.email "github-actions@github.com"
-          git config user.name "GitHub Actions"
+          git config user.email "naskidashvili.alex@gmail.com"
+          git config user.name "AlexNaskida"
 
       - name: Push sdk/ subtree to recuro-sdk
-        env:
-          SDK_DEPLOY_TOKEN: ${{ secrets.SDK_DEPLOY_TOKEN }}
         run: |
-          git remote add public-sdk https://AlexNaskida:${SDK_DEPLOY_TOKEN}@github.com/AlexNaskida/recuro-sdk.git
+          git remote add public-sdk https://oauth2:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
           git subtree push --prefix=sdk public-sdk main
