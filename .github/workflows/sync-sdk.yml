@@ -9,18 +9,20 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.SDK_DEPLOY_TOKEN }}
 
       - name: Configure git
         run: |
-          git config user.email "naskidashvili.alex@gmail.com"
-          git config user.name "AlexNaskida"
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
 
-      - name: Push sdk/ subtree to recuro-sdk
+      - name: Push sdk subtree to recuro-sdk
         run: |
-          git remote add public-sdk https://oauth2:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
+          git remote remove public-sdk || true
+          git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
           git subtree push --prefix=sdk public-sdk main
