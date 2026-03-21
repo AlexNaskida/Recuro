@@ -24,5 +24,8 @@ jobs:
       - name: Push sdk subtree to recuro-sdk
         run: |
           git remote remove public-sdk || true
-          git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
+          git remote add public-sdk https://github.com/AlexNaskida/recuro-sdk.git
+
+          git remote set-url public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
+
           git subtree push --prefix=sdk public-sdk main
