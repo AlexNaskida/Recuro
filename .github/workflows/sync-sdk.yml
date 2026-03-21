@@ -25,4 +25,5 @@ jobs:
       - name: Push sdk subtree
         run: |
           git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
-          git subtree push --prefix=sdk public-sdk main
+          git subtree split --prefix=sdk -b sdk-split
+          git push --force public-sdk sdk-split:main
