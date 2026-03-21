@@ -14,9 +14,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push sdk/ to recuro-sdk repo
+      - name: Configure git
         run: |
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
+
+      - name: Add public SDK remote
+        run: |
           git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
+
+      - name: Push sdk/ subtree to recuro-sdk main
+        run: |
           git subtree push --prefix=sdk public-sdk main
