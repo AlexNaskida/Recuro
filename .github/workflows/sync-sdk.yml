@@ -13,16 +13,16 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.SDK_DEPLOY_TOKEN }}
 
       - name: Configure git
         run: |
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
 
-      - name: Add public SDK remote
+      - name: Push sdk/ subtree to recuro-sdk
+        env:
+          SDK_DEPLOY_TOKEN: ${{ secrets.SDK_DEPLOY_TOKEN }}
         run: |
-          git remote add public-sdk https://x-access-token:${{ secrets.SDK_DEPLOY_TOKEN }}@github.com/AlexNaskida/recuro-sdk.git
-
-      - name: Push sdk/ subtree to recuro-sdk main
-        run: |
+          git remote add public-sdk https://AlexNaskida:${SDK_DEPLOY_TOKEN}@github.com/AlexNaskida/recuro-sdk.git
           git subtree push --prefix=sdk public-sdk main
