@@ -1,5 +1,5 @@
 /**
- * Browse Plans page — shows publicly available subscription plans.
+ * Browse Plans page - shows publicly available subscription plans.
  * Users enter a plan PDA address to look up any plan, or can browse
  * a curated list stored in the .env file.
  */
@@ -21,7 +21,7 @@ import {
 import { FEATURED_PLANS } from "@/lib/config";
 import type { SubscriptionAccount } from "@recuro/sdk";
 
-// Demo plans to showcase — in production these come from an off-chain registry
+// Demo plans to showcase - in production these come from an off-chain registry
 // or the merchant shares the plan PDA address with customers.
 
 // ── Plan Detail Card ──────────────────────────────────────────────────────────
@@ -67,7 +67,7 @@ function PlanDetail({ planPubkey }: { planPubkey: string }) {
         <div className="pt-6 px-6 pb-6">
           <p className="text-sm text-[hsl(var(--muted-foreground))]">
             {error
-              ? "Could not load plan — check the address."
+              ? "Could not load plan - check the address."
               : "Plan not found."}
           </p>
         </div>

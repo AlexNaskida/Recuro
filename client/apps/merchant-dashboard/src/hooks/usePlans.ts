@@ -71,7 +71,7 @@ export function usePlans() {
   const fetchPlans = useCallback(async () => {
     if (!program || !publicKey) {
       if (SHOW_MOCK_DATA) {
-        // Not connected — show mock data
+        // Not connected - show mock data
         setPlans(
           sortPlans(
             mockPlans.map((p, index) => ({
@@ -132,7 +132,7 @@ export function usePlans() {
 
       if (accounts.length === 0) {
         if (SHOW_MOCK_DATA) {
-          // Connected but no on-chain plans yet — show mock with a note
+          // Connected but no on-chain plans yet - show mock with a note
           setPlans(
             sortPlans(
               mockPlans.map((p, index) => ({

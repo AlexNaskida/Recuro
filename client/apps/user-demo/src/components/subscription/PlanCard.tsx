@@ -369,7 +369,7 @@ function RenewDialog({ plan, subscription, open, onClose }: RenewDialogProps) {
                   <span className="text-foreground font-medium">
                     Non-custodial.
                   </span>{" "}
-                  Same subscription PDA reused — no new account created.
+                  Same subscription PDA reused - no new account created.
                 </p>
               </div>
               {renew.isError && (
@@ -492,8 +492,8 @@ function CancelDialog({
                     </span>
                     <span>
                       {"cyclesRemaining" in subscription
-                        ? ((subscription as any).cyclesRemaining ?? "—")
-                        : "—"}
+                        ? ((subscription as any).cyclesRemaining ?? "-")
+                        : "-"}
                     </span>
                   </div>
                   <div className="flex justify-between">
@@ -632,7 +632,7 @@ export function PlanCard({ plan, subscription }: PlanCardProps) {
           )}
           {isActive && subscription && (
             <p className="mt-1 text-xs text-muted-foreground">
-              {(subscription as any).cyclesRemaining ?? "—"} cycles remaining
+              {(subscription as any).cyclesRemaining ?? "-"} cycles remaining
             </p>
           )}
           {isPaused && (

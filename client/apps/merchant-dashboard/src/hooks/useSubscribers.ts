@@ -28,7 +28,7 @@ function decodeSubStatus(raw: Record<string, unknown>): Subscriber["status"] {
 }
 
 function unixToDate(unix: number): string {
-  if (!unix) return "—";
+  if (!unix) return "-";
   return new Date(unix * 1000).toISOString().split("T")[0];
 }
 
@@ -41,7 +41,7 @@ function toMock(s: any): Subscriber {
       s.status === "past_due" ? "active" : (s.status as Subscriber["status"]),
     startedAt: Number.isNaN(startedAt) ? 0 : startedAt,
     planPubkey: "",
-    nextPayment: "—",
+    nextPayment: "-",
     amountUsdc: 0,
     paymentCount: 0,
     failedPaymentCount: 0,
@@ -160,7 +160,7 @@ export function useSubscribers(planPubkeys?: string[]) {
             lastPayment:
               acc.lastPaidAt.toNumber() > 0
                 ? unixToDate(acc.lastPaidAt.toNumber())
-                : "—",
+                : "-",
             nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
             amountUsdc: microToUsdc(acc.amountUsdc),
             totalPaid: microToUsdc(acc.totalPaid),
@@ -241,7 +241,7 @@ export function useSubscribers(planPubkeys?: string[]) {
           lastPayment:
             acc.lastPaidAt.toNumber() > 0
               ? unixToDate(acc.lastPaidAt.toNumber())
-              : "—",
+              : "-",
           nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
           amountUsdc: microToUsdc(acc.amountUsdc),
           totalPaid: microToUsdc(acc.totalPaid),

@@ -38,7 +38,7 @@ export interface DashboardData {
   // Donut chart
   planDistribution: { name: string; value: number; fill: string }[];
 
-  // Recent activity (from subscriber list — best we can do without event indexer)
+  // Recent activity (from subscriber list - best we can do without event indexer)
   events: {
     type: string;
     wallet: string;
@@ -67,7 +67,7 @@ function formatDelta(current: number, prev: number): string {
 }
 
 function dateToMillis(date: string): number {
-  if (!date || date === "—") return 0;
+  if (!date || date === "-") return 0;
   const ms = Date.parse(date);
   return Number.isNaN(ms) ? 0 : ms;
 }
@@ -227,7 +227,7 @@ export function useDashboard(): DashboardData {
     // Sparklines
     const revenueSparkline = buildSparkline(totalRevenue);
     const subscriberSparkline = buildSparkline(activeSubscribers, 0.08);
-    const successSparkline = buildSparkline(97, 0.03); // proxy — no historical data
+    const successSparkline = buildSparkline(97, 0.03); // proxy - no historical data
 
     // Revenue chart
     const revenueChart = buildRevenueChart(totalRevenue, mrr);
@@ -246,7 +246,7 @@ export function useDashboard(): DashboardData {
         fill: PLAN_COLORS[i % PLAN_COLORS.length],
       }));
 
-    // Recent activity — derive from subscribers (last payment date)
+    // Recent activity - derive from subscribers (last payment date)
     const recentEvents = subscribers
       .map((s) => {
         const lastPaymentMs = dateToMillis(s.lastPayment);
@@ -269,7 +269,7 @@ export function useDashboard(): DashboardData {
           plan: s.plan,
           amount: s.amountUsdc > 0 ? parseFloat(s.amountUsdc.toFixed(2)) : 0,
           time:
-            eventMs > 0 ? new Date(eventMs).toISOString().slice(0, 10) : "—",
+            eventMs > 0 ? new Date(eventMs).toISOString().slice(0, 10) : "-",
           eventMs,
         };
       })
@@ -278,7 +278,7 @@ export function useDashboard(): DashboardData {
       .slice(0, 6)
       .map(({ eventMs, ...event }) => event);
 
-    // Revenue delta vs prev period — approximate as 85% of current (no history)
+    // Revenue delta vs prev period - approximate as 85% of current (no history)
     const prevRevenue = totalRevenue * 0.85;
     const revenueDelta = formatDelta(totalRevenue, prevRevenue);
 

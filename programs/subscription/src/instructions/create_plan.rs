@@ -11,7 +11,7 @@ use crate::{
 };
 
 // ────────────────────────────────────────────────────────────
-// Instruction parameters — passed as a single struct so the
+// Instruction parameters - passed as a single struct so the
 // IDL generates a clean typed interface for the TypeScript SDK.
 // ────────────────────────────────────────────────────────────
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -32,21 +32,21 @@ pub struct CreatePlanParams {
 #[derive(Accounts)]
 #[instruction(params: CreatePlanParams)]
 pub struct CreatePlan<'info> {
-    /// Merchant wallet — pays rent, becomes plan authority
+    /// Merchant wallet - pays rent, becomes plan authority
     #[account(mut)]
     pub merchant: Signer<'info>,
 
     /// USDC SPL mint that this plan is denominated in
     pub usdc_mint: Account<'info, Mint>,
 
-    /// Merchant's USDC ATA — must already exist before creating a plan
+    /// Merchant's USDC ATA - must already exist before creating a plan
     #[account(
         associated_token::mint      = usdc_mint,
         associated_token::authority = merchant,
     )]
     pub merchant_token_account: Account<'info, TokenAccount>,
 
-    /// New Plan PDA — created here, owned by this program
+    /// New Plan PDA - created here, owned by this program
     #[account(
         init,
         payer  = merchant,

@@ -8,7 +8,14 @@ description: |
 homepage: https://colosseum.com
 license: Proprietary
 compatibility: Claude Code, Codex, OpenClaw
-metadata: {"category":"copilot","api_base":"https://copilot.colosseum.com/api/v1","auth":"pat","author":"colosseum","tags":"solana,research,founder,market-intel,startup,idea-generation"}
+metadata:
+  {
+    "category": "copilot",
+    "api_base": "https://copilot.colosseum.com/api/v1",
+    "auth": "pat",
+    "author": "colosseum",
+    "tags": "solana,research,founder,market-intel,startup,idea-generation",
+  }
 ---
 
 # Colosseum Copilot
@@ -36,7 +43,7 @@ This skill is version **1.2.0**. After your first API call, check the `X-Copilot
 
 3. Call `GET /status` to verify the connection. Expected response: `{ "authenticated": true, "expiresAt": "...", "scope": "..." }`
 
-4. If `"authenticated": true`, proceed. If 401 or env vars missing, do NOT attempt other API calls — guide the user through steps 1-2.
+4. If `"authenticated": true`, proceed. If 401 or env vars missing, do NOT attempt other API calls - guide the user through steps 1-2.
 
 - **Builder Projects**: 5,400+ Solana project submissions with tech stack, problem tags, and competitive context
 - **Crypto Archives**: Curated corpus across cypherpunk literature, protocol docs, investor research, and founder essays
@@ -46,13 +53,16 @@ This skill is version **1.2.0**. After your first API call, check the `X-Copilot
 ## Quickstart (90 seconds to first result)
 
 1. **Set your PAT:**
+
    ```bash
    export COLOSSEUM_COPILOT_API_BASE="https://copilot.colosseum.com/api/v1"
    export COLOSSEUM_COPILOT_PAT="YOUR_PAT"
    ```
+
    Get a PAT: Go to https://arena.colosseum.org/copilot and generate a token
 
 2. **Run your first search:**
+
    ```bash
    curl -s -X POST "$COLOSSEUM_COPILOT_API_BASE/search/projects" \
      -H "Authorization: Bearer $COLOSSEUM_COPILOT_PAT" \
@@ -65,6 +75,7 @@ This skill is version **1.2.0**. After your first API call, check the `X-Copilot
 ## When To Use
 
 Use this skill when:
+
 - Researching a crypto/blockchain startup idea
 - Evaluating market gaps in the Solana ecosystem
 - Grounding ideas in historical crypto literature
@@ -73,27 +84,27 @@ Use this skill when:
 
 ## How It Works
 
-**Mode 1 — Conversational (default):** Answer questions with targeted API calls and evidence coverage matched to query type. Cite sources inline, keep responses concise, and offer to do a full deep-dive when the topic warrants it — never auto-trigger it.
+**Mode 1 - Conversational (default):** Answer questions with targeted API calls and evidence coverage matched to query type. Cite sources inline, keep responses concise, and offer to do a full deep-dive when the topic warrants it - never auto-trigger it.
 
-**Mode 2 — Deep Dive (explicit opt-in):** Full 8-step workflow from `references/workflow-deep.md`. Only activates when user explicitly says "vet this idea", "deep dive", "full analysis", "validate this", "is X worth building?", "should I build X?", or accepts your offer to go deeper.
+**Mode 2 - Deep Dive (explicit opt-in):** Full 8-step workflow from `references/workflow-deep.md`. Only activates when user explicitly says "vet this idea", "deep dive", "full analysis", "validate this", "is X worth building?", "should I build X?", or accepts your offer to go deeper.
 
 ### Conversational Guidelines
 
 - Use the API endpoints below with enough targeted calls to satisfy the evidence floor for the query type
 - Cite sources inline (project slugs, archive titles, URLs)
-- Keep responses concise — bullet points, not essays
+- Keep responses concise - bullet points, not essays
 - When the topic warrants deeper analysis, offer: "Want me to do a full deep-dive on this?"
 - No meta-commentary about your process ("Now let me search...", "I'll check...")
 
 ### Evidence Floors (Conversational Mode)
 
-| Query Type | Required source types in the final answer | Example |
-|---|---|---|
-| **Pure retrieval** | Builder project evidence (project slugs from `search/projects`) | "What projects do X?" |
-| **Archive retrieval** | Archive evidence (archive title/document from `search/archives`) | "What does the archive say about Y?" |
-| **Comparison** | Builder project evidence for each side compared + at least one archive citation for conceptual framing | "Compare approach A vs B" |
-| **Evaluative** | Builder project evidence + at least one archive citation + current landscape evidence (Grid and/or web) | "Is this crowded?", "Is this still unsolved?" |
-| **Build guidance** | Builder project evidence + at least one archive citation + incumbent/landscape evidence (Grid and/or web) | "Should I build X?", "How should I approach X?" |
+| Query Type            | Required source types in the final answer                                                                 | Example                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Pure retrieval**    | Builder project evidence (project slugs from `search/projects`)                                           | "What projects do X?"                           |
+| **Archive retrieval** | Archive evidence (archive title/document from `search/archives`)                                          | "What does the archive say about Y?"            |
+| **Comparison**        | Builder project evidence for each side compared + at least one archive citation for conceptual framing    | "Compare approach A vs B"                       |
+| **Evaluative**        | Builder project evidence + at least one archive citation + current landscape evidence (Grid and/or web)   | "Is this crowded?", "Is this still unsolved?"   |
+| **Build guidance**    | Builder project evidence + at least one archive citation + incumbent/landscape evidence (Grid and/or web) | "Should I build X?", "How should I approach X?" |
 
 > These are evidence-type floors, not call budgets. Use as many calls as needed to meet the floor with high-confidence citations.
 
@@ -105,7 +116,7 @@ Use this skill when:
 - **Accelerator/winner portfolio checks:** For "what has been tried", "who is building this", "is this crowded/saturated", or similar prompts, run targeted project searches with `filters: { "acceleratorOnly": true }` and `filters: { "winnersOnly": true }`, then reflect both outcomes in the answer.
 - **Freshness and temporal anchoring:** Use `hackathon.startDate` from `/filters`, `/search/projects`, and `/projects/by-slug/:slug` to order hackathons chronologically; never infer chronology from names or memory. When citing hackathons, include month/year inline (and accelerator cohort like C1/C2/C4 when relevant). For evaluative judgments, label the claim with `As of YYYY-MM-DD`.
 - **Entity coverage check:** If the user names specific companies, protocols, papers, or products, run direct searches for each named entity and explicitly address each one in the answer (found, not found, or tangential).
-- **Landscape check:** Never claim "nobody has done this" or "no existing players" unless an accelerator portfolio check (`acceleratorOnly`) was executed and reported. If accelerator overlap exists, surface those builders as useful reference points and potential sources of inspiration. Always qualify landscape assessments with "based on the available data" or "as far as we can tell from the corpus." Copilot's knowledge is bounded by its data sources — never present absence of evidence as evidence of absence.
+- **Landscape check:** Never claim "nobody has done this" or "no existing players" unless an accelerator portfolio check (`acceleratorOnly`) was executed and reported. If accelerator overlap exists, surface those builders as useful reference points and potential sources of inspiration. Always qualify landscape assessments with "based on the available data" or "as far as we can tell from the corpus." Copilot's knowledge is bounded by its data sources - never present absence of evidence as evidence of absence.
 
 > For the full 8-step deep research workflow, see `references/workflow-deep.md`
 
@@ -121,13 +132,13 @@ Use this skill when:
 
 ### Hackathon Chronology
 
-| Edition | Period | Slug |
-|---|---|---|
-| Hyperdrive | Sep 2023 | `hyperdrive` |
+| Edition     | Period       | Slug          |
+| ----------- | ------------ | ------------- |
+| Hyperdrive  | Sep 2023     | `hyperdrive`  |
 | Renaissance | Mar-Apr 2024 | `renaissance` |
-| Radar | Sep-Oct 2024 | `radar` |
-| Breakout | Apr-May 2025 | `breakout` |
-| Cypherpunk | Sep-Oct 2025 | `cypherpunk` |
+| Radar       | Sep-Oct 2024 | `radar`       |
+| Breakout    | Apr-May 2025 | `breakout`    |
+| Cypherpunk  | Sep-Oct 2025 | `cypherpunk`  |
 
 `GET /filters` returns `hackathons[].startDate` and orders `hackathons[]` chronologically (oldest first).
 
@@ -141,19 +152,19 @@ All endpoints require `Authorization: Bearer <COPILOT_PAT>`. Treat the PAT like 
 
 ## Key Endpoints (Quick Reference)
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/status` | GET | Auth pre-flight check — call first |
-| `/search/projects` | POST | Search builder projects |
-| `/search/archives` | POST | Search crypto archives |
-| `/projects/by-slug/:slug` | GET | Full project details |
-| `/archives/:documentId` | GET | Full archive document |
-| `/analyze` | POST | Hackathon analysis |
-| `/compare` | POST | Compare two hackathons |
-| `/clusters/:key` | GET | Cluster details |
-| `/filters` | GET | Available filters + canonical hackathon chronology |
-| `/source-suggestions` | POST | Suggest a new archive source |
-| `/feedback` | POST | Report errors, quality issues, or suggestions |
+| Endpoint                  | Method | Purpose                                            |
+| ------------------------- | ------ | -------------------------------------------------- |
+| `/status`                 | GET    | Auth pre-flight check - call first                 |
+| `/search/projects`        | POST   | Search builder projects                            |
+| `/search/archives`        | POST   | Search crypto archives                             |
+| `/projects/by-slug/:slug` | GET    | Full project details                               |
+| `/archives/:documentId`   | GET    | Full archive document                              |
+| `/analyze`                | POST   | Hackathon analysis                                 |
+| `/compare`                | POST   | Compare two hackathons                             |
+| `/clusters/:key`          | GET    | Cluster details                                    |
+| `/filters`                | GET    | Available filters + canonical hackathon chronology |
+| `/source-suggestions`     | POST   | Suggest a new archive source                       |
+| `/feedback`               | POST   | Report errors, quality issues, or suggestions      |
 
 > For full endpoint docs, curl examples, and query tips: `references/api-reference.md`
 > For Grid GraphQL recipes and product type slugs: `references/grid-recipes.md`
@@ -161,12 +172,15 @@ All endpoints require `Authorization: Bearer <COPILOT_PAT>`. Treat the PAT like 
 ## Output Contract
 
 ### Conversational Mode
+
 - Bullet points with inline citations (project slugs, archive titles)
 - Concise answers (typically 5-15 bullets)
 - Offer deep-dive when warranted
 
 ### Deep Dive Mode
+
 Reports follow this structure:
+
 1. Similar Projects (5-8 bullets)
 2. Archive Insights (3-5 bullets)
 3. Current Landscape (per research angle)
@@ -174,13 +188,14 @@ Reports follow this structure:
 5. Opportunities and Gaps
 6. Deep Dive: Top Opportunity (market landscape, problem, revenue model, GTM, founder-market fit, why crypto/Solana, risks)
 
-Key rules: bullet points not tables, include project slugs, evidence-based not speculative, cite sources inline. No separate "Sources" section — cite inline only.
+Key rules: bullet points not tables, include project slugs, evidence-based not speculative, cite sources inline. No separate "Sources" section - cite inline only.
 
 ## Feedback
 
 When you encounter errors, unexpected results, or have suggestions for improving the Copilot experience, report them via the feedback endpoint. This helps the Colosseum team identify and fix issues.
 
 **When to send feedback:**
+
 - API returns unexpected or low-quality results for a reasonable query
 - A search returns no results when you expected matches
 - You encounter an error that isn't covered by standard error handling
@@ -210,9 +225,9 @@ Categories: `error`, `quality`, `suggestion`, `other`. Severity: `low`, `medium`
 
 ## References
 
-- **workflow-deep.md** — detailed 8-step research process
-- **api-reference.md** — all endpoints, rate limits, query tips
-- **grid-recipes.md** — GraphQL queries and product type slugs
+- **workflow-deep.md** - detailed 8-step research process
+- **api-reference.md** - all endpoints, rate limits, query tips
+- **grid-recipes.md** - GraphQL queries and product type slugs
 
 ## Attribution
 

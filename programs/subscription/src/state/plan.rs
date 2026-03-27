@@ -6,7 +6,7 @@ pub struct Plan {
     pub merchant: Pubkey,                 // 32
     pub merchant_token_account: Pubkey,   // 32
     pub usdc_mint: Pubkey,                // 32
-    pub merchant_receive_address: Pubkey, // 32 — where funds go (defaults to merchant signer if not specified)
+    pub merchant_receive_address: Pubkey, // 32 - where funds go (defaults to merchant signer if not specified)
     pub plan_id: u64,                     // 8
     pub name: String,                     // 4 + 64
     pub description: String,              // 4 + 256

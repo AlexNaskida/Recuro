@@ -7,7 +7,7 @@ use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct CancelSubscription<'info> {
-    /// Must be subscriber or merchant — validated in handler
+    /// Must be subscriber or merchant - validated in handler
     #[account(mut)]
     pub authority: Signer<'info>,
 

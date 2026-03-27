@@ -30,12 +30,12 @@ import { MOCK_LOGS, type LogEntry } from "@/lib/mock-data";
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function unixToDate(unix: number): string {
-  if (!unix) return "—";
+  if (!unix) return "-";
   return new Date(unix * 1000).toISOString().split("T")[0];
 }
 
 function unixToUtcDateTime(unix: number): string {
-  if (!unix) return "—";
+  if (!unix) return "-";
   return new Date(unix * 1000)
     .toISOString()
     .replace("T", " ")
@@ -221,7 +221,7 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
           <DetailRow
             icon={FileText}
             label="Plan"
-            value={`${entry.plan} — ${truncate(entry.planPubkey || "—", 8, 4)}`}
+            value={`${entry.plan} - ${truncate(entry.planPubkey || "-", 8, 4)}`}
             mono={!!entry.planPubkey}
           />
           <DetailRow
@@ -241,7 +241,7 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
           <DetailRow
             icon={Hash}
             label="Payment #"
-            value={entry.paymentCount > 0 ? `${entry.paymentCount}` : "—"}
+            value={entry.paymentCount > 0 ? `${entry.paymentCount}` : "-"}
           />
           <DetailRow
             icon={Clock}

@@ -1,14 +1,27 @@
 /**
- * My Subscriptions page — shows all subscriptions for the connected wallet.
+ * My Subscriptions page - shows all subscriptions for the connected wallet.
  * Supports pause, resume, and cancel actions per subscription.
  */
 import { useState } from "react";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { ExternalLink, Pause, Play, XCircle, ChevronDown, ChevronUp } from "lucide-react";
 import {
-  Card, CardContent, CardHeader, CardTitle, CardDescription,
-  Button, Badge, Skeleton,
+  ExternalLink,
+  Pause,
+  Play,
+  XCircle,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  Button,
+  Badge,
+  Skeleton,
 } from "@/components/ui";
 import {
   useMySubscriptions,
@@ -18,8 +31,14 @@ import {
   useResumeSubscription,
 } from "@/hooks/useSubscriptions";
 import {
-  cn, formatUSDC, intervalLabel, truncate,
-  formatTs, formatTsRelative, SOLSCAN_ACC, SOLSCAN_TX,
+  cn,
+  formatUSDC,
+  intervalLabel,
+  truncate,
+  formatTs,
+  formatTsRelative,
+  SOLSCAN_ACC,
+  SOLSCAN_TX,
 } from "@/lib/utils";
 import type { SubscriptionAccount } from "@recuro/sdk";
 
@@ -28,29 +47,35 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
   const [expanded, setExpanded] = useState(false);
 
   const { data: plan, isLoading: planLoading } = usePlan(sub.plan.toBase58());
-  const cancel  = useCancelSubscription();
-  const pause   = usePauseSubscription();
-  const resume  = useResumeSubscription();
+  const cancel = useCancelSubscription();
+  const pause = usePauseSubscription();
+  const resume = useResumeSubscription();
 
-  const subKey    = sub.publicKey.toBase58();
+  const subKey = sub.publicKey.toBase58();
   const isMutating = cancel.isPending || pause.isPending || resume.isPending;
 
   const statusVariant =
-    sub.status === "Active"    ? "success" :
-    sub.status === "Paused"    ? "warning" :
-    sub.status === "Cancelled" ? "muted"   : "danger";
+    sub.status === "Active"
+      ? "success"
+      : sub.status === "Paused"
+        ? "warning"
+        : sub.status === "Cancelled"
+          ? "muted"
+          : "danger";
 
   const nextPayment = sub.nextPaymentAt.toNumber();
-  const now         = Math.floor(Date.now() / 1000);
-  const isDue       = nextPayment > 0 && nextPayment <= now;
+  const now = Math.floor(Date.now() / 1000);
+  const isDue = nextPayment > 0 && nextPayment <= now;
 
   return (
-    <Card className={cn(
-      "transition-colors",
-      sub.status === "Active"    ? "border-[hsl(var(--success)/0.2)]" : "",
-      sub.status === "Paused"    ? "border-[hsl(var(--warning)/0.2)]" : "",
-      sub.status === "Cancelled" ? "opacity-60" : "",
-    )}>
+    <Card
+      className={cn(
+        "transition-colors",
+        sub.status === "Active" ? "border-[hsl(var(--success)/0.2)]" : "",
+        sub.status === "Paused" ? "border-[hsl(var(--warning)/0.2)]" : "",
+        sub.status === "Cancelled" ? "opacity-60" : "",
+      )}
+    >
       {/* Collapsed header */}
       <CardHeader
         className="cursor-pointer select-none"
@@ -96,7 +121,9 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
               <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
                 Total paid
               </p>
-              <p className="font-semibold num">{formatUSDC(sub.totalPaid.toNumber())}</p>
+              <p className="font-semibold num">
+                {formatUSDC(sub.totalPaid.toNumber())}
+              </p>
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
@@ -108,14 +135,21 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
               <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
                 Started
               </p>
-              <p className="font-semibold">{formatTs(sub.startedAt.toNumber())}</p>
+              <p className="font-semibold">
+                {formatTs(sub.startedAt.toNumber())}
+              </p>
             </div>
             {sub.status === "Active" && nextPayment > 0 && (
               <div>
                 <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
                   Next payment
                 </p>
-                <p className={cn("font-semibold", isDue ? "text-[hsl(var(--warning))]" : "")}>
+                <p
+                  className={cn(
+                    "font-semibold",
+                    isDue ? "text-[hsl(var(--warning))]" : "",
+                  )}
+                >
                   {isDue ? "Due now" : formatTsRelative(nextPayment)}
                 </p>
               </div>
@@ -125,7 +159,9 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
                 <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
                   Last paid
                 </p>
-                <p className="font-semibold">{formatTsRelative(sub.lastPaidAt.toNumber())}</p>
+                <p className="font-semibold">
+                  {formatTsRelative(sub.lastPaidAt.toNumber())}
+                </p>
               </div>
             )}
             {sub.failedPaymentCount > 0 && (
@@ -143,7 +179,9 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
                 <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--muted-foreground))] mb-1">
                   Trial ends
                 </p>
-                <p className="font-semibold">{formatTs(sub.trialEndsAt.toNumber())}</p>
+                <p className="font-semibold">
+                  {formatTs(sub.trialEndsAt.toNumber())}
+                </p>
               </div>
             )}
           </div>
@@ -151,17 +189,30 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
           {/* PDAs */}
           <div className="rounded-xl bg-[hsl(var(--muted))] p-3 space-y-2 text-xs font-mono">
             <div className="flex justify-between items-center gap-2">
-              <span className="text-[hsl(var(--muted-foreground))]">Subscription PDA</span>
-              <a href={SOLSCAN_ACC(subKey)} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[hsl(var(--primary))] hover:underline">
+              <span className="text-[hsl(var(--muted-foreground))]">
+                Subscription PDA
+              </span>
+              <a
+                href={SOLSCAN_ACC(subKey)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[hsl(var(--primary))] hover:underline"
+              >
                 {truncate(subKey)} <ExternalLink className="h-3 w-3" />
               </a>
             </div>
             <div className="flex justify-between items-center gap-2">
-              <span className="text-[hsl(var(--muted-foreground))]">Plan PDA</span>
-              <a href={SOLSCAN_ACC(sub.plan.toBase58())} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[hsl(var(--primary))] hover:underline">
-                {truncate(sub.plan.toBase58())} <ExternalLink className="h-3 w-3" />
+              <span className="text-[hsl(var(--muted-foreground))]">
+                Plan PDA
+              </span>
+              <a
+                href={SOLSCAN_ACC(sub.plan.toBase58())}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[hsl(var(--primary))] hover:underline"
+              >
+                {truncate(sub.plan.toBase58())}{" "}
+                <ExternalLink className="h-3 w-3" />
               </a>
             </div>
           </div>
@@ -197,7 +248,9 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
                 variant="destructive"
                 size="sm"
                 onClick={() => {
-                  if (confirm("Cancel this subscription? This cannot be undone.")) {
+                  if (
+                    confirm("Cancel this subscription? This cannot be undone.")
+                  ) {
                     cancel.mutate(subKey);
                   }
                 }}
@@ -212,7 +265,10 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
 
           {(cancel.isError || pause.isError || resume.isError) && (
             <p className="text-xs text-[hsl(var(--destructive))]">
-              {((cancel.error || pause.error || resume.error) as Error)?.message}
+              {
+                ((cancel.error || pause.error || resume.error) as Error)
+                  ?.message
+              }
             </p>
           )}
         </CardContent>
@@ -223,25 +279,32 @@ function SubscriptionRow({ sub }: { sub: SubscriptionAccount }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 export function SubscriptionsPage() {
-  const wallet              = useAnchorWallet();
+  const wallet = useAnchorWallet();
   const { data: subs, isLoading } = useMySubscriptions();
 
   const [filter, setFilter] = useState<"all" | "active" | "inactive">("all");
 
-  const filtered = subs?.filter((s) => {
-    if (filter === "active")   return s.status === "Active" || s.status === "Paused";
-    if (filter === "inactive") return s.status === "Cancelled" || s.status === "Expired";
-    return true;
-  }) ?? [];
+  const filtered =
+    subs?.filter((s) => {
+      if (filter === "active")
+        return s.status === "Active" || s.status === "Paused";
+      if (filter === "inactive")
+        return s.status === "Cancelled" || s.status === "Expired";
+      return true;
+    }) ?? [];
 
-  const active    = subs?.filter((s) => s.status === "Active").length ?? 0;
-  const paused    = subs?.filter((s) => s.status === "Paused").length ?? 0;
-  const cancelled = subs?.filter((s) => s.status === "Cancelled" || s.status === "Expired").length ?? 0;
+  const active = subs?.filter((s) => s.status === "Active").length ?? 0;
+  const paused = subs?.filter((s) => s.status === "Paused").length ?? 0;
+  const cancelled =
+    subs?.filter((s) => s.status === "Cancelled" || s.status === "Expired")
+      .length ?? 0;
 
   if (!wallet) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 p-8">
-        <p className="text-[hsl(var(--muted-foreground))]">Connect your wallet to view subscriptions</p>
+        <p className="text-[hsl(var(--muted-foreground))]">
+          Connect your wallet to view subscriptions
+        </p>
         <WalletMultiButton />
       </div>
     );
@@ -251,7 +314,10 @@ export function SubscriptionsPage() {
     <div className="max-w-2xl mx-auto px-6 py-8 space-y-6 animate-[fade-in_0.35s_ease-out]">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)" }}>
+          <h1
+            className="text-2xl font-bold"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             My Subscriptions
           </h1>
           <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
@@ -270,7 +336,7 @@ export function SubscriptionsPage() {
               "rounded-lg px-3 py-1.5 text-sm font-medium capitalize transition-colors",
               filter === f
                 ? "bg-[hsl(var(--primary))] text-white"
-                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]"
+                : "text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]",
             )}
           >
             {f}
@@ -281,7 +347,9 @@ export function SubscriptionsPage() {
       {/* Subscription list */}
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2].map((i) => <Skeleton key={i} className="h-24 w-full" />)}
+          {[1, 2].map((i) => (
+            <Skeleton key={i} className="h-24 w-full" />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <Card>

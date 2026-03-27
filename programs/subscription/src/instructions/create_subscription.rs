@@ -14,17 +14,17 @@ use crate::{
 // Keeper pattern (no Clockwork):
 //   Subscriber approves the Subscription PDA as SPL delegate.
 //   An off-chain keeper watches the chain and calls execute_payment
-//   when next_payment_at is reached. The program validates timing —
+//   when next_payment_at is reached. The program validates timing -
 //   a keeper calling early simply gets skipped (Ok(())).
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Accounts)]
 pub struct CreateSubscription<'info> {
-    /// Subscriber wallet — pays rent, signs once, keeps funds
+    /// Subscriber wallet - pays rent, signs once, keeps funds
     #[account(mut)]
     pub subscriber: Signer<'info>,
 
-    /// Plan PDA — verified active and has capacity
+    /// Plan PDA - verified active and has capacity
     #[account(
         mut,
         seeds = [SEED_PLAN, plan.merchant.as_ref(), &plan.plan_id.to_le_bytes()],
@@ -34,7 +34,7 @@ pub struct CreateSubscription<'info> {
     )]
     pub plan: Account<'info, Plan>,
 
-    /// Subscription PDA — created on first subscribe, reused on re-subscribe after cancel/expiry
+    /// Subscription PDA - created on first subscribe, reused on re-subscribe after cancel/expiry
     #[account(
         init_if_needed,
         payer = subscriber,
@@ -44,7 +44,7 @@ pub struct CreateSubscription<'info> {
     )]
     pub subscription: Account<'info, Subscription>,
 
-    /// Subscriber's USDC ATA — must exist; funds stay here until billing
+    /// Subscriber's USDC ATA - must exist; funds stay here until billing
     #[account(
         mut,
         associated_token::mint      = usdc_mint,
@@ -54,7 +54,7 @@ pub struct CreateSubscription<'info> {
     )]
     pub subscriber_token_account: Account<'info, TokenAccount>,
 
-    /// USDC mint — must match the plan's registered mint
+    /// USDC mint - must match the plan's registered mint
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Account<'info, Mint>,
 

@@ -46,7 +46,7 @@
       "accounts": [
         {
           "name": "authority",
-          "docs": ["Must be subscriber or merchant — validated in handler"],
+          "docs": ["Must be subscriber or merchant - validated in handler"],
           "writable": true,
           "signer": true
         },
@@ -91,7 +91,7 @@
       "accounts": [
         {
           "name": "merchant",
-          "docs": ["Merchant wallet — pays rent, becomes plan authority"],
+          "docs": ["Merchant wallet - pays rent, becomes plan authority"],
           "writable": true,
           "signer": true
         },
@@ -102,7 +102,7 @@
         {
           "name": "merchant_token_account",
           "docs": [
-            "Merchant's USDC ATA — must already exist before creating a plan"
+            "Merchant's USDC ATA - must already exist before creating a plan"
           ],
           "pda": {
             "seeds": [
@@ -135,7 +135,7 @@
         },
         {
           "name": "plan",
-          "docs": ["New Plan PDA — created here, owned by this program"],
+          "docs": ["New Plan PDA - created here, owned by this program"],
           "writable": true,
           "pda": {
             "seeds": [
@@ -188,13 +188,13 @@
       "accounts": [
         {
           "name": "subscriber",
-          "docs": ["Subscriber wallet — pays rent, signs once, keeps funds"],
+          "docs": ["Subscriber wallet - pays rent, signs once, keeps funds"],
           "writable": true,
           "signer": true
         },
         {
           "name": "plan",
-          "docs": ["Plan PDA — verified active and has capacity"],
+          "docs": ["Plan PDA - verified active and has capacity"],
           "writable": true,
           "pda": {
             "seeds": [
@@ -217,7 +217,7 @@
         },
         {
           "name": "subscription",
-          "docs": ["New Subscription PDA — one per (plan, subscriber) pair"],
+          "docs": ["New Subscription PDA - one per (plan, subscriber) pair"],
           "writable": true,
           "pda": {
             "seeds": [
@@ -241,7 +241,7 @@
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA — must exist; funds stay here until billing"
+            "Subscriber's USDC ATA - must exist; funds stay here until billing"
           ],
           "writable": true,
           "pda": {
@@ -275,7 +275,7 @@
         },
         {
           "name": "usdc_mint",
-          "docs": ["USDC mint — must match the plan's registered mint"]
+          "docs": ["USDC mint - must match the plan's registered mint"]
         },
         {
           "name": "token_program",
@@ -303,13 +303,13 @@
         {
           "name": "keeper",
           "docs": [
-            "Anyone may call this — timing is enforced by the program, not the signer."
+            "Anyone may call this - timing is enforced by the program, not the signer."
           ],
           "signer": true
         },
         {
           "name": "config",
-          "docs": ["Protocol config — reads fee_bps and treasury"],
+          "docs": ["Protocol config - reads fee_bps and treasury"],
           "pda": {
             "seeds": [
               {
@@ -350,18 +350,18 @@
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA — source of ALL funds (plan amount + fee)"
+            "Subscriber's USDC ATA - source of ALL funds (plan amount + fee)"
           ],
           "writable": true
         },
         {
           "name": "merchant_token_account",
-          "docs": ["Merchant's USDC ATA — receives the full plan amount"],
+          "docs": ["Merchant's USDC ATA - receives the full plan amount"],
           "writable": true
         },
         {
           "name": "treasury_token_account",
-          "docs": ["Protocol treasury ATA — receives the fee"],
+          "docs": ["Protocol treasury ATA - receives the fee"],
           "writable": true
         },
         {
@@ -682,7 +682,7 @@
     {
       "code": 6009,
       "name": "SubscriptionPaused",
-      "msg": "Subscription is paused — resume before performing this action"
+      "msg": "Subscription is paused - resume before performing this action"
     },
     {
       "code": 6010,
@@ -747,12 +747,12 @@
     {
       "code": 6022,
       "name": "ArithmeticOverflow",
-      "msg": "Arithmetic overflow — value exceeds safe bounds"
+      "msg": "Arithmetic overflow - value exceeds safe bounds"
     },
     {
       "code": 6023,
       "name": "ArithmeticUnderflow",
-      "msg": "Arithmetic underflow — value would go below zero"
+      "msg": "Arithmetic underflow - value would go below zero"
     }
   ],
   "types": [

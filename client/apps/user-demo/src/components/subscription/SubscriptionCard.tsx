@@ -230,10 +230,10 @@ export function SubscriptionCard({ sub }: { sub: SubscriptionAccount }) {
                 {isActive
                   ? nextPay > 0
                     ? formatTs(nextPay)
-                    : "—"
+                    : "-"
                   : lastPay > 0
                     ? formatTs(lastPay)
-                    : "—"}
+                    : "-"}
               </p>
               {isActive && nextPay > 0 && (
                 <p className="text-[11px] text-muted-foreground mt-0.5">

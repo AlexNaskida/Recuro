@@ -1,5 +1,5 @@
 // ============================================================
-// solana-subscription — Non-custodial recurring USDC payments
+// solana-subscription - Non-custodial recurring USDC payments
 //
 // Funds stay in the subscriber's wallet until each billing event.
 // An off-chain keeper calls execute_payment when next_payment_at

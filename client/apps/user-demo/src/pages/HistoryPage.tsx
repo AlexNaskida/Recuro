@@ -1,5 +1,5 @@
 /**
- * Payment History page — shows a timeline of all past payments.
+ * Payment History page - shows a timeline of all past payments.
  */
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";

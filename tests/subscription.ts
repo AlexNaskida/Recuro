@@ -1,14 +1,14 @@
 /**
  * ═══════════════════════════════════════════════════════════════════════════════
- * SOLANA SUBSCRIPTION PROTOCOL — FULL TEST SUITE
+ * SOLANA SUBSCRIPTION PROTOCOL - FULL TEST SUITE
  * ═══════════════════════════════════════════════════════════════════════════════
  *
- * STEP 1 — change ONE line in programs/subscription/src/constants.rs:
+ * STEP 1 - change ONE line in programs/subscription/src/constants.rs:
  *   pub const MIN_INTERVAL_SECONDS: i64 = 1;   // was 86_400
  * Then run:  anchor test --provider.cluster localnet
  *
  * ─────────────────────────────────────────────────────────────────────────────
- * ANCHOR 0.32 ACCOUNT RESOLUTION — FINAL CONFIRMED RULES
+ * ANCHOR 0.32 ACCOUNT RESOLUTION - FINAL CONFIRMED RULES
  * ─────────────────────────────────────────────────────────────────────────────
  * There are TWO resolution strategies Anchor supports. Only ONE works reliably:
  *
@@ -75,7 +75,7 @@ import type { Subscription } from "../target/types/subscription";
 const USDC_DECIMALS = 6;
 const USDC_FACTOR = 1_000_000;
 const PLAN_AMOUNT = new BN(10 * USDC_FACTOR); // $10.00
-const INTERVAL_S = new BN(1); // 1 sec — requires MIN_INTERVAL_SECONDS=1
+const INTERVAL_S = new BN(1); // 1 sec - requires MIN_INTERVAL_SECONDS=1
 const TRIAL_S = new BN(0);
 const MAX_SUBS = new BN(100);
 const FEE_BPS = 25; // 0.25%
@@ -145,7 +145,7 @@ function section(title: string) {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 // ═══════════════════════════════════════════════════════════════════════════════
-describe("Solana Subscription Protocol — Full Suite", () => {
+describe("Solana Subscription Protocol - Full Suite", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const program = anchor.workspace.Subscription as Program<Subscription>;
@@ -392,7 +392,7 @@ describe("Solana Subscription Protocol — Full Suite", () => {
 
       const tx = await program.methods
         .updatePlan({
-          name: "Pro Monthly — Updated",
+          name: "Pro Monthly - Updated",
           description: null,
           maxSubscribers: new BN(200),
         })
@@ -409,7 +409,7 @@ describe("Solana Subscription Protocol — Full Suite", () => {
         after.maxSubscribers.toString(),
       );
 
-      assert.equal(after.name, "Pro Monthly — Updated");
+      assert.equal(after.name, "Pro Monthly - Updated");
       assert.isTrue(after.maxSubscribers.eqn(200));
       console.log("  ✓ Plan updated");
     });
@@ -492,7 +492,7 @@ describe("Solana Subscription Protocol — Full Suite", () => {
       console.log(
         "  Balance after:  ",
         formatUSDC(tokenAcct.amount),
-        "(unchanged — funds stay in wallet)",
+        "(unchanged - funds stay in wallet)",
       );
 
       assert.deepEqual(sub.subscriber, subscriber.publicKey);
@@ -740,7 +740,7 @@ describe("Solana Subscription Protocol — Full Suite", () => {
       for (let attempt = 1; attempt <= 3; attempt++) {
         await sleep(1500);
         console.log(
-          `\n  Attempt ${attempt}/3 (insufficient balance — returns Ok, logs failure)...`,
+          `\n  Attempt ${attempt}/3 (insufficient balance - returns Ok, logs failure)...`,
         );
 
         // execute_payment returns Ok() on insufficient balance; records failure internally

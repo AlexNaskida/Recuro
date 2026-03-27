@@ -1,5 +1,5 @@
 /**
- * Recuro Keeper — Production Payment Executor
+ * Recuro Keeper - Production Payment Executor
  *
  * Watches all active subscriptions on-chain and calls execute_payment
  * when next_payment_at is reached. Runs as a daemon, retries on failure.
@@ -8,10 +8,10 @@
  *   node keeper.mjs
  *
  * Env vars:
- *   RPC_URL        — Solana RPC endpoint (use Helius/Alchemy, not public)
- *   KEEPER_KEYPAIR — path to keypair JSON (default: ~/.config/solana/id.json)
- *   POLL_INTERVAL  — seconds between polls (default: 60)
- *   DRY_RUN        — "true" to simulate without submitting
+ *   RPC_URL        - Solana RPC endpoint (use Helius/Alchemy, not public)
+ *   KEEPER_KEYPAIR - path to keypair JSON (default: ~/.config/solana/id.json)
+ *   POLL_INTERVAL  - seconds between polls (default: 60)
+ *   DRY_RUN        - "true" to simulate without submitting
  */
 
 import * as anchor from "@coral-xyz/anchor";
@@ -281,7 +281,7 @@ async function executePayment(subPubkey, subAccount, config) {
     return "error";
   }
 
-  // All account addresses sourced from on-chain state — keeper cannot manipulate them
+  // All account addresses sourced from on-chain state - keeper cannot manipulate them
   const subscriberTokenAccount = subAccount.subscriberTokenAccount; // from Subscription PDA
   const merchantTokenAccount = plan.merchantTokenAccount; // from Plan PDA
   const treasuryTokenAccount = await getAssociatedTokenAddress(
@@ -343,7 +343,7 @@ async function executePayment(subPubkey, subAccount, config) {
     } catch (err) {
       const msg = err?.message ?? String(err);
 
-      // Program silently returned Ok() — not due yet or already cancelled
+      // Program silently returned Ok() - not due yet or already cancelled
       if (msg.includes("SubscriptionNotActive") || msg.includes("skipped")) {
         log("skip", "Program skipped payment (not active or not due)", {
           subscription: subPubkey.toBase58(),
@@ -354,7 +354,7 @@ async function executePayment(subPubkey, subAccount, config) {
       if (attempt < MAX_RETRIES) {
         log(
           "warn",
-          `Attempt ${attempt}/${MAX_RETRIES} failed — retrying in ${RETRY_DELAY_MS / 1000}s`,
+          `Attempt ${attempt}/${MAX_RETRIES} failed - retrying in ${RETRY_DELAY_MS / 1000}s`,
           {
             subscription: subPubkey.toBase58(),
             error: msg.slice(0, 120),
@@ -364,7 +364,7 @@ async function executePayment(subPubkey, subAccount, config) {
       } else {
         log(
           "error",
-          `Failed after ${MAX_RETRIES} attempts — marking as permanent failure for this session`,
+          `Failed after ${MAX_RETRIES} attempts - marking as permanent failure for this session`,
           {
             subscription: subPubkey.toBase58(),
             error: msg.slice(0, 200),
@@ -444,19 +444,19 @@ async function main() {
   log("info", `Keeper balance: ${(balance / 1e9).toFixed(4)} SOL`);
 
   if (balance < 10_000_000) {
-    log("warn", "Low SOL — fund keeper before production use");
+    log("warn", "Low SOL - fund keeper before production use");
     if (RPC_URL.includes("devnet")) {
       try {
         await connection.requestAirdrop(keeperKeypair.publicKey, 1_000_000_000);
         await sleep(2_000);
         log("success", "Devnet airdrop received (1 SOL)");
       } catch {
-        log("warn", "Airdrop failed — run: solana airdrop 1");
+        log("warn", "Airdrop failed - run: solana airdrop 1");
       }
     }
   }
 
-  // Load protocol config — required for treasury ATA derivation
+  // Load protocol config - required for treasury ATA derivation
   let config;
   try {
     config = await withLoadingBar("Fetch protocol config", () =>
@@ -467,7 +467,7 @@ async function main() {
       treasury: config.treasury.toBase58(),
     });
   } catch {
-    log("error", "Protocol config not found at PDA — run initialize first");
+    log("error", "Protocol config not found at PDA - run initialize first");
     process.exit(1);
   }
 

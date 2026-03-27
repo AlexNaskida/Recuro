@@ -5,7 +5,7 @@ import { useMySubscriptions, useMerchantPlans } from "@/hooks/index";
 import type { SubscriptionAccount } from "@recuro/sdk";
 import { MERCHANT } from "@/lib/config";
 
-// ── Plan list — auto-fetches all plans for the merchant ───────────────────────
+// ── Plan list - auto-fetches all plans for the merchant ───────────────────────
 function PlanList() {
   const { data: plans = [], isLoading, isError } = useMerchantPlans(MERCHANT);
   const { data: mySubscriptions = [] } = useMySubscriptions();

@@ -25,7 +25,7 @@ pub enum SubscriptionError {
     ActiveSubscriptionExists,
     #[msg("Subscription is not in Active status")]
     SubscriptionNotActive,
-    #[msg("Subscription is paused — resume before performing this action")]
+    #[msg("Subscription is paused - resume before performing this action")]
     SubscriptionPaused,
     #[msg("Subscription has already been cancelled")]
     AlreadyCancelled,
@@ -59,9 +59,9 @@ pub enum SubscriptionError {
     FeeTooHigh,
 
     // ── Arithmetic ────────────────────────────────────────────────────────────
-    #[msg("Arithmetic overflow — value exceeds safe bounds")]
+    #[msg("Arithmetic overflow - value exceeds safe bounds")]
     ArithmeticOverflow,
-    #[msg("Arithmetic underflow — value would go below zero")]
+    #[msg("Arithmetic underflow - value would go below zero")]
     ArithmeticUnderflow,
     // ── Plan deletion ─────────────────────────────────────────────────────────
     #[msg("Plan must be archived before it can be deleted")]

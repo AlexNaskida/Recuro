@@ -18,15 +18,15 @@ use crate::{
 //   fee = plan_amount * fee_bps / 10_000
 //
 // Caller: any keeper (off-chain bot that watches next_payment_at).
-// The program validates timing — early calls are silently skipped.
+// The program validates timing - early calls are silently skipped.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Accounts)]
 pub struct ExecutePayment<'info> {
-    /// Anyone may call this — timing is enforced by the program, not the signer.
+    /// Anyone may call this - timing is enforced by the program, not the signer.
     pub keeper: Signer<'info>,
 
-    /// Protocol config — reads fee_bps and treasury
+    /// Protocol config - reads fee_bps and treasury
     #[account(seeds = [b"config"], bump = config.bump)]
     pub config: Account<'info, ProtocolConfig>,
 
@@ -41,7 +41,7 @@ pub struct ExecutePayment<'info> {
     #[account(mut, address = subscription.plan)]
     pub plan: Account<'info, Plan>,
 
-    /// Subscriber's USDC ATA — source of ALL funds (plan amount + fee)
+    /// Subscriber's USDC ATA - source of ALL funds (plan amount + fee)
     #[account(
         mut,
         address = subscription.subscriber_token_account
@@ -49,7 +49,7 @@ pub struct ExecutePayment<'info> {
     )]
     pub subscriber_token_account: Account<'info, TokenAccount>,
 
-    /// Merchant's USDC ATA — receives the full plan amount
+    /// Merchant's USDC ATA - receives the full plan amount
     #[account(
         mut,
         address = plan.merchant_token_account
@@ -57,7 +57,7 @@ pub struct ExecutePayment<'info> {
     )]
     pub merchant_token_account: Account<'info, TokenAccount>,
 
-    /// Protocol treasury ATA — receives the fee
+    /// Protocol treasury ATA - receives the fee
     #[account(
         mut,
         constraint = treasury_token_account.owner == config.treasury
@@ -236,7 +236,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             payment_count: subscription.payment_count,
             timestamp: now,
         });
-        msg!("[execute_payment] 12 cycles complete — subscription expired cleanly");
+        msg!("[execute_payment] 12 cycles complete - subscription expired cleanly");
     } else {
         subscription.next_payment_at = now
             .checked_add(plan.interval_seconds)

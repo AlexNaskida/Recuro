@@ -26,11 +26,11 @@ Registers Phantom and Solflare adapters. Imported in `src/main.tsx`.
 
 PDA derivation helpers matching the Rust seed constants:
 
-- `getPlanPDA(merchant, planId)` — seeds: `["plan", merchant, planId_le8]`
-- `getSubscriptionPDA(plan, subscriber)` — seeds: `["subscription", plan, subscriber]`
-- `getConfigPDA()` — seeds: `["config"]`
-- `microToUsdc(bn)` — divides by 1_000_000
-- `usdcToMicro(n)` — multiplies by 1_000_000, returns BN
+- `getPlanPDA(merchant, planId)` - seeds: `["plan", merchant, planId_le8]`
+- `getSubscriptionPDA(plan, subscriber)` - seeds: `["subscription", plan, subscriber]`
+- `getConfigPDA()` - seeds: `["config"]`
+- `microToUsdc(bn)` - divides by 1_000_000
+- `usdcToMicro(n)` - multiplies by 1_000_000, returns BN
 
 ### `src/hooks/useAnchorProgram.ts`
 
@@ -125,8 +125,8 @@ Connect Wallet button was a no-op. Disconnect was a no-op.
 
 **After:**
 
-- Uses `usePlans()` hook — shows real on-chain plans or mock with banner
-- Uses `useCreatePlan()` hook — submits real Anchor transaction on form submit
+- Uses `usePlans()` hook - shows real on-chain plans or mock with banner
+- Uses `useCreatePlan()` hook - submits real Anchor transaction on form submit
 - Shows `Alert` banner when displaying demo data
 - Loading skeleton while fetching
 - Form fields wired to state: name, description, price, interval, trialDays, maxSubscribers
@@ -140,14 +140,14 @@ Connect Wallet button was a no-op. Disconnect was a no-op.
 
 **After:**
 
-- Uses `useSubscribers()` hook — shows real on-chain data or mock with banner
+- Uses `useSubscribers()` hook - shows real on-chain data or mock with banner
 - Loading skeleton rows while fetching
 - Status filter now includes "expired" and "paused" (matching real on-chain statuses)
 - Plan filter dynamically populated from actual subscriber data
 
 ---
 
-## After anchor deploy — Final wiring steps
+## After anchor deploy - Final wiring steps
 
 1. Copy IDL:
 
@@ -176,6 +176,6 @@ Connect Wallet button was a no-op. Disconnect was a no-op.
 
 ## What still uses mock data
 
-- `src/pages/Analytics.tsx` — charts still use `mock-data.ts`. Wire to `usePlans` + `useSubscribers` for real analytics.
-- `src/pages/Dashboard.tsx` — KPI cards and charts use mock data. Wire to `usePlans` + `useSubscribers`.
-- `src/lib/mock-data.ts` — kept as fallback, no changes needed.
+- `src/pages/Analytics.tsx` - charts still use `mock-data.ts`. Wire to `usePlans` + `useSubscribers` for real analytics.
+- `src/pages/Dashboard.tsx` - KPI cards and charts use mock data. Wire to `usePlans` + `useSubscribers`.
+- `src/lib/mock-data.ts` - kept as fallback, no changes needed.

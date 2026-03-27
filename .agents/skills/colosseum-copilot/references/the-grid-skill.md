@@ -15,14 +15,17 @@ export THEGRID_GRAPHQL_ENDPOINT="https://beta.node.thegrid.id/graphql"
 ```
 
 GraphiQL (default endpoint):
+
 - https://cloud.hasura.io/public/graphiql?endpoint=https%3A%2F%2Fbeta.node.thegrid.id%2Fgraphql
 
 Docs:
+
 - https://docs.thegrid.id/using-the-api-11
 
 ## Auth (Optional)
 
 Most dataset queries work without an API key. The Grid docs state: "There is currently no key needed":
+
 - https://docs.thegrid.id/getting-an-api-key-9
 
 If you have a key (enterprise / future), send it as an HTTP header:
@@ -50,19 +53,21 @@ Node.js (built-in `fetch`):
 
 ```js
 const endpoint =
-  process.env.THEGRID_GRAPHQL_ENDPOINT ?? 'https://beta.node.thegrid.id/graphql';
+  process.env.THEGRID_GRAPHQL_ENDPOINT ??
+  "https://beta.node.thegrid.id/graphql";
 
-const headers = { 'content-type': 'application/json' };
-if (process.env.THEGRID_API_KEY) headers['x-api-key'] = process.env.THEGRID_API_KEY;
+const headers = { "content-type": "application/json" };
+if (process.env.THEGRID_API_KEY)
+  headers["x-api-key"] = process.env.THEGRID_API_KEY;
 
 const payload = {
   query:
-    'query($q:String!,$limit:Int!){products(limit:$limit,where:{_or:[{name:{_contains:$q}},{description:{_contains:$q}}]}){id name root{slug urlMain}}}',
-  variables: { q: 'jupiter', limit: 5 },
+    "query($q:String!,$limit:Int!){products(limit:$limit,where:{_or:[{name:{_contains:$q}},{description:{_contains:$q}}]}){id name root{slug urlMain}}}",
+  variables: { q: "jupiter", limit: 5 },
 };
 
 const res = await fetch(endpoint, {
-  method: 'POST',
+  method: "POST",
   headers,
   body: JSON.stringify(payload),
 });
@@ -139,7 +144,9 @@ List fields for a type:
 ```graphql
 query FieldsForRoots {
   __type(name: "Roots") {
-    fields { name }
+    fields {
+      name
+    }
   }
 }
 ```
@@ -149,7 +156,9 @@ List filter input fields for a bool exp type:
 ```graphql
 query RootRelationshipFilters {
   __type(name: "RootRelationshipsBoolExp") {
-    inputFields { name }
+    inputFields {
+      name
+    }
   }
 }
 ```
@@ -158,23 +167,23 @@ query RootRelationshipFilters {
 
 The strongest precision lever for incumbent discovery is filtering by `productType.slug`. There are 115 product type slugs total. Map your research topic to slugs using this guide:
 
-| Research Topic | Suggested `productType` Slugs |
-|---|---|
-| DeFi lending | `decentralised_borrowing_and_lending`, `yield_aggregator` |
-| Payments | `merchant_payment_gateway`, `on_off_ramp`, `payments_infrastructure_and_orchestration` |
-| DEX / trading | `decentralised_exchange`, `dex_aggregator`, `derivatives` |
-| Infrastructure | `developer_tooling`, `onchain_data_api`, `block_explorer`, `rpc_provider` |
-| Staking | `liquid_staking`, `staking_service` |
-| Cross-chain | `bridge`, `cross_chain_infrastructure` |
-| AI agents | `ai_agent`, `ai_agent_platform`, `ai_agent_framework` |
-| Gaming | `game`, `blockchain_gaming_infrastructure` |
-| Identity | `decentralised_identity` |
-| Stablecoins | `stablecoin_issuance` |
-| NFTs | `nft_marketplace`, `nft_issuance_platform` |
-| DePin | `depin` |
-| Prediction markets | `prediction_markets` |
-| Oracles | `oracle` |
-| Wallets | `wallet`, `embedded_wallet`, `hardware_wallet` |
+| Research Topic     | Suggested `productType` Slugs                                                          |
+| ------------------ | -------------------------------------------------------------------------------------- |
+| DeFi lending       | `decentralised_borrowing_and_lending`, `yield_aggregator`                              |
+| Payments           | `merchant_payment_gateway`, `on_off_ramp`, `payments_infrastructure_and_orchestration` |
+| DEX / trading      | `decentralised_exchange`, `dex_aggregator`, `derivatives`                              |
+| Infrastructure     | `developer_tooling`, `onchain_data_api`, `block_explorer`, `rpc_provider`              |
+| Staking            | `liquid_staking`, `staking_service`                                                    |
+| Cross-chain        | `bridge`, `cross_chain_infrastructure`                                                 |
+| AI agents          | `ai_agent`, `ai_agent_platform`, `ai_agent_framework`                                  |
+| Gaming             | `game`, `blockchain_gaming_infrastructure`                                             |
+| Identity           | `decentralised_identity`                                                               |
+| Stablecoins        | `stablecoin_issuance`                                                                  |
+| NFTs               | `nft_marketplace`, `nft_issuance_platform`                                             |
+| DePin              | `depin`                                                                                |
+| Prediction markets | `prediction_markets`                                                                   |
+| Oracles            | `oracle`                                                                               |
+| Wallets            | `wallet`, `embedded_wallet`, `hardware_wallet`                                         |
 
 **Top 30 by count:** `developer_tooling` (599), `wallet` (331), `decentralised_exchange` (207), `centralised_exchange` (182), `financial_services_platform` (174), `merchant_payment_gateway` (159), `on_off_ramp` (145), `l1` (144), `payments_infrastructure_and_orchestration` (136), `game` (131), `decentralised_borrowing_and_lending` (114), `yield_aggregator` (113), `block_explorer` (113), `ai_agent` (104), `bridge` (101), `onchain_data_api` (100), `dex_aggregator` (81), `depin` (80), `ai_agent_platform` (77), `cross_chain_infrastructure` (73), `stablecoin_issuance` (71), `nft_marketplace` (68), `peer_to_peer_and_remittance` (67), `decentralised_identity` (55), `oracle` (46), `derivatives` (46), `embedded_wallet` (46), `rpc_provider` (44), `prediction_markets` (28), `ai_agent_framework` (27). Query `productTypes` for the full list.
 
@@ -182,7 +191,7 @@ The strongest precision lever for incumbent discovery is filtering by `productTy
 
 Three approaches with different coverage/precision trade-offs. **For maximum recall, combine all three with `_or`** (see Vertical Search recipe below).
 
-**Option A: Profile tags** (broadest — recommended default)
+**Option A: Profile tags** (broadest - recommended default)
 
 ```graphql
 where: {
@@ -206,7 +215,7 @@ where: {
 }
 ```
 
-**Option C: CAIP-2 attribute** (narrow, limited coverage — use as supplement)
+**Option C: CAIP-2 attribute** (narrow, limited coverage - use as supplement)
 
 ```graphql
 where: {
@@ -222,6 +231,7 @@ Other ecosystem tags with profile coverage: `ethereum` (1,371), `tether` (1,337)
 ## High-Value Query Recipes (Idea Research)
 
 Each recipe includes:
+
 - When to use it
 - A complete GraphQL query
 - A ready-to-run `curl` invocation using variables
@@ -230,7 +240,7 @@ All `curl` examples assume you have set `THEGRID_GRAPHQL_ENDPOINT` and built the
 
 ### Vertical Search (Category + Solana Scoping)
 
-When to use: incumbent search for a specific vertical. This is the **highest-precision starting point** — map your topic to `productType` slugs (see taxonomy above) and combine with triple-OR Solana ecosystem scoping for maximum recall.
+When to use: incumbent search for a specific vertical. This is the **highest-precision starting point** - map your topic to `productType` slugs (see taxonomy above) and combine with triple-OR Solana ecosystem scoping for maximum recall.
 
 ```graphql
 query VerticalSearch(
@@ -247,7 +257,13 @@ query VerticalSearch(
         { productType: { slug: { _in: $typeSlugs } } }
         {
           _or: [
-            { productDeployments: { smartContractDeployment: { deployedOnProduct: { name: { _eq: $chain } } } } }
+            {
+              productDeployments: {
+                smartContractDeployment: {
+                  deployedOnProduct: { name: { _eq: $chain } }
+                }
+              }
+            }
             { supportsProducts: { supportsProduct: { name: { _eq: $chain } } } }
             { root: { profileTags: { tag: { slug: { _eq: $tag } } } } }
           ]
@@ -258,9 +274,20 @@ query VerticalSearch(
   ) {
     id
     name
-    productType { slug name }
-    productStatus { slug }
-    root { slug urlMain gridRank { score } }
+    productType {
+      slug
+      name
+    }
+    productStatus {
+      slug
+    }
+    root {
+      slug
+      urlMain
+      gridRank {
+        score
+      }
+    }
   }
 }
 ```
@@ -286,7 +313,16 @@ query BroadKeyword($q: String!, $dead: [String!]!, $limit: Int!) {
             { name: { _contains: $q } }
             { description: { _contains: $q } }
             { root: { slug: { _contains: $q } } }
-            { root: { entities: { _or: [{ name: { _contains: $q } }, { tradeName: { _contains: $q } }] } } }
+            {
+              root: {
+                entities: {
+                  _or: [
+                    { name: { _contains: $q } }
+                    { tradeName: { _contains: $q } }
+                  ]
+                }
+              }
+            }
           ]
         }
         { _not: { productStatus: { slug: { _in: $dead } } } }
@@ -296,9 +332,17 @@ query BroadKeyword($q: String!, $dead: [String!]!, $limit: Int!) {
     id
     name
     description
-    productType { slug name }
-    productStatus { slug }
-    root { slug urlMain }
+    productType {
+      slug
+      name
+    }
+    productStatus {
+      slug
+    }
+    root {
+      slug
+      urlMain
+    }
   }
 }
 ```
@@ -325,9 +369,21 @@ query SearchProducts($q: String!, $limit: Int!) {
     name
     description
     launchDate
-    productType { slug name }
-    productStatus { slug name }
-    root { slug urlMain gridRank { score } }
+    productType {
+      slug
+      name
+    }
+    productStatus {
+      slug
+      name
+    }
+    root {
+      slug
+      urlMain
+      gridRank {
+        score
+      }
+    }
   }
 }
 ```
@@ -346,15 +402,37 @@ When to use: find organizations/companies (entities) and jump to the related roo
 query SearchEntities($q: String!, $limit: Int!) {
   entities(
     limit: $limit
-    where: { _or: [{ name: { _contains: $q } }, { tradeName: { _contains: $q } }] }
+    where: {
+      _or: [{ name: { _contains: $q } }, { tradeName: { _contains: $q } }]
+    }
   ) {
     id
     name
     tradeName
-    country { name }
-    root { slug urlMain }
-    urls { url urlType { slug name } }
-    socials { name socialType { slug name } urls { url } }
+    country {
+      name
+    }
+    root {
+      slug
+      urlMain
+    }
+    urls {
+      url
+      urlType {
+        slug
+        name
+      }
+    }
+    socials {
+      name
+      socialType {
+        slug
+        name
+      }
+      urls {
+        url
+      }
+    }
   }
 }
 ```
@@ -375,15 +453,32 @@ query RootProfile($slug: String!) {
     id
     slug
     urlMain
-    gridRank { score }
+    gridRank {
+      score
+    }
     profileInfos {
       tagLine
       descriptionShort
       descriptionLong
       descriptionMarketing
     }
-    urls { url urlType { slug name } }
-    socials { name socialType { slug name } urls { url } }
+    urls {
+      url
+      urlType {
+        slug
+        name
+      }
+    }
+    socials {
+      name
+      socialType {
+        slug
+        name
+      }
+      urls {
+        url
+      }
+    }
     products(
       limit: 10
       order_by: { name: Asc }
@@ -391,8 +486,14 @@ query RootProfile($slug: String!) {
     ) {
       id
       name
-      productType { slug name }
-      productStatus { slug name }
+      productType {
+        slug
+        name
+      }
+      productStatus {
+        slug
+        name
+      }
     }
   }
 }
@@ -413,8 +514,13 @@ query TopRoots($limit: Int!) {
   roots(limit: $limit, order_by: { gridRank: { score: Desc } }) {
     slug
     urlMain
-    gridRank { score }
-    profileInfos { tagLine descriptionShort }
+    gridRank {
+      score
+    }
+    profileInfos {
+      tagLine
+      descriptionShort
+    }
   }
 }
 ```
@@ -433,11 +539,18 @@ Find tag slugs by keyword:
 
 ```graphql
 query SearchTags($q: String!, $limit: Int!) {
-  tags(limit: $limit, where: { name: { _contains: $q } }, order_by: { name: Asc }) {
+  tags(
+    limit: $limit
+    where: { name: { _contains: $q } }
+    order_by: { name: Asc }
+  ) {
     id
     slug
     name
-    tagType { slug name }
+    tagType {
+      slug
+      name
+    }
   }
 }
 ```
@@ -457,8 +570,17 @@ query RootsByTag($tag: String!, $limit: Int!) {
     where: { tag: { slug: { _eq: $tag } } }
     order_by: { root: { gridRank: { score: Desc } } }
   ) {
-    root { slug urlMain gridRank { score } }
-    tag { slug name }
+    root {
+      slug
+      urlMain
+      gridRank {
+        score
+      }
+    }
+    tag {
+      slug
+      name
+    }
   }
 }
 ```
@@ -486,7 +608,9 @@ query RootsByAttribute($attrSlug: String!, $needle: String!, $limit: Int!) {
   ) {
     slug
     urlMain
-    attributes(where: { attributeType: { slug: { _eq: $attrSlug } } }) { value }
+    attributes(where: { attributeType: { slug: { _eq: $attrSlug } } }) {
+      value
+    }
   }
 }
 ```
@@ -505,7 +629,10 @@ Step A: find the chain "product id" (example: Solana Mainnet).
 
 ```graphql
 query FindChainProduct($q: String!) {
-  products(limit: 10, where: { name: { _contains: $q } }) { id name }
+  products(limit: 10, where: { name: { _contains: $q } }) {
+    id
+    name
+  }
 }
 ```
 
@@ -529,13 +656,27 @@ query ProductsDeployedOn($deployedOnId: String!, $limit: Int!) {
   ) {
     id
     name
-    productType { slug name }
-    productStatus { slug name }
-    root { slug urlMain }
+    productType {
+      slug
+      name
+    }
+    productStatus {
+      slug
+      name
+    }
+    root {
+      slug
+      urlMain
+    }
     productDeployments(limit: 2) {
       smartContractDeployment {
-        deployedOnProduct { name }
-        smartContracts(limit: 2) { address name }
+        deployedOnProduct {
+          name
+        }
+        smartContracts(limit: 2) {
+          address
+          name
+        }
       }
     }
   }
@@ -558,15 +699,28 @@ query SolanaByTag($tag: String!, $limit: Int!) {
     limit: $limit
     where: {
       root: { profileTags: { tag: { slug: { _eq: $tag } } } }
-      _not: { productStatus: { slug: { _in: ["discontinued", "support_ended"] } } }
+      _not: {
+        productStatus: { slug: { _in: ["discontinued", "support_ended"] } }
+      }
     }
     order_by: { root: { gridRank: { score: Desc } } }
   ) {
     id
     name
-    productType { slug name }
-    productStatus { slug }
-    root { slug urlMain gridRank { score } }
+    productType {
+      slug
+      name
+    }
+    productStatus {
+      slug
+    }
+    root {
+      slug
+      urlMain
+      gridRank {
+        score
+      }
+    }
   }
 }
 ```
@@ -586,12 +740,29 @@ query ProductSupportGraph($productId: String!) {
   productsById(id: $productId) {
     id
     name
-    root { slug urlMain }
+    root {
+      slug
+      urlMain
+    }
     supportsProducts(limit: 25) {
-      supportsProduct { id name root { slug urlMain } }
+      supportsProduct {
+        id
+        name
+        root {
+          slug
+          urlMain
+        }
+      }
     }
     supportsProductsBySupportsProductId(limit: 25) {
-      product { id name root { slug urlMain } }
+      product {
+        id
+        name
+        root {
+          slug
+          urlMain
+        }
+      }
     }
   }
 }
@@ -616,8 +787,14 @@ query FindAssetByTicker($ticker: String!) {
     name
     ticker
     description
-    assetType { slug name }
-    root { slug urlMain }
+    assetType {
+      slug
+      name
+    }
+    root {
+      slug
+      urlMain
+    }
   }
 }
 ```
@@ -636,10 +813,23 @@ query AssetRelationships($assetId: String!) {
     id
     name
     ticker
-    root { slug urlMain }
+    root {
+      slug
+      urlMain
+    }
     productAssetRelationships(limit: 25) {
-      assetSupportType { slug name }
-      product { id name root { slug urlMain } }
+      assetSupportType {
+        slug
+        name
+      }
+      product {
+        id
+        name
+        root {
+          slug
+          urlMain
+        }
+      }
     }
   }
 }
@@ -659,7 +849,11 @@ Step A: resolve a root slug to a root id.
 
 ```graphql
 query RootId($slug: String!) {
-  roots(limit: 1, where: { slug: { _eq: $slug } }) { id slug urlMain }
+  roots(limit: 1, where: { slug: { _eq: $slug } }) {
+    id
+    slug
+    urlMain
+  }
 }
 ```
 
@@ -674,8 +868,15 @@ Step B: fetch relationships by `parentRootId` (filtering by slug is not supporte
 ```graphql
 query RootRelationships($rootId: String!, $limit: Int!) {
   rootRelationships(limit: $limit, where: { parentRootId: { _eq: $rootId } }) {
-    rootRelationshipType { slug name }
-    childRoot { id slug urlMain }
+    rootRelationshipType {
+      slug
+      name
+    }
+    childRoot {
+      id
+      slug
+      urlMain
+    }
   }
 }
 ```
@@ -693,7 +894,11 @@ When to use: estimate how crowded a space is before you claim a "gap". Use the c
 **Category-based** (recommended for vertical analysis):
 
 ```graphql
-query VerticalSaturation($typeSlugs: [String!]!, $tag: String!, $dead: [String!]!) {
+query VerticalSaturation(
+  $typeSlugs: [String!]!
+  $tag: String!
+  $dead: [String!]!
+) {
   productsAggregate(
     filter_input: {
       where: {
@@ -706,7 +911,9 @@ query VerticalSaturation($typeSlugs: [String!]!, $tag: String!, $dead: [String!]
     }
   ) {
     _count
-    rootId { _count_distinct }
+    rootId {
+      _count_distinct
+    }
   }
 }
 ```
@@ -723,7 +930,9 @@ JSON
 query ProductSaturation($q: String!) {
   productsAggregate(filter_input: { where: { name: { _contains: $q } } }) {
     _count
-    rootId { _count_distinct }
+    rootId {
+      _count_distinct
+    }
   }
 }
 ```
@@ -749,7 +958,10 @@ query AlphaVybeRanking($xApiKey: String!) {
       programName
       programRank
       score
-      smartContract { address name }
+      smartContract {
+        address
+        name
+      }
     }
   }
 }
@@ -765,7 +977,7 @@ JSON
 
 1. **Map topic to slugs**: Use the Product Type Slug Taxonomy to identify 1-3 `productType` slugs for your domain.
 2. **Vertical Search**: Run the Vertical Search recipe with your slugs + Solana scoping to get the highest-precision incumbent list.
-3. **Broad Keyword Search**: Run the Broad Keyword Search for recall — catches products that don't fit standard categories.
+3. **Broad Keyword Search**: Run the Broad Keyword Search for recall - catches products that don't fit standard categories.
 4. **Saturation check**: Run the category-based aggregate to count total products and distinct roots. This grounds your "crowded vs. whitespace" assessment.
 5. **Expand top incumbents**: Pick 3-5 top results and expand their root profiles (descriptions, tags, socials, product lists).
 6. **Map dependencies**: For each incumbent product, map `supportsProducts` (what they depend on) and `supportsProductsBySupportsProductId` (what depends on them) to find missing primitives.
