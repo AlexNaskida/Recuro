@@ -12,7 +12,7 @@ type ImagePlaceholderProps = {
 
 const tintClasses: Record<ImagePlaceholderProps["tint"], string> = {
   teal: "from-[#dff7f4] via-[#f7fffd] to-[#eefbf8]",
-  purple: "from-[#f0e7ff] via-[#faf6ff] to-[#f6efff]",
+  purple: "from-[#ead8ff] via-[#f6eeff] to-[#efe3ff]",
   blue: "from-[#e6f0ff] via-[#f7fbff] to-[#edf5ff]",
   neutral: "from-[#f4f4f2] via-[#fafaf8] to-[#f1f1ed]",
 };
@@ -40,7 +40,7 @@ export default function ImagePlaceholder({
           tintClasses[tint],
         )}
       />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(12,144,128,0.14),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.08),transparent_34%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(126,58,242,0.16),transparent_36%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.1),transparent_34%)]" />
       <div className="absolute inset-x-0 top-0 z-10 h-12 border-b border-white/40 bg-white/30 backdrop-blur-sm">
         <div className="flex h-full items-center gap-2 px-5">
           <span className="h-2.5 w-2.5 rounded-full bg-[#f87171]" />

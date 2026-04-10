@@ -25,9 +25,21 @@ export default function PoweredBy() {
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <ImagePlaceholder tint="teal" imageSrc="/images/preview-saas.png" imageAlt="SaaS preview" />
-        <ImagePlaceholder tint="purple" imageSrc="/images/preview-membership.png" imageAlt="Membership preview" />
-        <ImagePlaceholder tint="blue" imageSrc="/images/preview-content.png" imageAlt="Content preview" />
+        <ImagePlaceholder
+          tint="teal"
+          imageSrc="/images/preview-saas.png"
+          imageAlt="SaaS preview"
+        />
+        <ImagePlaceholder
+          tint="purple"
+          imageSrc="/images/preview-membership.png"
+          imageAlt="Membership preview"
+        />
+        <ImagePlaceholder
+          tint="blue"
+          imageSrc="/images/preview-content.png"
+          imageAlt="Content preview"
+        />
       </div>
     </section>
   );

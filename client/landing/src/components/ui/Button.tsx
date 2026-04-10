@@ -15,7 +15,7 @@ type ButtonProps = {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-white shadow-[0_18px_40px_-22px_rgba(12,144,128,0.95)] ring-1 ring-inset ring-white/10 hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-[0_24px_50px_-24px_rgba(12,144,128,0.95)]",
+    "bg-primary text-white shadow-[0_18px_40px_-22px_rgba(126,58,242,0.92)] ring-1 ring-inset ring-white/10 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-[0_24px_50px_-24px_rgba(126,58,242,0.96)]",
   ghost:
     "bg-transparent text-text-primary ring-1 ring-inset ring-border/80 hover:bg-black/[0.03] hover:text-text-primary",
   white:
@@ -39,7 +39,7 @@ export default function Button({
   ...buttonProps
 }: ButtonProps) {
   const classes = cn(
-    "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full font-semibold tracking-[-0.01em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:pointer-events-none disabled:opacity-50",
+    "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full font-semibold tracking-[-0.01em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary/25 disabled:pointer-events-none disabled:opacity-50",
     "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:opacity-0 before:transition-opacity before:duration-200 before:content-[''] hover:before:opacity-100",
     variantStyles[variant],
     sizeStyles[size],

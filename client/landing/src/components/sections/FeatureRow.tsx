@@ -36,12 +36,7 @@ export default function FeatureRow({ data }: FeatureRowProps) {
             {data.description}
           </p>
           <CheckList items={data.checklist} />
-          <Button
-            href={data.ctaHref}
-            variant="ghost"
-            size="md"
-            className="px-0"
-          >
+          <Button href={data.ctaHref} variant="primary" size="md">
             {data.ctaLabel}
           </Button>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 import { NAV_LINKS } from "@/lib/constants";
 import { cn } from "@/lib/cn";
 import Button from "@/components/ui/Button";
@@ -14,9 +15,19 @@ export default function Navbar() {
       <div className="mx-auto flex max-w-[1100px] items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <a
           href="/"
-          className="font-display text-xl font-extrabold tracking-tight text-text-primary"
+          className="inline-flex items-center gap-2 font-display text-xl font-extrabold tracking-tight text-text-primary"
         >
-          Recur<span className="text-accent">o</span>
+          <Image
+            src="/Recuro.svg"
+            alt="Recuro logo"
+            width={24}
+            height={24}
+            className="size-12"
+            priority
+          />
+          <span className="inline-flex items-baseline leading-none">
+            Recur<span className="-ml-[0.02em] text-primary">o</span>
+          </span>
         </a>
 
         <nav className="hidden items-center gap-8 md:flex">

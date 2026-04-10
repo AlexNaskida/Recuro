@@ -18,7 +18,7 @@ export default function Home() {
       <Navbar />
       <main>
         <Hero />
-        <LogoStrip />
+        {/* <LogoStrip /> */}
         <SectionDivider title="One protocol for the full lifecycle" />
         <div id="features">
           {FEATURE_ROWS.slice(0, 2).map((row) => (

@@ -14,7 +14,11 @@ export default function BlogCards() {
             Read the latest thinking from the Recuro stack
           </h2>
         </div>
-        <Button href="https://recuro.gitbook.io/recuro-sdk" variant="ghost" size="sm">
+        <Button
+          href="https://recuro.gitbook.io/recuro-sdk"
+          variant="ghost"
+          size="sm"
+        >
           See all posts
         </Button>
       </div>
