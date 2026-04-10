@@ -21,6 +21,11 @@ export const metadata: Metadata = {
   title: "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
   description:
     "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
+  icons: {
+    icon: "/favicon.svg",
+    shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
+  },
   openGraph: {
     title:
       "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",

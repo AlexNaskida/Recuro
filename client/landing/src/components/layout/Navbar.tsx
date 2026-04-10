@@ -17,17 +17,13 @@ export default function Navbar() {
           href="/"
           className="inline-flex items-center gap-2 font-display text-xl font-extrabold tracking-tight text-text-primary"
         >
-          <span className="inline-flex size-8 items-center justify-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_10px_28px_-16px_rgba(126,58,242,0.92)] ring-1 ring-inset ring-white/20">
-            {/* <span className="font-display text-xl font-extrabold leading-none">
-              R
-            </span> */}
-            <Image
+          <span className="size-8 items-center justify-center">
+            {/* <Image
               src="/Recuro.svg"
               alt="Recuro Logo"
               width={35}
               height={35}
-              className="rounded-sm"
-            />
+            /> */}
           </span>
           <span className="inline-flex items-baseline leading-none">
             Recur<span className="-ml-[0.02em] text-primary">o</span>

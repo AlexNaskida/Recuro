@@ -10,7 +10,7 @@ export const NAV_LINKS: NavLink[] = [
   { label: "Why Recuro", href: "#why-recuro" },
   { label: "Features", href: "#features" },
   { label: "Docs", href: "https://recuro.gitbook.io/recuro-sdk" },
-  { label: "Blog", href: "https://recuro.gitbook.io/recuro-sdk" },
+  { label: "Blog", href: "/blog" },
 ];
 
 export const PARTNER_LOGOS = [
