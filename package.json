@@ -4,12 +4,14 @@
   "private": true,
   "workspaces": [
     "sdk",
-    "client/apps/*"
+    "client/apps/*",
+    "client/landing"
   ],
   "scripts": {
-    "dev": "concurrently \"yarn workspace merchant-dashboard dev\" \"yarn workspace user-demo dev\"",
+    "dev": "concurrently \"yarn workspace merchant-dashboard dev\" \"yarn workspace user-demo dev\" \"yarn workspace recuro-landing dev\"",
     "dev:merchant": "yarn workspace merchant-dashboard dev",
     "dev:user": "yarn workspace user-demo dev",
+    "dev:landing": "yarn workspace recuro-landing dev",
     "build": "concurrently \"yarn workspace merchant-dashboard build\" \"yarn workspace user-demo build\"",
     "build:sdk": "yarn --cwd sdk build",
     "type-check": "yarn workspaces run type-check",
