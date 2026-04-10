@@ -14,9 +14,9 @@ export default function Hero() {
           Recuro gives you a subscription stack built for on-chain billing.
         </h1>
         <p className="mx-auto mt-5 max-w-[480px] text-base leading-7 text-text-secondary sm:text-lg">
-          Create recurring USDC subscriptions without touching subscriber funds.
-          Keep price immutability, delegate safety, and keeper redundancy from
-          day one.
+          Create recurring stablecoin subscriptions (like USDC) without touching
+          subscriber funds. Keep price immutability, delegate safety, and keeper
+          redundancy from day one.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button

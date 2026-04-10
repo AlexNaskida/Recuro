@@ -18,21 +18,23 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
+  title: "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
   description:
-    "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+    "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
   openGraph: {
-    title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
+    title:
+      "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
     description:
-      "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+      "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
     type: "website",
     siteName: "Recuro",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
+    title:
+      "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
     description:
-      "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+      "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
   },
 };
 

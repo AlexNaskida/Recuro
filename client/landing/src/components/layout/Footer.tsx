@@ -29,7 +29,7 @@ export default function Footer() {
             Recur<span className="text-accent-light">o</span>
           </a>
           <p className="mt-4 max-w-xs text-sm leading-6 text-white/65">
-            Non-custodial recurring USDC subscriptions on Solana.
+            Non-custodial recurring stablecoin subscriptions on Solana.
           </p>
         </div>
 

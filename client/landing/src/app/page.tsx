@@ -2,7 +2,7 @@ import { FEATURE_ROWS } from "@/lib/constants";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Hero from "@/components/sections/Hero";
-import LogoStrip from "@/components/sections/LogoStrip";
+// import LogoStrip from "@/components/sections/LogoStrip";
 import SectionDivider from "@/components/sections/SectionDivider";
 import FeatureRow from "@/components/sections/FeatureRow";
 import StatsBanner from "@/components/sections/StatsBanner";
