@@ -74,6 +74,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Detect changed app workspaces
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            sdk:
+              - 'sdk/**'
+              - 'src/**'
+              - 'types/**'
+              - 'package.json'
+              - 'yarn.lock'
+            merchant:
+              - 'client/apps/merchant-dashboard/**'
+              - 'package.json'
+              - 'yarn.lock'
+            user_demo:
+              - 'client/apps/user-demo/**'
+              - 'package.json'
+              - 'yarn.lock'
+            landing:
+              - 'client/landing/**'
+              - 'package.json'
+              - 'yarn.lock'
+
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -82,22 +106,31 @@ jobs:
       - run: yarn install --frozen-lockfile
 
       - name: Download IDL
+        if: steps.changes.outputs.sdk == 'true'
         uses: actions/download-artifact@v4
         with:
           name: subscription-idl
           path: sdk/src/
 
       - name: Build SDK
+        if: steps.changes.outputs.sdk == 'true'
         run: yarn workspace @recuro/sdk build
 
       - name: Upload SDK dist
+        if: steps.changes.outputs.sdk == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: sdk-dist
           path: sdk/dist/
 
       - name: Build merchant dashboard
+        if: steps.changes.outputs.merchant == 'true'
         run: yarn workspace merchant-dashboard build
 
       - name: Build user demo
+        if: steps.changes.outputs.user_demo == 'true'
         run: yarn workspace user-demo build
+
+      - name: Build landing
+        if: steps.changes.outputs.landing == 'true'
+        run: yarn workspace recuro-landing build
