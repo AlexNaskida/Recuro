@@ -185,12 +185,13 @@ anchor build && anchor deploy --provider.cluster devnet
 ### 6 - Run the apps
 
 ```bash
-# Both apps in parallel
+# All three apps in parallel
 yarn dev
 
 # Or individually
 yarn dev:merchant   # http://localhost:3001
 yarn dev:user       # http://localhost:3000
+yarn dev:landing    # http://localhost:3002
 ```
 
 Copy `client/apps/merchant-dashboard/.env.example` → `.env.local` and fill in your deployed values before running.

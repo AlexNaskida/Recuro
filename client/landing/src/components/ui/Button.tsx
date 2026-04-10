@@ -15,13 +15,13 @@ type ButtonProps = {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    "bg-accent text-white hover:bg-accent-hover shadow-card border border-accent",
+    "bg-accent text-white shadow-[0_18px_40px_-22px_rgba(12,144,128,0.95)] ring-1 ring-inset ring-white/10 hover:-translate-y-0.5 hover:bg-accent-hover hover:shadow-[0_24px_50px_-24px_rgba(12,144,128,0.95)]",
   ghost:
-    "bg-transparent text-text-primary hover:bg-black/5 border border-transparent",
+    "bg-transparent text-text-primary ring-1 ring-inset ring-border/80 hover:bg-black/[0.03] hover:text-text-primary",
   white:
-    "bg-white text-text-primary hover:bg-bg border border-border shadow-card",
+    "bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(246,249,248,0.98)_100%)] text-text-primary shadow-[0_12px_30px_-24px_rgba(15,23,42,0.45)] ring-1 ring-inset ring-border hover:-translate-y-0.5",
   "outline-white":
-    "bg-transparent text-white border border-white/20 hover:bg-white/10",
+    "bg-white/[0.04] text-white ring-1 ring-inset ring-white/20 hover:bg-white/[0.08] hover:-translate-y-0.5",
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -39,7 +39,8 @@ export default function Button({
   ...buttonProps
 }: ButtonProps) {
   const classes = cn(
-    "inline-flex items-center justify-center rounded-md font-medium transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:pointer-events-none disabled:opacity-50",
+    "group relative inline-flex items-center justify-center gap-2 overflow-hidden rounded-full font-semibold tracking-[-0.01em] transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent/20 disabled:pointer-events-none disabled:opacity-50",
+    "before:pointer-events-none before:absolute before:inset-0 before:rounded-full before:opacity-0 before:transition-opacity before:duration-200 before:content-[''] hover:before:opacity-100",
     variantStyles[variant],
     sizeStyles[size],
     className,
@@ -55,7 +56,7 @@ export default function Button({
         target={external ? "_blank" : undefined}
         rel={external ? "noopener noreferrer" : undefined}
       >
-        {children}
+        <span className="relative z-10">{children}</span>
       </a>
     );
   }
@@ -66,7 +67,7 @@ export default function Button({
       type={buttonProps.type ?? "button"}
       {...buttonProps}
     >
-      {children}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }
