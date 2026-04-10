@@ -32,7 +32,7 @@ import {
   planBreakdown,
 } from "@/lib/mock-data";
 
-const TEAL = "hsl(168, 82%, 32%)";
+const TEAL = "hsl(254, 81%, 68%)";
 const RED = "hsl(0, 84%, 60%)";
 
 // ── Tooltip ───────────────────────────────────────────────────────────────────

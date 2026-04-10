@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/useDashboard";
 
-const TEAL = "hsl(168, 82%, 32%)";
+const TEAL = "hsl(254, 81%, 68%)";
 const GRAY = "hsl(220, 9%, 72%)";
 
 // ── Sparklines ────────────────────────────────────────────────────────────────

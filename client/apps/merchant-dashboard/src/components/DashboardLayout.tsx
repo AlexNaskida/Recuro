@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   FileText,
@@ -19,6 +20,8 @@ import {
   X,
   BookOpen,
   ExternalLink,
+  MoonStar,
+  SunMedium,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -72,6 +75,7 @@ export default function DashboardLayout({
   const location = useLocation();
   const [copied, setCopied] = useState(false);
   const [showSupport, setShowSupport] = useState(true);
+  const { resolvedTheme, setTheme } = useTheme();
 
   const { publicKey, disconnect, connected } = useWallet();
   const { setVisible } = useWalletModal();
@@ -86,6 +90,7 @@ export default function DashboardLayout({
   };
 
   const crumb = breadcrumbs[location.pathname] || "Overview";
+  const isDarkTheme = resolvedTheme === "dark";
 
   const NavItem = ({ item }: { item: (typeof mainNav)[0] }) => {
     const active = location.pathname === item.path;
@@ -109,10 +114,14 @@ export default function DashboardLayout({
     <div className="flex min-h-screen w-full">
       <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r bg-card">
         <div className="flex h-14 items-center gap-2.5 px-5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-bold">
-            S
-          </div>
-          <span className="text-lg font-semibold text-foreground">Recuro</span>
+          <img
+            src="/favicon.svg"
+            alt="Recuro logo"
+            className="h-8 w-8 shrink-0"
+          />
+          <span className="inline-flex items-baseline text-lg font-semibold leading-none text-foreground">
+            Recur<span className="-ml-[0.02em] text-primary">o</span>
+          </span>
         </div>
 
         <div className="px-4 pb-2">
@@ -207,6 +216,21 @@ export default function DashboardLayout({
                 Contact support
               </Button>
             </div>
+          )}
+          {!showSupport && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setTheme(isDarkTheme ? "light" : "dark")}
+              className="w-full justify-start gap-3 px-3 text-sm text-muted-foreground hover:text-foreground"
+            >
+              {isDarkTheme ? (
+                <SunMedium className="h-4 w-4" />
+              ) : (
+                <MoonStar className="h-4 w-4" />
+              )}
+              {isDarkTheme ? "Light mode" : "Dark mode"}
+            </Button>
           )}
           <Link
             to="/settings"
