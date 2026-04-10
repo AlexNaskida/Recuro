@@ -1,28 +1,49 @@
 import type { Metadata } from "next";
+import { DM_Sans, Syne } from "next/font/google";
 import "./globals.css";
+import type { ReactNode } from "react";
+
+const syne = Syne({
+  subsets: ["latin"],
+  weight: ["700", "800"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Recuro - Non-Custodial Recurring Payments on Solana",
+  title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
   description:
-    "Accept automated, recurring USDC subscription payments without ever touching subscriber funds. Built on Solana.",
-  keywords: [
-    "Solana",
-    "subscriptions",
-    "recurring payments",
-    "USDC",
-    "crypto payments",
-    "non-custodial",
-  ],
+    "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+  openGraph: {
+    title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
+    description:
+      "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+    type: "website",
+    siteName: "Recuro",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Recuro — Non-custodial recurring USDC subscriptions on Solana",
+    description:
+      "Accept recurring USDC subscriptions on Solana without ever taking custody of subscriber funds.",
+  },
 };
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-[#0a0a0a] text-white antialiased">{children}</body>
+    <html lang="en" className={`${syne.variable} ${dmSans.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
