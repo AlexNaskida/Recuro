@@ -1,8 +1,8 @@
 # Solana Subscription Protocol
 
-> **Non-custodial, on-chain recurring USDC subscriptions powered by Solana + Clockwork.**
+> **Non-custodial, on-chain recurring USDC subscriptions powered by Solana + open keepers.**
 
-Funds stay in the subscriber's wallet until payment time. Billing is fully automated by self-hosted on-chain thread - no backend, no custodian, no cron jobs.
+Funds stay in the subscriber's wallet until payment time. Billing is automated by permissionless keepers that call `execute_payment()` on-chain.
 
 ---
 
@@ -12,37 +12,39 @@ Funds stay in the subscriber's wallet until payment time. Billing is fully autom
 ┌──────────────────────────────────────────────────────────┐
 │                   Solana Blockchain                       │
 │                                                           │
-│  ┌─────────────┐       ┌──────────────────────────────┐  │
-│  │  Plan PDA   │◄──────│  subscription program        │  │
-│  │  (merchant) │       │  (Anchor / Rust)             │  │
-│  └─────────────┘       └──────────┬───────────────────┘  │
-│                                    │                      │
-│  ┌──────────────────────┐          │ CPI                  │
-│  │  Subscription PDA    │◄─────────┘                      │
-│  │  (per subscriber)    │                                 │
-│  └──────────┬───────────┘                                 │
-│             │  SPL delegate approval                      │
-│             ▼                                             │
-│  ┌──────────────────────┐   ┌──────────────────────────┐ │
-│  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │ │
-│  │  (funds stay here)   │   │  (receives net payment)  │ │
-│  └──────────────────────┘   └──────────────────────────┘ │
+│  ┌─────────────┐       ┌──────────────────────────────┐   │
+│  │  Plan PDA   │◄──────│  subscription program        │   │
+│  │  (merchant) │       │  (Anchor / Rust)             │   │
+│  └─────────────┘       └──────────┬───────────────────┘   │
+│                                    │ CPI                   │
+│                                    ▼                       │
+│                         ┌──────────────────────────────┐    │
+│                         │  recuro-guard program        │    │
+│                         │  GuardAccount PDA            │    │
+│                         └──────────┬───────────────────┘    │
+│                                    │ transfer_checked        │
+│                                    ▼                        │
+│  ┌──────────────────────┐   ┌──────────────────────────┐    │
+│  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │    │
+│  │  (funds stay here)   │   │  (receives principal)    │    │
+│  └──────────────────────┘   └──────────────────────────┘    │
 │                                                           │
 │  ┌──────────────────────┐                                 │
-│  │  Self-hosted Thread  │ fires execute_payment() cron    │
+│  │  Open keepers        │ call execute_payment()          │
 │  └──────────────────────┘                                 │
 └──────────────────────────────────────────────────────────┘
 ```
 
 ### Key design decisions
 
-| Decision            | Reasoning                                                                                                                                                                |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Non-custodial**   | Subscriber's USDC stays in their wallet. Only an SPL delegate approval is granted to the Subscription PDA, which authorises the exact plan amount per cycle.             |
-| **Price integrity** | The `amount_usdc` field on the Subscription PDA is **copied from the Plan PDA** at creation time by the program. No user-supplied amount is ever accepted for transfers. |
-| **Fully automated** | self-hosted on-chain threads execute `execute_payment()` on-chain. There is no off-chain backend, cron job, or relayer required for billing.                             |
-| **Auto-expiry**     | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned.                                                                             |
-| **Protocol fee**    | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA.                                                                        |
+| Decision             | Reasoning                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Non-custodial**    | Subscriber's USDC stays in their wallet. SPL delegate approval is granted to a per-subscription Guard PDA, not to a keeper wallet.                                       |
+| **Price integrity**  | The `amount_usdc` field on the Subscription PDA is **copied from the Plan PDA** at creation time by the program. No user-supplied amount is ever accepted for transfers. |
+| **Guarded transfer** | `execute_payment()` calls Guard via CPI. Guard enforces caller, destination ATA, interval, and transfer amount before moving tokens.                                     |
+| **Fully automated**  | Permissionless keepers execute `execute_payment()` on-chain. There is no centralized billing backend that can unilaterally charge users.                                 |
+| **Auto-expiry**      | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned.                                                                             |
+| **Protocol fee**     | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA.                                                                        |
 
 ---
 
@@ -68,6 +70,9 @@ recuro-sdk/
 │           ├── execute_payment.rs
 │           ├── cancel_subscription.rs
 │           └── charge_now.rs
+├── programs/recuro-guard/           # Anchor / Rust guard program
+│   └── src/
+│       └── lib.rs                   # Guard PDA state + authorize_payment gatekeeper
 │
 ├── sdk/                             # TypeScript SDK (@recuro/sdk)
 │   └── src/
@@ -273,7 +278,7 @@ All events are emitted via Anchor's event system and indexed by the SDK's `onXxx
 | `PlanCreated`           | Merchant deploys a new plan                          |
 | `PlanUpdated`           | Merchant updates plan metadata                       |
 | `SubscriptionCreated`   | User subscribes to a plan                            |
-| `PaymentExecuted`       | Clockwork successfully transfers USDC                |
+| `PaymentExecuted`       | Guard-authorized payment succeeds                    |
 | `PaymentFailed`         | Transfer fails (low balance, revoked delegate, etc.) |
 | `SubscriptionCancelled` | Subscriber or merchant cancels                       |
 | `SubscriptionExpired`   | Auto-closed after 3 consecutive failures             |
@@ -284,19 +289,19 @@ All events are emitted via Anchor's event system and indexed by the SDK's `onXxx
 
 ### Price spoofing is impossible
 
-The `execute_payment` instruction reads `amount_usdc` exclusively from the **Subscription PDA**, which is itself populated from the **Plan PDA** at subscription creation. No user-supplied amount is ever used for SPL transfers.
+The `execute_payment` path uses amount from on-chain state only. Recuro CPI-calls Guard, and Guard always transfers its stored `amount_per_period`. No user-supplied transfer amount is accepted.
 
 ### Delegate scoping
 
-The SPL delegate approval is granted **to the Subscription PDA** (not the program itself), for an amount equal to 12× the monthly amount. This means:
+The SPL delegate approval is granted **to the Guard PDA** (not a keeper wallet), for a bounded recurring allowance. This means:
 
-- The program can only pull the exact approved amount per cycle.
+- Guard can only transfer its configured amount to its configured destination.
 - The subscriber can revoke the approval at any time from any SPL-aware wallet.
 - If the approval is revoked, the next payment fails gracefully and the failure counter increments.
 
-### self-hosted on-chain thread authority
+### Guard caller enforcement
 
-`execute_payment` can only be called by the self-hosted on-chain thread that was registered at subscription creation. The instruction verifies the thread authority against the `subscription.thread` field - preventing any other caller from triggering payments.
+Any keeper may call `execute_payment`, but merchant principal transfer still requires Guard authorization. Guard verifies caller identity, interval elapsed, and destination ATA before transfer.
 
 ---
 

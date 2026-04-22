@@ -40,7 +40,8 @@
  *  update_plan          merchant, plan
  *  create_subscription  subscriber, usdcMint, plan, subscription
  *  execute_payment      keeper, subscription, plan,
- *                       subscriber, subscriberTokenAccount,
+ *                       subscriber, subscriberTokenAccount, usdcMint,
+ *                       guardAccount, guardProgram,
  *                       merchantTokenAccount, treasuryTokenAccount
  *  pause_subscription   authority, subscription, plan
  *  resume_subscription  authority, subscription, plan
@@ -118,6 +119,17 @@ function deriveSubscriptionPDA(
   return pda;
 }
 
+function deriveGuardPDA(
+  subscription: PublicKey,
+  guardProgramId: PublicKey,
+): PublicKey {
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("guard"), subscription.toBuffer()],
+    guardProgramId,
+  );
+  return pda;
+}
+
 function deriveConfigPDA(programId: PublicKey): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from("config")],
@@ -149,6 +161,9 @@ describe("Solana Subscription Protocol - Full Suite", () => {
   const provider = anchor.AnchorProvider.env();
   anchor.setProvider(provider);
   const program = anchor.workspace.Subscription as Program<Subscription>;
+  const guardProgramId = new PublicKey(
+    "grdvTYiUwMY5j2R7UCnR5B8WkrGmD8KES2BJ63V2zZS",
+  );
   const programId = program.programId;
 
   console.log("\n  Program ID:", programId.toBase58());
@@ -168,6 +183,7 @@ describe("Solana Subscription Protocol - Full Suite", () => {
   let planId: BN;
   let planPDA: PublicKey;
   let subscriptionPDA: PublicKey;
+  let guardPDA: PublicKey;
 
   before("Fund actors & create mock USDC", async () => {
     section("SETUP");
@@ -237,6 +253,7 @@ describe("Solana Subscription Protocol - Full Suite", () => {
       subscriber.publicKey,
       programId,
     );
+    guardPDA = deriveGuardPDA(subscriptionPDA, guardProgramId);
 
     console.log("\n  configPDA       =", configPDA.toBase58());
     console.log("  planPDA         =", planPDA.toBase58());
@@ -455,8 +472,11 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         .accountsPartial({
           subscriber: subscriber.publicKey,
           usdcMint,
+          merchantTokenAccount: merchantUsdcAta,
           plan: planPDA,
           subscription: subscriptionPDA,
+          guardAccount: guardPDA,
+          guardProgram: guardProgramId,
         })
         .signers([subscriber])
         .rpc();
@@ -485,8 +505,8 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         tokenAcct.delegate?.toBase58() ?? "none",
       );
       console.log(
-        "  delegate=subPDA?=",
-        tokenAcct.delegate?.toBase58() === subscriptionPDA.toBase58(),
+        "  delegate=guardPDA?=",
+        tokenAcct.delegate?.toBase58() === guardPDA.toBase58(),
       );
       console.log("  active_subs     =", plan.activeSubscribers.toString());
       console.log(
@@ -527,8 +547,9 @@ describe("Solana Subscription Protocol - Full Suite", () => {
 
       const sub1 = Keypair.generate();
       const sub1PDA = deriveSubscriptionPDA(capPDA, sub1.publicKey, programId);
+      const sub1GuardPDA = deriveGuardPDA(sub1PDA, guardProgramId);
       await airdrop(provider, sub1.publicKey);
-      await createAssociatedTokenAccount(
+      const sub1Ata = await createAssociatedTokenAccount(
         provider.connection,
         sub1,
         usdcMint,
@@ -539,16 +560,21 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         .accountsPartial({
           subscriber: sub1.publicKey,
           usdcMint,
+          merchantTokenAccount: merchantUsdcAta,
           plan: capPDA,
           subscription: sub1PDA,
+          subscriberTokenAccount: sub1Ata,
+          guardAccount: sub1GuardPDA,
+          guardProgram: guardProgramId,
         })
         .signers([sub1])
         .rpc();
 
       const sub2 = Keypair.generate();
       const sub2PDA = deriveSubscriptionPDA(capPDA, sub2.publicKey, programId);
+      const sub2GuardPDA = deriveGuardPDA(sub2PDA, guardProgramId);
       await airdrop(provider, sub2.publicKey);
-      await createAssociatedTokenAccount(
+      const sub2Ata = await createAssociatedTokenAccount(
         provider.connection,
         sub2,
         usdcMint,
@@ -560,8 +586,12 @@ describe("Solana Subscription Protocol - Full Suite", () => {
           .accountsPartial({
             subscriber: sub2.publicKey,
             usdcMint,
+            merchantTokenAccount: merchantUsdcAta,
             plan: capPDA,
             subscription: sub2PDA,
+            subscriberTokenAccount: sub2Ata,
+            guardAccount: sub2GuardPDA,
+            guardProgram: guardProgramId,
           })
           .signers([sub2])
           .rpc();
@@ -615,6 +645,9 @@ describe("Solana Subscription Protocol - Full Suite", () => {
           subscriberTokenAccount: subscriberUsdcAta,
           merchantTokenAccount: merchantUsdcAta,
           treasuryTokenAccount: treasuryUsdcAta,
+          usdcMint,
+          guardAccount: guardPDA,
+          guardProgram: guardProgramId,
         })
         .signers([keeper])
         .rpc();
@@ -709,6 +742,7 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         broke.publicKey,
         programId,
       );
+      const brokeGuardPDA = deriveGuardPDA(brokeSubPDA, guardProgramId);
 
       console.log("  Broke subscriber: $5.00, plan costs $10.00 + fee");
 
@@ -731,8 +765,12 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         .accountsPartial({
           subscriber: broke.publicKey,
           usdcMint,
+          merchantTokenAccount: merchantUsdcAta,
           plan: brokePDA,
           subscription: brokeSubPDA,
+          subscriberTokenAccount: brokeAta,
+          guardAccount: brokeGuardPDA,
+          guardProgram: guardProgramId,
         })
         .signers([broke])
         .rpc();
@@ -754,6 +792,9 @@ describe("Solana Subscription Protocol - Full Suite", () => {
             subscriberTokenAccount: brokeAta,
             merchantTokenAccount: merchantUsdcAta,
             treasuryTokenAccount: treasuryUsdcAta,
+            usdcMint,
+            guardAccount: brokeGuardPDA,
+            guardProgram: guardProgramId,
           })
           .signers([keeper])
           .rpc();
@@ -805,6 +846,7 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         pauseSub.publicKey,
         programId,
       );
+      const pauseGuardPDA = deriveGuardPDA(pauseSubPDA, guardProgramId);
 
       await program.methods
         .createPlan({
@@ -825,8 +867,11 @@ describe("Solana Subscription Protocol - Full Suite", () => {
         .accountsPartial({
           subscriber: pauseSub.publicKey,
           usdcMint,
+          merchantTokenAccount: merchantUsdcAta,
           plan: pPlanPDA,
           subscription: pauseSubPDA,
+          guardAccount: pauseGuardPDA,
+          guardProgram: guardProgramId,
         })
         .signers([pauseSub])
         .rpc();
@@ -982,8 +1027,9 @@ describe("Solana Subscription Protocol - Full Suite", () => {
     it("cannot subscribe to a paused plan (PlanNotActive)", async () => {
       const s = Keypair.generate();
       const sPDA = deriveSubscriptionPDA(planPDA, s.publicKey, programId);
+      const sGuardPDA = deriveGuardPDA(sPDA, guardProgramId);
       await airdrop(provider, s.publicKey);
-      await createAssociatedTokenAccount(
+      const sAta = await createAssociatedTokenAccount(
         provider.connection,
         s,
         usdcMint,
@@ -995,8 +1041,12 @@ describe("Solana Subscription Protocol - Full Suite", () => {
           .accountsPartial({
             subscriber: s.publicKey,
             usdcMint,
+            merchantTokenAccount: merchantUsdcAta,
             plan: planPDA,
             subscription: sPDA,
+            subscriberTokenAccount: sAta,
+            guardAccount: sGuardPDA,
+            guardProgram: guardProgramId,
           })
           .signers([s])
           .rpc();
