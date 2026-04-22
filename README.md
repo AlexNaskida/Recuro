@@ -9,30 +9,40 @@ Funds stay in the subscriber's wallet until payment time. Billing is automated b
 ## Architecture overview
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                   Solana Blockchain                       │
-│                                                           │
-│  ┌─────────────┐       ┌──────────────────────────────┐   │
-│  │  Plan PDA   │◄──────│  subscription program        │   │
-│  │  (merchant) │       │  (Anchor / Rust)             │   │
-│  └─────────────┘       └──────────┬───────────────────┘   │
-│                                    │ CPI                   │
-│                                    ▼                       │
-│                         ┌──────────────────────────────┐    │
-│                         │  recuro-guard program        │    │
-│                         │  GuardAccount PDA            │    │
-│                         └──────────┬───────────────────┘    │
-│                                    │ transfer_checked        │
-│                                    ▼                        │
+┌──────────────────────────────────────────────────────────────┐
+│                      Solana Blockchain                        │
+│                                                               │
+│  ┌─────────────┐       ┌──────────────────────────────────┐  │
+│  │  Plan PDA   │◄──────│     Subscription Program         │  │
+│  │  (merchant) │       │       (Anchor / Rust)            │  │
+│  └─────────────┘       └──────────────┬─────────────────┘  │
+│                                        │                     │
+│  ┌──────────────────────┐              │ CPI                 │
+│  │  Subscription PDA    │◄─────────────┘                    │
+│  │  (per subscriber)    │                                    │
+│  └──────────┬───────────┘                                    │
+│             │                                                 │
+│             │ SPL delegate approval (exact amount only)       │
+│             ▼                                                 │
+│  ┌──────────────────────┐                                    │
+│  │        Guard         │  checks:                           │
+│  │   (per subscription) │  ✓ correct merchant?               │
+│  │                      │  ✓ exact amount?                   │
+│  │                      │  ✓ interval respected?             │
+│  │                      │  ✓ status == active?               │
+│  └──────────┬───────────┘                                    │
+│             │  only releases funds if all checks pass        │
+│             ▼                                                 │
 │  ┌──────────────────────┐   ┌──────────────────────────┐    │
 │  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │    │
-│  │  (funds stay here)   │   │  (receives principal)    │    │
+│  │  (funds stay here)   │   │  (receives payment)      │    │
 │  └──────────────────────┘   └──────────────────────────┘    │
-│                                                           │
-│  ┌──────────────────────┐                                 │
-│  │  Open keepers        │ call execute_payment()          │
-│  └──────────────────────┘                                 │
-└──────────────────────────────────────────────────────────┘
+│                                                               │
+│  ┌──────────────────────┐                                    │
+│  │  On-Chain Thread     │  fires execute_payment() every     │
+│  │                      │  billing interval automatically    │
+│  └──────────────────────┘                                    │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ### Key design decisions
