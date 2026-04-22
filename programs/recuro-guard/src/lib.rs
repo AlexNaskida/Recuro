@@ -35,14 +35,14 @@ pub enum GuardError {
 
 #[account]
 pub struct GuardAccount {
-    pub subscription: Pubkey, // The Recuro subscription this guard is bound to
-    pub subscriber: Pubkey,   // Whose ATA the guard can pull from
-    pub merchant_receive: Pubkey, // Only destination allowed for transfers
-    pub recuro_program: Pubkey, // Only this program ID may call authorize_payment
-    pub amount_per_period: u64, // Read from plan at creation, never updated by caller
-    pub period_seconds: i64,  // Billing interval, never updated by caller
-    pub last_executed_at: i64, // Unix timestamp, updated on each successful payment
-    pub bump: u8,             // PDA bump seed
+    pub subscription: Pubkey,      // The Recuro subscription this guard is bound to
+    pub subscriber: Pubkey,        // Whose ATA the guard can pull from
+    pub merchant_receive: Pubkey,  // Only destination allowed for transfers
+    pub recuro_program: Pubkey,    // Only this program ID may call authorize_payment
+    pub amount_per_period: u64,    // Read from plan at creation, never updated by caller
+    pub period_seconds: i64,       // Billing interval, never updated by caller
+    pub last_executed_at: i64,     // Unix timestamp, updated on each successful payment
+    pub bump: u8,                  // PDA bump seed
 }
 
 impl GuardAccount {
@@ -207,10 +207,7 @@ pub fn handler_authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
                 from: ctx.accounts.subscriber_token_account.to_account_info(),
-                to: ctx
-                    .accounts
-                    .merchant_receive_token_account
-                    .to_account_info(),
+                to: ctx.accounts.merchant_receive_token_account.to_account_info(),
                 authority: guard.to_account_info(), // Guard PDA signs
                 mint: ctx.accounts.usdc_mint.to_account_info(),
             },

@@ -197,7 +197,11 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         signer_seeds,
     );
 
-    recuro_guard::cpi::initialize_guard(cpi_context, plan.amount_usdc, plan.interval_seconds)?;
+    recuro_guard::cpi::initialize_guard(
+        cpi_context,
+        plan.amount_usdc,
+        plan.interval_seconds,
+    )?;
 
     // ── Emit event ────────────────────────────────────────────────────────────
     emit!(SubscriptionCreated {
