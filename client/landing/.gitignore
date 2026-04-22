@@ -3,6 +3,7 @@ node_modules/
 .yarn/
 dist/
 .turbo/
+out/
 
 # Env
 .env
