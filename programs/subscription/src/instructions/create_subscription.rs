@@ -3,6 +3,8 @@ use anchor_spl::{
     associated_token::AssociatedToken,
     token::{approve, Approve, Mint, Token, TokenAccount},
 };
+use recuro_guard::cpi::accounts::InitializeGuard as GuardInitializeGuard;
+use recuro_guard::program::RecuroGuard;
 
 use crate::{
     constants::*,
@@ -57,6 +59,21 @@ pub struct CreateSubscription<'info> {
     /// USDC mint - must match the plan's registered mint
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Account<'info, Mint>,
+
+    /// Merchant receive ATA (from plan) - passed through to guard init
+    #[account(
+        mut,
+        address = plan.merchant_token_account @ SubscriptionError::InvalidMerchantTokenAccount,
+    )]
+    pub merchant_token_account: Account<'info, TokenAccount>,
+
+    /// Guard PDA - created for this subscription, authorizes payments
+    /// CHECK: created by Guard program CPI
+    #[account(mut)]
+    pub guard_account: AccountInfo<'info>,
+
+    /// Guard program
+    pub guard_program: Program<'info, RecuroGuard>,
 
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -123,9 +140,9 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         .checked_add(1)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
-    // ── Approve Subscription PDA as SPL delegate ──────────────────────────────
-    // Covers 12 billing cycles. Keeper calls execute_payment; the program
-    // signs the transfer via PDA seeds (no private key needed).
+    // ── Approve Guard PDA as SPL delegate ──────────────────────────────────────
+    // The Guard PDA handles payment transfers. We approve it for the full
+    // amount across 12 billing cycles (including fees).
     // Note: the fee is included in approval
     let fee_per_cycle = (plan.amount_usdc as u128)
         .saturating_mul(25)
@@ -143,11 +160,47 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
             ctx.accounts.token_program.to_account_info(),
             Approve {
                 to: ctx.accounts.subscriber_token_account.to_account_info(),
-                delegate: subscription.to_account_info(),
+                delegate: ctx.accounts.guard_account.to_account_info(),
                 authority: ctx.accounts.subscriber.to_account_info(),
             },
         ),
         delegate_amount,
+    )?;
+
+    // ── Initialize Guard via CPI ──────────────────────────────────────────────
+    let subscription_account_info = subscription.to_account_info();
+    let plan_key = subscription.plan;
+    let sub_key = subscription.subscriber;
+    let sub_bump = subscription.bump;
+
+    let sub_signer_seeds: &[&[u8]] = &[
+        SEED_SUBSCRIPTION,
+        plan_key.as_ref(),
+        sub_key.as_ref(),
+        &[sub_bump],
+    ];
+    let signer_seeds = &[sub_signer_seeds];
+
+    let cpi_accounts = GuardInitializeGuard {
+        recuro_program: subscription_account_info.clone(),
+        subscription: subscription_account_info,
+        subscriber: ctx.accounts.subscriber.to_account_info(),
+        guard_account: ctx.accounts.guard_account.to_account_info(),
+        subscriber_token_account: ctx.accounts.subscriber_token_account.to_account_info(),
+        merchant_receive_token_account: ctx.accounts.merchant_token_account.to_account_info(),
+        system_program: ctx.accounts.system_program.to_account_info(),
+    };
+
+    let cpi_context = CpiContext::new_with_signer(
+        ctx.accounts.guard_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
+
+    recuro_guard::cpi::initialize_guard(
+        cpi_context,
+        plan.amount_usdc,
+        plan.interval_seconds,
     )?;
 
     // ── Emit event ────────────────────────────────────────────────────────────

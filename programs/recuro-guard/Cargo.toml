@@ -1,12 +1,12 @@
 [package]
-name = "subscription"
+name = "recuro-guard"
 version = "0.1.0"
-description = "Non-custodial recurring USDC subscription smart contract for Solana"
+description = "Guard program for Recuro subscription protocol - enforces payment intervals and authorization"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "subscription"
+name = "recuro_guard"
 
 [features]
 no-entrypoint = []
@@ -20,7 +20,6 @@ idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 anchor-lang  = { version = "0.32.0", features = ["init-if-needed"] }
 anchor-spl   = { version = "0.32.0", features = ["token", "associated_token"] }
 spl-token    = { version = "4.0", features = ["no-entrypoint"] }
-recuro-guard = { path = "../recuro-guard", features = ["cpi"] }
 
 [lints.rust]
 ambiguous_glob_reexports = "allow"

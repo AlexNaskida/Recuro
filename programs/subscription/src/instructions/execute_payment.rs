@@ -1,5 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use recuro_guard::cpi::accounts::AuthorizePayment as GuardAuthorizePayment;
+use recuro_guard::program::RecuroGuard;
+use recuro_guard::GuardAccount;
 
 use crate::{
     constants::*,
@@ -57,6 +60,19 @@ pub struct ExecutePayment<'info> {
     )]
     pub merchant_token_account: Account<'info, TokenAccount>,
 
+    /// Guard account - validates payment authorization and timing
+    #[account(
+        mut,
+        seeds = [b"guard", subscription.key().as_ref()],
+        bump = guard_account.bump,
+        constraint = guard_account.subscription == subscription.key(),
+    )]
+    pub guard_account: Account<'info, GuardAccount>,
+
+    /// USDC mint for guarded transfer_checked
+    #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
+    pub usdc_mint: Account<'info, Mint>,
+
     /// Protocol treasury ATA - receives the fee
     #[account(
         mut,
@@ -69,7 +85,11 @@ pub struct ExecutePayment<'info> {
     #[account(address = subscription.subscriber)]
     pub subscriber: UncheckedAccount<'info>,
 
+    /// Guard program
+    pub guard_program: Program<'info, RecuroGuard>,
+
     pub token_program: Program<'info, Token>,
+    pub clock: Sysvar<'info, Clock>,
     pub system_program: Program<'info, System>,
 }
 
@@ -166,19 +186,25 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     ];
     let signer_seeds = &[seeds];
 
-    // ── Transfer 1: plan_amount → merchant ────────────────────────────────────
-    token::transfer(
-        CpiContext::new_with_signer(
-            ctx.accounts.token_program.to_account_info(),
-            Transfer {
-                from: ctx.accounts.subscriber_token_account.to_account_info(),
-                to: ctx.accounts.merchant_token_account.to_account_info(),
-                authority: subscription_account_info.clone(),
-            },
-            signer_seeds,
-        ),
-        plan_amount,
-    )?;
+    // ── Guard: Call authorize_payment via CPI ─────────────────────────────────
+    // The Guard account validates timing, authorization, and executes the merchant transfer
+    let cpi_accounts = GuardAuthorizePayment {
+        caller: subscription_account_info.clone(),
+        guard_account: ctx.accounts.guard_account.to_account_info(),
+        subscriber_token_account: ctx.accounts.subscriber_token_account.to_account_info(),
+        merchant_receive_token_account: ctx.accounts.merchant_token_account.to_account_info(),
+        usdc_mint: ctx.accounts.usdc_mint.to_account_info(),
+        token_program: ctx.accounts.token_program.to_account_info(),
+        clock: ctx.accounts.clock.to_account_info(),
+    };
+
+    let cpi_context = CpiContext::new_with_signer(
+        ctx.accounts.guard_program.to_account_info(),
+        cpi_accounts,
+        signer_seeds,
+    );
+
+    recuro_guard::cpi::authorize_payment(cpi_context)?;
 
     // ── Transfer 2: fee → treasury ────────────────────────────────────────────
     if fee > 0 {
