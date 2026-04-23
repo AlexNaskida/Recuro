@@ -31,7 +31,7 @@ export const STATS: StatItem[] = [
   { value: "0%", label: "custody risk" },
   { value: "1 tx", label: "to start billing" },
   { value: "3", label: "missed cycles to expire" },
-  { value: "5%", label: "protocol fee cap" },
+  { value: "0.25%", label: "protocol fee cap" },
 ];
 
 export const POWERED_STATS: StatItem[] = [
