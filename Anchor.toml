@@ -5,7 +5,7 @@ anchor_version = "0.32.0"
 
 [programs.localnet]
 subscription = "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr"
-recuro_guard = "grdvTYiUwMY5j2R7UCnR5B8WkrGmD8KES2BJ63V2zZS"
+recuro_guard = "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
 
 [programs.devnet]
 subscription = "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr"

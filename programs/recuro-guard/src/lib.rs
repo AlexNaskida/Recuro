@@ -11,7 +11,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 
-declare_id!("grdvTYiUwMY5j2R7UCnR5B8WkrGmD8KES2BJ63V2zZS");
+declare_id!("4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Error enum
