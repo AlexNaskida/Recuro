@@ -1,10 +1,10 @@
 # Welcome to Recuro
 
-**Non-custodial recurring USDC subscriptions on Solana.**
+**Non-custodial recurring stablecoin subscriptions on Solana.**
 
 Subscribe once. Pay automatically.
 
-Recuro enables users to manage recurring USDC payments that are controlled entirely by them. Funds stay in subscriber wallets until payment executes on-chain. Subscriptions are trustless-no backend required.
+Recuro enables users to manage recurring stablecoin payments that are controlled entirely by them, with support for common Solana dollar assets such as USDC, USDT, and PYUSD. Funds stay in subscriber wallets until payment executes on-chain. Subscriptions are trustless-no backend required.
 
 ## What you can build
 

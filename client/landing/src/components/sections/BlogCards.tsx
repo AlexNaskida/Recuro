@@ -23,7 +23,7 @@ export default function BlogCards() {
         {BLOG_POSTS.map((post) => (
           <article
             key={post.title}
-            className="overflow-hidden rounded-md border border-border bg-surface shadow-card transition-transform duration-200 hover:-translate-y-1"
+            className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition-transform duration-200 hover:-translate-y-1"
           >
             <div className="border-b border-dashed border-border bg-bg">
               <ImagePlaceholder
