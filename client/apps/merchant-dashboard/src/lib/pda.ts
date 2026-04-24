@@ -3,7 +3,10 @@ import BN from "bn.js";
 import { SEED_PLAN, SEED_SUBSCRIPTION, SEED_CONFIG } from "./constants";
 import { PROGRAM_ID } from "@/lib/config";
 
-const programId = new PublicKey(PROGRAM_ID);
+function getProgramId(): PublicKey {
+  if (!PROGRAM_ID) throw new Error("VITE_PROGRAM_ID is not set");
+  return new PublicKey(PROGRAM_ID);
+}
 
 export function getPlanPDA(merchant: PublicKey, planId: BN): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
@@ -12,7 +15,7 @@ export function getPlanPDA(merchant: PublicKey, planId: BN): PublicKey {
       merchant.toBuffer(),
       planId.toArrayLike(Buffer, "le", 8),
     ],
-    programId,
+    getProgramId(),
   );
   return pda;
 }
@@ -23,7 +26,7 @@ export function getSubscriptionPDA(
 ): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(SEED_SUBSCRIPTION), plan.toBuffer(), subscriber.toBuffer()],
-    programId,
+    getProgramId(),
   );
   return pda;
 }
@@ -31,7 +34,7 @@ export function getSubscriptionPDA(
 export function getConfigPDA(): PublicKey {
   const [pda] = PublicKey.findProgramAddressSync(
     [Buffer.from(SEED_CONFIG)],
-    programId,
+    getProgramId(),
   );
   return pda;
 }
