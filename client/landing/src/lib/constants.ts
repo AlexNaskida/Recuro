@@ -7,7 +7,10 @@ import type {
 } from "@/types";
 
 export const NAV_LINKS: NavLink[] = [
-  { label: "Why Recuro", href: "#why-recuro" },
+  {
+    label: "Why Recuro",
+    href: "https://recuro.gitbook.io/recuro-sdk/why-recuro",
+  },
   { label: "Features", href: "#features" },
   { label: "Docs", href: "https://recuro.gitbook.io/recuro-sdk" },
   { label: "Blog", href: "/blog" },

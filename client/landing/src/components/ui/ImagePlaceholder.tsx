@@ -21,7 +21,7 @@ export default function ImagePlaceholder({
   return (
     <div
       className={cn(
-        "relative min-h-[320px] overflow-hidden border border-border/70 bg-surface shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]",
+        "relative min-h-[320px] overflow-hidden rounded-2xl border border-border/70 bg-surface shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]",
         className,
       )}
     >

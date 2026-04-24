@@ -1,19 +1,50 @@
 const groups = [
   {
     title: "Product",
-    links: ["Why Recuro", "Features", "Pricing", "Security"],
+    links: [
+      {
+        label: "Why Recuro",
+        href: "https://recuro.gitbook.io/recuro-sdk/why-recuro",
+      },
+      { label: "Features", href: "/#features" },
+      { label: "Pricing", href: "https://recuro.gitbook.io/recuro-sdk" },
+      {
+        label: "Security",
+        href: "https://recuro.gitbook.io/recuro-sdk/security",
+      },
+    ],
   },
   {
     title: "Developers",
-    links: ["Docs", "Integration guide", "SDK reference", "API status"],
+    links: [
+      { label: "Docs", href: "https://recuro.gitbook.io/recuro-sdk" },
+      {
+        label: "Integration guide",
+        href: "https://recuro.gitbook.io/recuro-sdk/getting-started/integration-guide",
+      },
+      {
+        label: "SDK reference",
+        href: "https://recuro.gitbook.io/recuro-sdk/sdk-reference",
+      },
+    ],
   },
   {
     title: "Community",
-    links: ["Blog", "X / Twitter", "GitHub", "Discord"],
+    links: [
+      { label: "Blog", href: "/blog" },
+      { label: "Roadmap", href: "/roadmap" },
+      { label: "X / Twitter", href: "https://x.com/recuro_solana" },
+      { label: "GitHub", href: "https://github.com/AlexNaskida/recuro" },
+    ],
   },
   {
     title: "Legal",
-    links: ["Privacy", "Terms", "Cookies", "Licenses"],
+    links: [
+      { label: "Privacy", href: "#" },
+      { label: "Terms", href: "#" },
+      { label: "Cookies", href: "#" },
+      { label: "Licenses", href: "#" },
+    ],
   },
 ];
 
@@ -40,9 +71,18 @@ export default function Footer() {
             </h3>
             <ul className="mt-4 space-y-3 text-sm text-white/70">
               {group.links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="transition-colors hover:text-white">
-                    {link}
+                <li key={link.label}>
+                  <a
+                    href={link.href}
+                    className="transition-colors hover:text-white"
+                    target={link.href.startsWith("http") ? "_blank" : undefined}
+                    rel={
+                      link.href.startsWith("http")
+                        ? "noopener noreferrer"
+                        : undefined
+                    }
+                  >
+                    {link.label}
                   </a>
                 </li>
               ))}
