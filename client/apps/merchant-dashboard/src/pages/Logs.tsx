@@ -12,10 +12,10 @@ import {
 } from "@/components/ui/accordion";
 import {
   AlertCircle,
-  CheckCircle2,
-  XCircle,
-  PlusCircle,
-  MinusCircle,
+  Check,
+  X,
+  Plus,
+  Minus,
   Pause,
   Clock,
   DollarSign,
@@ -93,44 +93,51 @@ const typeConfig: Record<
   {
     label: string;
     icon: React.ElementType;
-    color: string;
+    iconClass: string;
+    glyphClass: string;
     badge: string;
   }
 > = {
   PaymentExecuted: {
     label: "Payment Executed",
-    icon: CheckCircle2,
-    color: "text-green-500",
+    icon: Check,
+    iconClass: "text-green-600 border-green-500/30 bg-green-500/10",
+    glyphClass: "h-4 w-4",
     badge: "bg-green-500/10 text-green-500 border-green-500/20",
   },
   PaymentFailed: {
     label: "Payment Failed",
-    icon: XCircle,
-    color: "text-orange-400",
+    icon: X,
+    iconClass: "text-red-500 border-red-500/30 bg-red-500/10",
+    glyphClass: "h-4 w-4",
     badge: "bg-orange-500/10 text-orange-400 border-orange-500/20",
   },
   SubscriptionCreated: {
     label: "Subscription Created",
-    icon: PlusCircle,
-    color: "text-blue-500",
+    icon: Plus,
+    iconClass: "text-violet-500 border-violet-500/30 bg-violet-500/10",
+    glyphClass: "h-[18px] w-[18px] -mt-px",
     badge: "bg-blue-500/10 text-blue-500 border-blue-500/20",
   },
   SubscriptionPaused: {
     label: "Subscription Paused",
     icon: Pause,
-    color: "text-amber-500",
+    iconClass: "text-amber-500 border-amber-500/30 bg-amber-500/10",
+    glyphClass: "h-[15px] w-[15px] -mt-px",
     badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",
   },
   SubscriptionCancelled: {
     label: "Subscription Cancelled",
-    icon: MinusCircle,
-    color: "text-red-500",
+    icon: Minus,
+    iconClass: "text-muted-foreground border-border bg-muted/50",
+    glyphClass: "h-[15px] w-[15px] -mt-px",
     badge: "bg-red-500/10 text-red-500 border-red-500/20",
   },
   SubscriptionExpired: {
     label: "Subscription Expired",
     icon: AlertCircle,
-    color: "text-red-500",
+    iconClass: "text-red-500 border-red-500/30 bg-red-500/10",
+    glyphClass: "h-4 w-4",
     badge: "bg-red-500/10 text-red-500 border-red-500/20",
   },
 };
@@ -178,9 +185,11 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
         <div className="flex items-center gap-3 flex-1 min-w-0 text-left">
           {/* Icon */}
           <div
-            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-muted ${cfg.color}`}
+            className={`relative h-9 w-9 shrink-0 rounded-full border ${cfg.iconClass}`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon
+              className={`absolute left-1/2 top-1/2 block shrink-0 -translate-x-1/2 -translate-y-1/2 ${cfg.glyphClass}`}
+            />
           </div>
 
           {/* Main info */}

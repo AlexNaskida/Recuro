@@ -1,5 +1,9 @@
 import { POWERED_STATS } from "@/lib/constants";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
+import {
+  SaaSPreview,
+  MembershipPreview,
+  ContentPreview,
+} from "@/components/sections/PoweredByVisuals";
 
 export default function PoweredBy() {
   return (
@@ -25,21 +29,9 @@ export default function PoweredBy() {
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <ImagePlaceholder
-          tint="teal"
-          imageSrc="/images/preview-saas.png"
-          imageAlt="SaaS preview"
-        />
-        <ImagePlaceholder
-          tint="purple"
-          imageSrc="/images/preview-membership.png"
-          imageAlt="Membership preview"
-        />
-        <ImagePlaceholder
-          tint="blue"
-          imageSrc="/images/preview-content.png"
-          imageAlt="Content preview"
-        />
+        <SaaSPreview />
+        <MembershipPreview />
+        <ContentPreview />
       </div>
     </section>
   );

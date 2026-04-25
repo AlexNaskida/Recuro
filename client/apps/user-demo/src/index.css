@@ -4,21 +4,27 @@
 
 @layer base {
   :root {
-    --background: 0 0% 8%;
-    --foreground: 210 40% 98%;
-    --card: 0 0% 13%;
-    --card-foreground: 210 40% 98%;
-    --primary: 355 75% 63%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 0 0% 16%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 0 0% 18%;
-    --muted-foreground: 215 20% 68%;
+    --background: 210 20% 98%;
+    --foreground: 222 30% 16%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 30% 16%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 24% 94%;
+    --secondary-foreground: 222 30% 16%;
+    --muted: 210 28% 96%;
+    --muted-foreground: 215 16% 42%;
+    --accent: 210 24% 94%;
+    --accent-foreground: 222 30% 16%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    --border: 0 0% 24%;
-    --input: 0 0% 18%;
-    --ring: 355 75% 63%;
+    --border: 214 24% 89%;
+    --input: 214 24% 89%;
+    --ring: 217 91% 60%;
+    --success: 142 72% 36%;
+    --success-muted: 142 65% 92%;
+    --warning: 43 95% 50%;
+    --warning-muted: 46 96% 91%;
     --radius: 0.625rem;
   }
   * {
@@ -28,28 +34,29 @@
     -webkit-font-smoothing: antialiased;
   }
   body {
-    background-color: #141414;
-    color: hsl(210, 40%, 98%);
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
   ::-webkit-scrollbar {
     width: 5px;
   }
   ::-webkit-scrollbar-track {
-    background: #141414;
+    background: hsl(var(--muted));
   }
   ::-webkit-scrollbar-thumb {
-    background: #564d4d;
+    background: hsl(var(--border));
     border-radius: 99px;
   }
   .wallet-adapter-button {
-    background: #221f1f !important;
-    border: 1px solid #564d4d !important;
+    background: hsl(var(--card)) !important;
+    border: 1px solid hsl(var(--border)) !important;
+    color: hsl(var(--foreground)) !important;
     border-radius: 12px !important;
     font-size: 14px !important;
     height: auto !important;
     padding: 10px 20px !important;
   }
   .wallet-adapter-button:hover {
-    border-color: #e85a66 !important;
+    border-color: hsl(var(--primary)) !important;
   }
 }

@@ -51,14 +51,14 @@ export default function Navbar() {
             GitHub
           </Button> */}
           <Button href="https://recuro.gitbook.io/" variant="ghost" size="sm">
-            Docs
+            Read Docs
           </Button>
           <Button
             href="https://recuro-app.pages.dev"
             variant="primary"
             size="sm"
           >
-            Start integrating
+            Launch App
           </Button>
         </div>
 
@@ -99,7 +99,7 @@ export default function Navbar() {
             size="sm"
             className="w-full"
           >
-            Start integrating
+            Launch App
           </Button>
         </div>
       </div>
