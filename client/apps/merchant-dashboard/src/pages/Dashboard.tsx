@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -24,6 +25,7 @@ import {
   CheckCircle,
   ArrowUpRight,
   AlertCircle,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -131,6 +133,11 @@ function KpiSkeleton() {
 
 export default function Dashboard() {
   const d = useDashboard();
+  const [showMockBanner, setShowMockBanner] = useState(true);
+
+  useEffect(() => {
+    if (d.usingMock) setShowMockBanner(true);
+  }, [d.usingMock]);
 
   if (d.loading) {
     return (
@@ -149,13 +156,23 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Mock data banner */}
-      {d.usingMock && (
-        <Alert>
+      {d.usingMock && showMockBanner && (
+        <Alert className="relative pr-10">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Showing sample data. Connect your wallet to see real on-chain
             analytics.
           </AlertDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowMockBanner(false)}
+            aria-label="Dismiss sample data banner"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 

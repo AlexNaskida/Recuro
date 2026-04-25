@@ -69,29 +69,29 @@ export function usePlans() {
   const [usingMock, setUsingMock] = useState(true);
 
   const fetchPlans = useCallback(async () => {
+    if (SHOW_MOCK_DATA) {
+      setPlans(
+        sortPlans(
+          mockPlans.map((p, index) => ({
+            ...p,
+            createdAt: Date.now() - index * 60_000,
+            intervalSeconds: 0,
+            description: "",
+            feePaid: 0,
+            successfulPayments: 0,
+            pubkey: "",
+            deployer: "",
+            merchantReceiveAddress: "",
+          })),
+        ),
+      );
+      setUsingMock(true);
+      return;
+    }
+
     if (!program || !connected || !publicKey) {
-      if (SHOW_MOCK_DATA) {
-        // Not connected - show mock data
-        setPlans(
-          sortPlans(
-            mockPlans.map((p, index) => ({
-              ...p,
-              createdAt: Date.now() - index * 60_000,
-              intervalSeconds: 0,
-              description: "",
-              feePaid: 0,
-              successfulPayments: 0,
-              pubkey: "",
-              deployer: "",
-              merchantReceiveAddress: "",
-            })),
-          ),
-        );
-        setUsingMock(true);
-      } else {
-        setPlans([]);
-        setUsingMock(false);
-      }
+      setPlans([]);
+      setUsingMock(false);
       return;
     }
 
@@ -131,28 +131,8 @@ export function usePlans() {
       });
 
       if (accounts.length === 0) {
-        if (SHOW_MOCK_DATA) {
-          // Connected but no on-chain plans yet - show mock with a note
-          setPlans(
-            sortPlans(
-              mockPlans.map((p, index) => ({
-                ...p,
-                createdAt: Date.now() - index * 60_000,
-                intervalSeconds: 0,
-                description: "",
-                feePaid: 0,
-                successfulPayments: 0,
-                pubkey: "",
-                deployer: "",
-                merchantReceiveAddress: "",
-              })),
-            ),
-          );
-          setUsingMock(true);
-        } else {
-          setPlans([]);
-          setUsingMock(false);
-        }
+        setPlans([]);
+        setUsingMock(false);
       } else {
         const real: Plan[] = [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,29 +194,9 @@ export function usePlans() {
         setUsingMock(false);
       }
     } catch (err) {
-      if (SHOW_MOCK_DATA) {
-        console.warn("[usePlans] fetch failed, using mock:", err);
-        setPlans(
-          sortPlans(
-            mockPlans.map((p, index) => ({
-              ...p,
-              createdAt: Date.now() - index * 60_000,
-              intervalSeconds: 0,
-              description: "",
-              feePaid: 0,
-              successfulPayments: 0,
-              pubkey: "",
-              deployer: "",
-              merchantReceiveAddress: "",
-            })),
-          ),
-        );
-        setUsingMock(true);
-      } else {
-        console.warn("[usePlans] fetch failed, mock disabled:", err);
-        setPlans([]);
-        setUsingMock(false);
-      }
+      console.warn("[usePlans] fetch failed:", err);
+      setPlans([]);
+      setUsingMock(false);
     } finally {
       setLoading(false);
     }

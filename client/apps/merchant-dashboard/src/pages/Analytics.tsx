@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -22,7 +23,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 import { usePlans } from "@/hooks/usePlans";
 import { useSubscribers } from "@/hooks/useSubscribers";
 import {
@@ -109,6 +110,7 @@ function buildChurnChart(churnRate: number) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Analytics() {
+  const [showMockBanner, setShowMockBanner] = useState(true);
   const { plans, loading: plansLoading, usingMock: plansMock } = usePlans();
   const {
     subscribers,
@@ -118,6 +120,10 @@ export default function Analytics() {
 
   const usingMock = plansMock || subsMock;
   const loading = plansLoading || subsLoading;
+
+  useEffect(() => {
+    if (usingMock) setShowMockBanner(true);
+  }, [usingMock]);
 
   const data = useMemo(() => {
     if (usingMock) {
@@ -228,12 +234,22 @@ export default function Analytics() {
 
   return (
     <div className="space-y-6">
-      {usingMock && (
-        <Alert>
+      {usingMock && showMockBanner && (
+        <Alert className="relative pr-10">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             Showing sample data. Connect your wallet to see real analytics.
           </AlertDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowMockBanner(false)}
+            aria-label="Dismiss sample data banner"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 

@@ -9,8 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["Syne", "sans-serif"],
-        body: ["DM Sans", "sans-serif"],
+        display: ["Sora", "sans-serif"],
+        body: ["Manrope", "sans-serif"],
       },
       colors: {
         background: "hsl(var(--background))",

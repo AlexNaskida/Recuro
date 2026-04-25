@@ -8,7 +8,6 @@ import {
   subscriberSparkline as mockSubscriberSparkline,
   successSparkline as mockSuccessSparkline,
 } from "@/lib/mock-data";
-import { SHOW_MOCK_DATA } from "@/lib/config";
 
 export interface DashboardData {
   // KPI cards
@@ -109,7 +108,7 @@ export function useDashboard(): DashboardData {
     usingMock: subsMock,
   } = useSubscribers();
 
-  const usingMock = SHOW_MOCK_DATA && (plansMock || subsMock);
+  const usingMock = plansMock || subsMock;
   const loading = plansLoading || subsLoading;
 
   return useMemo(() => {

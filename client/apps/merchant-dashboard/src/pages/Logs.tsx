@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { microToUsdc } from "@/lib/pda";
 import { MOCK_LOGS, type LogEntry } from "@/lib/mock-data";
+import { SHOW_MOCK_DATA } from "@/lib/config";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -283,8 +284,14 @@ export default function Logs() {
   useEffect(() => {
     async function fetchLogs() {
       if (!program || !connected || !publicKey) {
-        setLogs(MOCK_LOGS);
-        setUsingMock(true);
+        if (SHOW_MOCK_DATA) {
+          setLogs(MOCK_LOGS);
+          setUsingMock(true);
+          return;
+        }
+
+        setLogs([]);
+        setUsingMock(false);
         return;
       }
 
@@ -297,8 +304,8 @@ export default function Logs() {
         ]);
 
         if (planAccounts.length === 0) {
-          setLogs(MOCK_LOGS);
-          setUsingMock(true);
+          setLogs([]);
+          setUsingMock(false);
           return;
         }
 
@@ -348,8 +355,8 @@ export default function Logs() {
         }
 
         if (allSubs.length === 0) {
-          setLogs(MOCK_LOGS);
-          setUsingMock(true);
+          setLogs([]);
+          setUsingMock(false);
           return;
         }
 
@@ -526,8 +533,8 @@ export default function Logs() {
         setUsingMock(false);
       } catch (err) {
         console.error("[Logs] fetch failed:", err);
-        setLogs(MOCK_LOGS);
-        setUsingMock(true);
+        setLogs([]);
+        setUsingMock(false);
       } finally {
         setLoading(false);
       }
