@@ -31,14 +31,14 @@ const FEATURES = [
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { authenticated, connected, login } = useMerchantWallet();
+  const { ready, authenticated, connected, login } = useMerchantWallet();
   const [isConnecting, setIsConnecting] = useState(false);
 
   useEffect(() => {
-    if (authenticated && connected) {
+    if (ready && authenticated && connected) {
       navigate("/dashboard", { replace: true });
     }
-  }, [authenticated, connected, navigate]);
+  }, [ready, authenticated, connected, navigate]);
 
   // Reset spinner if user dismisses the modal without connecting
   useEffect(() => {

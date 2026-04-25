@@ -12,7 +12,6 @@ export default defineConfig(() => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
       buffer: "buffer/",
-      "@solana-program/memo": path.resolve(__dirname, "./src/stubs/empty.ts"),
     },
   },
   plugins: [react()],

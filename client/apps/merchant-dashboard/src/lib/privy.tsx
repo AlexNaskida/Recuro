@@ -72,6 +72,7 @@ export function PrivyAppProvider({ children }: { children: ReactNode }) {
   return (
     <PrivyProvider
       appId={PRIVY_APP_ID}
+      clientId={import.meta.env.VITE_PRIVY_CLIENT_ID ?? ""}
       config={{
         appearance: {
           walletChainType: "solana-only",
