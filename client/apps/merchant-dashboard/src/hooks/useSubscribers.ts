@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
+import { useMerchantWallet } from "./useMerchantWallet";
 import { microToUsdc } from "@/lib/pda";
 import { subscribers as mockSubs } from "@/lib/mock-data";
 import { SHOW_MOCK_DATA } from "@/lib/config";
@@ -49,14 +49,14 @@ function toMock(s: any): Subscriber {
 }
 
 export function useSubscribers(planPubkeys?: string[]) {
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(false);
   const [usingMock, setUsingMock] = useState(true);
 
   const fetchSubscribers = useCallback(async () => {
-    if (!program || !publicKey) {
+    if (!program || !connected || !publicKey) {
       if (SHOW_MOCK_DATA) {
         setSubscribers(mockSubs.map(toMock));
         setUsingMock(true);

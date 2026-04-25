@@ -3,15 +3,16 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AuthPage from "@/components/AuthPage";
 import DashboardLayout from "@/components/DashboardLayout";
+import WalletGate from "@/components/WalletGate";
 import Dashboard from "@/pages/Dashboard";
 import Plans from "@/pages/Plans";
 import Subscribers from "@/pages/Subscribers";
 import Analytics from "@/pages/Analytics";
 import Logs from "./pages/Logs";
 import SettingsPage from "@/pages/Settings";
-import NotFound from "./pages/NotFound";
 import { MerchantProgramProvider } from "@/context/MerchantProgramContext";
 const queryClient = new QueryClient();
 
@@ -24,55 +25,68 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
+              <Route path="/" element={<AuthPage />} />
               <Route
-                path="/"
+                path="/dashboard"
                 element={
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <Dashboard />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
               <Route
                 path="/plans"
                 element={
-                  <DashboardLayout>
-                    <Plans />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <Plans />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
               <Route
                 path="/subscribers"
                 element={
-                  <DashboardLayout>
-                    <Subscribers />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <Subscribers />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
               <Route
                 path="/analytics"
                 element={
-                  <DashboardLayout>
-                    <Analytics />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <Analytics />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
               <Route
                 path="/settings"
                 element={
-                  <DashboardLayout>
-                    <SettingsPage />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <SettingsPage />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
               <Route
                 path="/logs"
                 element={
-                  <DashboardLayout>
-                    <Logs />
-                  </DashboardLayout>
+                  <WalletGate>
+                    <DashboardLayout>
+                      <Logs />
+                    </DashboardLayout>
+                  </WalletGate>
                 }
               />
-              <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

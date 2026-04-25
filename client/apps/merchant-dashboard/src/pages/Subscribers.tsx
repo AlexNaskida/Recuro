@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Table,
@@ -26,6 +25,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Copy, Check, AlertCircle } from "lucide-react";
 import WalletIdenticon from "@/components/WalletIdenticon";
 import { useSubscribers } from "@/hooks/useSubscribers";
+import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 function truncateWallet(addr: string) {
   return addr.slice(0, 4) + "..." + addr.slice(-4);
@@ -39,7 +39,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function Subscribers() {
-  const { connected } = useWallet();
+  const { connected } = useMerchantWallet();
   const { subscribers, loading, usingMock } = useSubscribers();
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");

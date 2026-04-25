@@ -1,7 +1,9 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Connection } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
 import IDL from "@/lib/idl.json";
+import { RPC_URL } from "@/lib/config";
+import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 type MerchantProgramContextValue = {
   provider: AnchorProvider | null;
@@ -13,27 +15,14 @@ const MerchantProgramContext =
   createContext<MerchantProgramContextValue | null>(null);
 
 export function MerchantProgramProvider({ children }: { children: ReactNode }) {
-  const { connection } = useConnection();
-  const wallet = useWallet();
+  const connection = useMemo(() => new Connection(RPC_URL, "confirmed"), []);
+  const { ready, wallet } = useMerchantWallet();
 
   const provider = useMemo(() => {
-    if (!wallet.publicKey || !wallet.signTransaction) return null;
+    if (!ready || !wallet) return null;
 
-    return new AnchorProvider(
-      connection,
-      {
-        publicKey: wallet.publicKey,
-        signTransaction: wallet.signTransaction,
-        signAllTransactions: wallet.signAllTransactions!,
-      },
-      { commitment: "confirmed" },
-    );
-  }, [
-    connection,
-    wallet.publicKey,
-    wallet.signTransaction,
-    wallet.signAllTransactions,
-  ]);
+    return new AnchorProvider(connection, wallet, { commitment: "confirmed" });
+  }, [connection, ready, wallet]);
 
   const program = useMemo(() => {
     if (!provider) return null;
@@ -49,7 +38,7 @@ export function MerchantProgramProvider({ children }: { children: ReactNode }) {
 
   return (
     <MerchantProgramContext.Provider
-      value={{ provider, program, connected: !!wallet.publicKey }}
+      value={{ provider, program, connected: !!wallet }}
     >
       {children}
     </MerchantProgramContext.Provider>

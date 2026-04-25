@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { EventParser } from "@coral-xyz/anchor";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,6 +25,7 @@ import {
 } from "lucide-react";
 import { microToUsdc } from "@/lib/pda";
 import { MOCK_LOGS, type LogEntry } from "@/lib/mock-data";
+import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -273,7 +273,7 @@ function LogCard({ entry, index }: { entry: LogEntry; index: number }) {
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function Logs() {
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
@@ -282,7 +282,7 @@ export default function Logs() {
 
   useEffect(() => {
     async function fetchLogs() {
-      if (!program || !publicKey) {
+      if (!program || !connected || !publicKey) {
         setLogs(MOCK_LOGS);
         setUsingMock(true);
         return;

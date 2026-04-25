@@ -8,13 +8,13 @@ export default defineConfig(() => ({
     port: 8080,
     hmr: { overlay: false },
   },
-  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       buffer: "buffer/",
     },
   },
+  plugins: [react()],
   define: {
     global: "globalThis",
   },

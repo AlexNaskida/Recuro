@@ -1,7 +1,5 @@
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
@@ -25,7 +23,16 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut,
+} from "@/components/ui/command";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,9 +48,12 @@ import {
 import { cn } from "@/lib/utils";
 import WalletIdenticon from "@/components/WalletIdenticon";
 import { CLUSTER } from "@/lib/config";
+import OnboardingModal from "@/components/OnboardingModal";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 const mainNav = [
-  { title: "Dashboard", path: "/", icon: LayoutDashboard },
+  { title: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
   { title: "Plans", path: "/plans", icon: FileText },
   { title: "Subscribers", path: "/subscribers", icon: Users },
 ];
@@ -55,7 +65,7 @@ const managementNav = [
 ];
 
 const breadcrumbs: Record<string, string> = {
-  "/": "Overview",
+  "/dashboard": "Overview",
   "/plans": "Plans",
   "/subscribers": "Subscribers",
   "/analytics": "Analytics",
@@ -73,24 +83,67 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
   const [showSupport, setShowSupport] = useState(true);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const { resolvedTheme, setTheme } = useTheme();
+  const { showOnboarding, mounted, completeOnboarding } = useOnboarding();
 
-  const { publicKey, disconnect, connected } = useWallet();
-  const { setVisible } = useWalletModal();
+  const {
+    authenticated,
+    connected,
+    publicKey,
+    walletAddress,
+    connectWallet,
+    logout,
+  } = useMerchantWallet();
 
-  const walletAddress = publicKey?.toBase58() ?? "";
+  // Show onboarding modal when user first connects wallet
+  useEffect(() => {
+    if (mounted && connected && showOnboarding) {
+      setOnboardingOpen(true);
+    }
+  }, [mounted, connected, showOnboarding]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setCommandOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  const walletAddressValue = walletAddress || publicKey?.toBase58() || "";
+
+  const handleDisconnect = () => {
+    Promise.resolve(logout()).finally(() => {
+      navigate("/", { replace: true });
+    });
+  };
 
   const copyWallet = () => {
-    if (!walletAddress) return;
-    navigator.clipboard.writeText(walletAddress);
+    if (!walletAddressValue) return;
+    navigator.clipboard.writeText(walletAddressValue);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
 
   const crumb = breadcrumbs[location.pathname] || "Overview";
   const isDarkTheme = resolvedTheme === "dark";
+  const searchActions = [
+    { label: "Dashboard", href: "/dashboard", shortcut: "1" },
+    { label: "Plans", href: "/plans", shortcut: "2" },
+    { label: "Subscribers", href: "/subscribers", shortcut: "3" },
+    { label: "Analytics", href: "/analytics", shortcut: "4" },
+    { label: "Execution Logs", href: "/logs", shortcut: "5" },
+    { label: "Settings", href: "/settings", shortcut: "6" },
+  ];
 
   const NavItem = ({ item }: { item: (typeof mainNav)[0] }) => {
     const active = location.pathname === item.path;
@@ -112,6 +165,50 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen w-full">
+      <OnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        onComplete={completeOnboarding}
+      />
+      <CommandDialog open={commandOpen} onOpenChange={setCommandOpen}>
+        <CommandInput placeholder="Search pages or jump to a section" />
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandGroup heading="Navigation">
+            {searchActions.map((item) => (
+              <CommandItem
+                key={item.href}
+                onSelect={() => {
+                  navigate(item.href);
+                  setCommandOpen(false);
+                }}
+              >
+                {item.label}
+                <CommandShortcut>{item.shortcut}</CommandShortcut>
+              </CommandItem>
+            ))}
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup heading="Actions">
+            <CommandItem
+              onSelect={() => {
+                connectWallet();
+                setCommandOpen(false);
+              }}
+            >
+              Connect Wallet
+            </CommandItem>
+            <CommandItem
+              onSelect={() => {
+                setTheme(isDarkTheme ? "light" : "dark");
+                setCommandOpen(false);
+              }}
+            >
+              Toggle Theme
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </CommandDialog>
       <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col border-r bg-card">
         <div className="flex h-14 items-center gap-2.5 px-5">
           <img
@@ -125,16 +222,17 @@ export default function DashboardLayout({
         </div>
 
         <div className="px-4 pb-2">
-          <div className="relative">
+          <button
+            type="button"
+            onClick={() => setCommandOpen(true)}
+            className="relative flex h-9 w-full items-center rounded-md border bg-muted px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search"
-              className="pl-9 h-9 text-sm bg-muted border-0"
-            />
-            <kbd className="absolute right-2.5 top-2 pointer-events-none text-xs text-muted-foreground bg-background border rounded px-1.5 py-0.5">
+            <span className="text-sm pl-6">Search or jump to...</span>
+            <kbd className="pointer-events-none ml-auto rounded border bg-background px-1.5 py-0.5 text-xs text-muted-foreground">
               ⌘K
             </kbd>
-          </div>
+          </button>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 pt-2">
@@ -239,13 +337,13 @@ export default function DashboardLayout({
             <Settings className="h-4 w-4" />
             Settings
           </Link>
-          {connected && (
+          {authenticated && connected && (
             <button
-              onClick={disconnect}
+              onClick={handleDisconnect}
               className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors w-full"
             >
               <LogOut className="h-4 w-4" />
-              Disconnect Wallet
+              Sign out
             </button>
           )}
         </div>
@@ -259,17 +357,17 @@ export default function DashboardLayout({
             <span className="font-semibold text-foreground">{crumb}</span>
           </div>
 
-          {connected && walletAddress ? (
+          {authenticated && connected && walletAddressValue ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors">
                   <WalletIdenticon
-                    address={walletAddress}
+                    address={walletAddressValue}
                     size={32}
                     className="border-2 border-muted"
                   />
                   <span className="text-sm font-medium">
-                    {truncateWallet(walletAddress)}
+                    {truncateWallet(walletAddressValue)}
                   </span>
                   <ChevronDown className="h-4 w-4 text-muted-foreground" />
                 </button>
@@ -277,7 +375,7 @@ export default function DashboardLayout({
               <DropdownMenuContent align="end" className="w-56">
                 <div className="px-2 py-1.5">
                   <p className="text-xs text-muted-foreground font-mono break-all">
-                    {walletAddress}
+                    {walletAddressValue}
                   </p>
                 </div>
                 <DropdownMenuSeparator />
@@ -304,23 +402,23 @@ export default function DashboardLayout({
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
-                  onClick={disconnect}
+                  onClick={handleDisconnect}
                   className="text-destructive"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Disconnect
+                  Sign out
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button size="sm" onClick={() => setVisible(true)}>
+                <Button size="sm" onClick={() => connectWallet()}>
                   <Wallet className="mr-2 h-4 w-4" />
                   Connect Wallet
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Connect Phantom or Solflare</TooltipContent>
+              <TooltipContent>Open Privy wallet access</TooltipContent>
             </Tooltip>
           )}
         </header>

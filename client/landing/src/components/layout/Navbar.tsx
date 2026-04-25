@@ -17,14 +17,14 @@ export default function Navbar() {
           href="/"
           className="inline-flex items-center gap-2 font-display text-xl font-extrabold tracking-tight text-text-primary"
         >
-          <span className="size-8 items-center justify-center">
-            {/* <Image
+          {/*<span className="size-8 items-center justify-center">
+           <Image
               src="/Recuro.svg"
               alt="Recuro Logo"
               width={35}
               height={35}
-            /> */}
-          </span>
+            /> 
+          </span>*/}
           <span className="inline-flex items-baseline leading-none">
             Recur<span className="-ml-[0.02em] text-primary">o</span>
           </span>
@@ -47,11 +47,14 @@ export default function Navbar() {
         </nav>
 
         <div className="ml-auto hidden items-center gap-3 md:flex">
-          <Button href="https://github.com/recuro" variant="ghost" size="sm">
+          {/* <Button href="https://github.com/AlexNaskida/recuro" variant="ghost" size="sm">
             GitHub
+          </Button> */}
+          <Button href="https://recuro.gitbook.io/" variant="ghost" size="sm">
+            Docs
           </Button>
           <Button
-            href="https://recuro.gitbook.io/recuro-sdk/getting-started/integration-guide"
+            href="https://recuro-app.pages.dev"
             variant="primary"
             size="sm"
           >
