@@ -62,6 +62,7 @@ export function useMerchantWallet() {
     walletCount: wallets.length,
     connectWallet: privy.connectWallet,
     connectOrCreateWallet: privy.connectOrCreateWallet,
+    link: privy.link,
     login: privy.login,
     logout: privy.logout,
   };

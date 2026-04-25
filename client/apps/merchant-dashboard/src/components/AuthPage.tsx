@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 import {
   Wallet,
@@ -30,39 +30,63 @@ const FEATURES = [
 ];
 
 export default function AuthPage() {
-  const navigate = useNavigate();
-  const { ready, authenticated, connected, login } = useMerchantWallet();
+  const {
+    ready,
+    authenticated,
+    connected,
+    connectWallet,
+    connectOrCreateWallet,
+    link,
+    login,
+  } = useMerchantWallet();
   const [isConnecting, setIsConnecting] = useState(false);
+  const connectTimeoutRef = useRef<number | null>(null);
 
+  // Reset spinner if user dismisses modal or session state settles.
   useEffect(() => {
-    if (ready && authenticated && connected) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [ready, authenticated, connected, navigate]);
-
-  // Reset spinner if user dismisses the modal without connecting
-  useEffect(() => {
-    if (!authenticated) {
+    if (!authenticated || (ready && connected)) {
       setIsConnecting(false);
     }
-  }, [authenticated]);
+  }, [authenticated, ready, connected]);
+
+  useEffect(() => {
+    return () => {
+      if (connectTimeoutRef.current !== null) {
+        window.clearTimeout(connectTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleConnect() {
     setIsConnecting(true);
 
-    // Do NOT await — Privy's modal is fire-and-forget.
-    // Navigation is handled by the useEffect above watching authenticated + connected.
-    // If the modal is dismissed or errors, reset the spinner.
+    // Prefer Privy's wallet-specific action to reliably open a wallet modal.
+    const action = authenticated
+      ? (connectWallet ?? link ?? connectOrCreateWallet)
+      : (login ?? connectWallet ?? connectOrCreateWallet);
+
     try {
-      void login();
+      if (!action) {
+        throw new Error("No wallet connect action is available from Privy");
+      }
+      void action();
     } catch (err) {
-      console.error("[AuthPage] login failed:", err);
+      console.error("[AuthPage] auth action failed:", err);
       setIsConnecting(false);
     }
 
-    // Safety timeout — reset spinner if nothing happens after 15s
-    const timeout = setTimeout(() => setIsConnecting(false), 15_000);
-    return () => clearTimeout(timeout);
+    // Safety timeout — reset spinner if nothing happens after 15s.
+    if (connectTimeoutRef.current !== null) {
+      window.clearTimeout(connectTimeoutRef.current);
+    }
+    connectTimeoutRef.current = window.setTimeout(() => {
+      setIsConnecting(false);
+      connectTimeoutRef.current = null;
+    }, 15_000);
+  }
+
+  if (ready && authenticated && connected) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return (
