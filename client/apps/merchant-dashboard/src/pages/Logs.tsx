@@ -284,9 +284,14 @@ export default function Logs() {
   useEffect(() => {
     async function fetchLogs() {
       if (!program || !connected || !publicKey) {
-      if (SHOW_MOCK_DATA) {
-        setLogs(MOCK_LOGS);
-        setUsingMock(true);
+        if (SHOW_MOCK_DATA) {
+          setLogs(MOCK_LOGS);
+          setUsingMock(true);
+          return;
+        }
+
+        setLogs([]);
+        setUsingMock(false);
         return;
       }
 

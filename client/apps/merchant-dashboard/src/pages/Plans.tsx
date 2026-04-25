@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, Loader2, Users, DollarSign, AlertCircle } from "lucide-react";
+import { Plus, Loader2, Users, DollarSign, AlertCircle, X } from "lucide-react";
 import { toast } from "sonner";
 import { type Plan, usePlans } from "@/hooks/usePlans";
 import { useCreatePlan } from "@/hooks/useCreatePlan";
@@ -54,6 +54,11 @@ export default function Plans() {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "active" | "paused" | "archived"
   >("all");
+  const [showMockBanner, setShowMockBanner] = useState(true);
+
+  useEffect(() => {
+    if (usingMock) setShowMockBanner(true);
+  }, [usingMock]);
 
   // Form state
   const [name, setName] = useState("");
@@ -363,14 +368,24 @@ export default function Plans() {
   return (
     <div className="space-y-6">
       {/* Mock data banner */}
-      {usingMock && (
-        <Alert>
+      {usingMock && showMockBanner && (
+        <Alert className="relative pr-12">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
             {connected
               ? "No on-chain plans found. Deploy your first plan to see real data."
               : "Connect your wallet to see your on-chain plans."}
           </AlertDescription>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="absolute right-2 top-2 h-7 w-7 text-muted-foreground hover:text-foreground"
+            onClick={() => setShowMockBanner(false)}
+            aria-label="Dismiss plans banner"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </Alert>
       )}
 
