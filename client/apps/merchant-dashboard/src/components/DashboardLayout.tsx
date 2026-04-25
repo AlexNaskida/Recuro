@@ -228,7 +228,7 @@ export default function DashboardLayout({
             className="relative flex h-9 w-full items-center rounded-md border bg-muted px-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <span className="text-sm pl-6">Search or jump to...</span>
+            <span className="text-xs pl-6">Search or jump to...</span>
             <kbd className="pointer-events-none ml-auto rounded border bg-background px-1.5 py-0.5 text-xs text-muted-foreground">
               ⌘K
             </kbd>
