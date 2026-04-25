@@ -19,8 +19,8 @@ export default function Home() {
       <main>
         <Hero />
         {/* <LogoStrip /> */}
-        <SectionDivider title="One protocol for the full lifecycle" />
-        <div id="features">
+        <div id="features" className="scroll-mt-24">
+          <SectionDivider title="One protocol for the full lifecycle" />
           {FEATURE_ROWS.slice(0, 2).map((row) => (
             <FeatureRow key={row.title} data={row} />
           ))}

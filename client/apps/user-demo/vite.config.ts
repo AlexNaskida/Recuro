@@ -4,7 +4,12 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react()],
-  resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
-  define:  { "process.env": {}, global: "globalThis" },
-  server:  { port: 3000 },
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@recuro/sdk": path.resolve(__dirname, "../../../sdk/src/index.ts"),
+    },
+  },
+  define: { "process.env": {}, global: "globalThis" },
+  server: { port: 3000 },
 });

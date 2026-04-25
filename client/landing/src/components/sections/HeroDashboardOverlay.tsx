@@ -101,7 +101,11 @@ function RevenueChart({ inView }: { inView: boolean }) {
   }, []);
 
   return (
-    <svg viewBox="0 0 580 155" className="w-full" preserveAspectRatio="none">
+    <svg
+      viewBox="0 0 580 155"
+      className="h-full w-full"
+      preserveAspectRatio="none"
+    >
       <defs>
         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#7c3aed" stopOpacity="0.12" />
@@ -273,7 +277,7 @@ export default function HeroDashboardOverlay() {
 
         {/* Chart + Activity */}
         <div className="grid grid-cols-[1.15fr_0.85fr] gap-3">
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
+          <div className="flex h-full flex-col rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-800">
                 Revenue vs MRR
@@ -289,15 +293,15 @@ export default function HeroDashboardOverlay() {
                 </span>
               </div>
             </div>
-            <div className="flex gap-2">
-              <div className="flex flex-col justify-between text-[10px] text-gray-300 pb-5 shrink-0">
+            <div className="flex flex-1 gap-2 min-h-[220px]">
+              <div className="flex flex-col justify-between pb-5 text-[10px] text-gray-300 shrink-0">
                 <span>$34k</span>
                 <span>$26k</span>
                 <span>$17k</span>
                 <span>$0</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div style={{ height: 130 }}>
+              <div className="flex flex-1 min-w-0 flex-col">
+                <div className="flex-1 min-h-0">
                   <RevenueChart inView={inView} />
                 </div>
                 <div className="flex justify-between text-[10px] text-gray-300 mt-1">

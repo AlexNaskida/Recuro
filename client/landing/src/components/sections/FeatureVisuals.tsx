@@ -1,5 +1,6 @@
 // FeatureVisuals.tsx — styled to match Recuro dashboard exactly
 import { cn } from "@/lib/cn";
+import { Check, Minus, Pause, Plus, X } from "lucide-react";
 
 // ─── Shared chrome wrapper (mimics the dashboard card style) ─────────────────
 function DashCard({
@@ -304,12 +305,12 @@ function ReliabilityVisual() {
     },
   ];
 
-  const icons: Record<string, string> = {
-    "Payment Executed": "M5 12l4 4 6-7",
-    "Subscription Created": "M12 5v14M5 12h14",
-    "Payment Failed": "M6 6l8 8M14 6l-8 8",
-    "Subscription Paused": "M8 5v6M14 5v6",
-    "Subscription Cancelled": "M6 6l8 8M14 6l-8 8",
+  const icons: Record<string, React.ComponentType<{ className?: string }>> = {
+    "Payment Executed": Check,
+    "Subscription Created": Plus,
+    "Payment Failed": X,
+    "Subscription Paused": Pause,
+    "Subscription Cancelled": Minus,
   };
 
   return (
@@ -345,53 +346,48 @@ function ReliabilityVisual() {
 
       {/* Log entries */}
       <DashCard>
-        {logs.map((log, i) => (
-          <div
-            key={i}
-            className={cn(
-              "flex items-center gap-2.5 px-3.5 py-2.5",
-              i < logs.length - 1 && "border-b border-gray-50",
-            )}
-          >
+        {logs.map((log, i) => {
+          const Icon = icons[log.type] ?? Check;
+          return (
             <div
+              key={i}
               className={cn(
-                "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
-                log.color,
+                "flex items-center gap-2.5 px-3.5 py-2.5",
+                i < logs.length - 1 && "border-b border-gray-50",
               )}
             >
-              <svg
-                className="h-3 w-3"
-                viewBox="0 0 20 20"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+              <div
+                className={cn(
+                  "flex h-6 w-6 shrink-0 items-center justify-center rounded-full border",
+                  log.color,
+                )}
               >
-                <path d={icons[log.type] ?? "M5 12l4 4 6-7"} />
-              </svg>
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] font-semibold text-gray-800">
-                  {log.type}
-                </span>
-                <span className="text-[9px] bg-violet-50 text-violet-600 border border-violet-100 rounded-full px-1.5 py-0.5 font-medium">
-                  {log.plan}
-                </span>
+                <Icon className="h-3 w-3 shrink-0" />
               </div>
-              <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                {log.wallet}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-gray-800">
+                    {log.type}
+                  </span>
+                  <span className="text-[9px] bg-violet-50 text-violet-600 border border-violet-100 rounded-full px-1.5 py-0.5 font-medium">
+                    {log.plan}
+                  </span>
+                </div>
+                <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                  {log.wallet}
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-[11px] font-semibold text-gray-800">
+                  {log.amount}
+                </div>
+                <div className="text-[9px] text-gray-400 mt-0.5">
+                  {log.date}
+                </div>
               </div>
             </div>
-            <div className="text-right shrink-0">
-              <div className="text-[11px] font-semibold text-gray-800">
-                {log.amount}
-              </div>
-              <div className="text-[9px] text-gray-400 mt-0.5">{log.date}</div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </DashCard>
     </div>
   );

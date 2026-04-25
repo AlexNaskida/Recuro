@@ -20,10 +20,14 @@ export default function Hero() {
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Button href="https://recuro-app.pages.dev" size="lg">
-            Create Subscription
+            Start Building Subscriptions
           </Button>
-          <Button href="#features" variant="white" size="lg">
-            Explore features
+          <Button
+            href="https://recuro.gitbook.io/recuro-sdk"
+            variant="white"
+            size="lg"
+          >
+            Read Documentation
           </Button>
         </div>
       </div>
