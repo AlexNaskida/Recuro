@@ -2024,7 +2024,7 @@
   resolved "file:sdk"
   dependencies:
     "@coral-xyz/anchor" "^0.32.0"
-    "@privy-io/react-auth" "1.28.2"
+    "@privy-io/react-auth" "^3.22.2"
     "@solana/wallet-adapter-wallets" "^0.16.9"
     bn.js "^5.2.1"
     mocha "11.7.5"
@@ -7984,7 +7984,7 @@ memoize-one@^5.0.0:
   dependencies:
     "@coral-xyz/anchor" "^0.32.0"
     "@hookform/resolvers" "^3.10.0"
-    "@privy-io/react-auth" "^1.28.2"
+    "@privy-io/react-auth" "^3.22.2"
     "@radix-ui/react-accordion" "^1.2.11"
     "@radix-ui/react-alert-dialog" "^1.1.14"
     "@radix-ui/react-aspect-ratio" "^1.1.7"
@@ -8013,6 +8013,7 @@ memoize-one@^5.0.0:
     "@radix-ui/react-toggle-group" "^1.1.10"
     "@radix-ui/react-tooltip" "^1.2.7"
     "@recuro/sdk" "*"
+    "@solana-program/memo" "^0.11.0"
     "@solana/spl-token" "^0.1.8"
     "@solana/wallet-adapter-base" "^0.9.23"
     "@solana/wallet-adapter-phantom" "^0.9.24"

@@ -62,10 +62,12 @@ function PrivyConfigError({ reason }: { reason: string }) {
   );
 }
 
+// initialise ONCE outside the component — not on every render
+const solanaConnectors = toSolanaWalletConnectors({ shouldAutoConnect: false });
+
 export function PrivyAppProvider({ children }: { children: ReactNode }) {
-  if (!PRIVY_APP_ID) {
+  if (!PRIVY_APP_ID)
     return <PrivyConfigError reason="VITE_PRIVY_APP_ID is missing." />;
-  }
 
   return (
     <PrivyProvider
@@ -76,7 +78,7 @@ export function PrivyAppProvider({ children }: { children: ReactNode }) {
         },
         externalWallets: {
           solana: {
-            connectors: toSolanaWalletConnectors(),
+            connectors: solanaConnectors, // ← this is what registers Phantom Solana
           },
         },
         embeddedWallets: {
