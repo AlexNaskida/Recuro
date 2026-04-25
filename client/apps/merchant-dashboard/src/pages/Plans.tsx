@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,9 +29,10 @@ import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { PlanActionsMenu } from "@/components/plans/PlanActionsMenu";
 import { DeletePlanConfirmDialog } from "@/components/plans/DeletePlanConfirmDialog";
 import { PlanInfoDialog } from "@/components/plans/PlanInfoDialog";
+import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 export default function Plans() {
-  const { connected, publicKey } = useWallet();
+  const { connected, publicKey } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const { plans, loading, usingMock, refetch } = usePlans();
   const { createPlan, loading: deploying, canCreate } = useCreatePlan();

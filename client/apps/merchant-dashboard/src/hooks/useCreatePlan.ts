@@ -1,15 +1,24 @@
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { useAnchorProgram } from "./useAnchorProgram";
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import {
   TOKEN_PROGRAM_ID,
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import BN from "bn.js";
 import { getPlanPDA, usdcToMicro } from "@/lib/pda";
 import { USDC_MINT } from "@/lib/config";
+import { useMerchantWallet } from "./useMerchantWallet";
+
+function getAssociatedTokenAddress(
+  mint: PublicKey,
+  owner: PublicKey,
+): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
+}
 
 export interface CreatePlanInput {
   name: string;
@@ -22,22 +31,20 @@ export interface CreatePlanInput {
 }
 
 export function useCreatePlan() {
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const [loading, setLoading] = useState(false);
 
   const createPlan = async (input: CreatePlanInput): Promise<string | null> => {
-    if (!program || !publicKey) throw new Error("Wallet not connected");
+    if (!program || !connected || !publicKey)
+      throw new Error("Wallet not connected");
 
     setLoading(true);
     try {
       const planId = new BN(Date.now());
       const planPubkey = getPlanPDA(publicKey, planId);
       const usdcMint = new PublicKey(USDC_MINT);
-      const merchantTokenAccount = await getAssociatedTokenAddressSync(
-        usdcMint,
-        publicKey,
-      );
+      const merchantTokenAccount = getAssociatedTokenAddress(usdcMint, publicKey);
 
       const sig = await program.methods
         .createPlan({
@@ -70,5 +77,9 @@ export function useCreatePlan() {
     }
   };
 
-  return { createPlan, loading, canCreate: !!program && !!publicKey };
+  return {
+    createPlan,
+    loading,
+    canCreate: !!program && connected && !!publicKey,
+  };
 }

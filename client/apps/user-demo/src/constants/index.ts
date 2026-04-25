@@ -1,6 +1,10 @@
-export const PROGRAM_ID = "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr";
+export const PROGRAM_ID =
+  import.meta.env.VITE_PROGRAM_ID ??
+  "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr";
 
-export const USDC_MINT = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+export const USDC_MINT =
+  import.meta.env.VITE_USDC_MINT ??
+  "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
 
 export const CLUSTER =
   (import.meta.env.VITE_SOLANA_CLUSTER as "devnet" | "mainnet-beta") ??

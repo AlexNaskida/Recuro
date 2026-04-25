@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { PublicKey } from "@solana/web3.js";
 import { useAnchorProgram } from "./useAnchorProgram";
+import { useMerchantWallet } from "./useMerchantWallet";
 import { microToUsdc } from "@/lib/pda";
 import { plans as mockPlans } from "@/lib/mock-data";
 import { SHOW_MOCK_DATA } from "@/lib/config";
@@ -62,14 +62,14 @@ function sortPlans(plans: Plan[]): Plan[] {
 // }
 
 export function usePlans() {
-  const { publicKey } = useWallet();
+  const { publicKey, connected } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(false);
   const [usingMock, setUsingMock] = useState(true);
 
   const fetchPlans = useCallback(async () => {
-    if (!program || !publicKey) {
+    if (!program || !connected || !publicKey) {
       if (SHOW_MOCK_DATA) {
         // Not connected - show mock data
         setPlans(
@@ -240,7 +240,7 @@ export function usePlans() {
     } finally {
       setLoading(false);
     }
-  }, [program, publicKey]);
+  }, [connected, program, publicKey]);
 
   useEffect(() => {
     fetchPlans();

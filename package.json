@@ -27,12 +27,15 @@
     "@types/mocha": "^10.0.6",
     "chai": "^4.3.11",
     "concurrently": "^9.2.1",
-    "mocha": "^7.2.0",
+    "mocha": "^11.7.5",
     "ts-mocha": "^10.0.0",
     "typescript": "^5.3.3"
   },
   "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e",
   "dependencies": {
-    "@coral-xyz/anchor": "^0.32.0"
+    "@coral-xyz/anchor": "^0.32.0",
+    "@solana-program/memo": "^0.11.0",
+    "@privy-io/react-auth": "^3.22.2",
+    "next": "16.2.4"
   }
 }

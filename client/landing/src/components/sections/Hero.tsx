@@ -19,11 +19,8 @@ export default function Hero() {
           redundancy from day one.
         </p>
         <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Button
-            href="https://recuro.gitbook.io/recuro-sdk/getting-started/integration-guide"
-            size="lg"
-          >
-            Start integrating
+          <Button href="https://recuro-app.pages.dev" size="lg">
+            Create Subscription
           </Button>
           <Button href="#features" variant="white" size="lg">
             Explore features

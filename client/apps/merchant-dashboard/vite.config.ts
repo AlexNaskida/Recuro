@@ -8,13 +8,14 @@ export default defineConfig(() => ({
     port: 8080,
     hmr: { overlay: false },
   },
-  plugins: [react()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
       buffer: "buffer/",
+      "@solana-program/memo": path.resolve(__dirname, "./src/stubs/empty.ts"),
     },
   },
+  plugins: [react()],
   define: {
     global: "globalThis",
   },
