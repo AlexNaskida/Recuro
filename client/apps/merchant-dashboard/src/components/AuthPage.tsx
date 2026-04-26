@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 import {
-  Check,
   Pause,
   Plus,
   ArrowRight,
@@ -21,13 +20,29 @@ import {
 import { Button } from "@/components/ui/button";
 
 const METRICS = [
-  { label: "Total Revenue", value: "$24,847", delta: "+12.5%" },
-  { label: "Active Subscribers", value: "187", delta: "+6.1%" },
-  { label: "Success Rate", value: "97.3%", delta: "+1.2%" },
+  {
+    label: "Total Revenue",
+    target: 24847,
+    delta: "+12.5%",
+    formatter: (value: number) => `$${Math.round(value).toLocaleString()}`,
+  },
+  {
+    label: "Active Subscribers",
+    target: 187,
+    delta: "+6.1%",
+    formatter: (value: number) => `${Math.round(value)}`,
+  },
+  {
+    label: "Success Rate",
+    target: 97.3,
+    delta: "+1.2%",
+    formatter: (value: number) => `${value.toFixed(1)}%`,
+  },
 ];
 
 const ACTIVITY = [
   {
+    id: "act-1",
     type: "Subscription Paused",
     wallet: "6yQm...A2Kd",
     plan: "Pro",
@@ -36,6 +51,7 @@ const ACTIVITY = [
     tone: "text-amber-600 border-amber-200 bg-amber-50",
   },
   {
+    id: "act-2",
     type: "Payment Executed",
     wallet: "9WzD...wsG",
     plan: "Pro",
@@ -44,6 +60,7 @@ const ACTIVITY = [
     tone: "text-emerald-600 border-emerald-200 bg-emerald-50",
   },
   {
+    id: "act-3",
     type: "Subscription Created",
     wallet: "FQJ2...GKY",
     plan: "Starter",
@@ -52,6 +69,7 @@ const ACTIVITY = [
     tone: "text-violet-600 border-violet-200 bg-violet-50",
   },
   {
+    id: "act-4",
     type: "Payment Executed",
     wallet: "HN7c...WrH",
     plan: "Enterprise",
@@ -60,6 +78,7 @@ const ACTIVITY = [
     tone: "text-emerald-600 border-emerald-200 bg-emerald-50",
   },
   {
+    id: "act-5",
     type: "Payment Failed",
     wallet: "5Zzg...7AB",
     plan: "Pro",
@@ -68,6 +87,7 @@ const ACTIVITY = [
     tone: "text-red-500 border-red-200 bg-red-50",
   },
   {
+    id: "act-6",
     type: "Subscription Cancelled",
     wallet: "DRpb...1hy",
     plan: "Starter",
@@ -99,11 +119,12 @@ function Sparkline({ d }: { d: string }) {
   );
 }
 
-function AreaChart() {
-  // line starts at y=126 (near bottom) and rises to y=4 (near top)
+function AreaChart({ progress }: { progress: number }) {
+  // Smooth rising line from left to right.
   const line =
-    "M0,126 C25,122 55,108 90,88 C125,68 150,70 178,58 C206,46 228,48 255,34 C272,24 285,14 300,4";
+    "M0,126 C18,124 38,118 60,108 C84,97 108,82 132,72 C156,62 180,60 204,50 C228,40 252,36 276,22 C286,16 293,10 300,6";
   const area = `${line} L300,130 L0,130 Z`;
+  const revealWidth = Math.max(3, Math.min(300, 300 * progress));
   return (
     <svg
       viewBox="0 0 300 130"
@@ -128,20 +149,30 @@ function AreaChart() {
           strokeDasharray="3 3"
         />
       ))}
-      <path d={area} fill="url(#ag)" />
-      <path
-        d={line}
-        stroke="#7c3aed"
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+
+      <clipPath id="chartReveal">
+        <rect x="0" y="0" width={revealWidth} height="130" />
+      </clipPath>
+
+      <g clipPath="url(#chartReveal)">
+        <path d={area} fill="url(#ag)" />
+        <path
+          d={line}
+          pathLength={1}
+          stroke="#7c3aed"
+          strokeWidth="2"
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeDasharray="1"
+          strokeDashoffset={1 - progress}
+        />
+      </g>
     </svg>
   );
 }
 
-function DonutChart() {
+function DonutChart({ progress }: { progress: number }) {
   const r = 40;
   const cx = 48;
   const cy = 48;
@@ -164,7 +195,7 @@ function DonutChart() {
           fill="none"
           stroke={s.color}
           strokeWidth="16"
-          strokeDasharray={`${s.dash} ${circ - s.dash}`}
+          strokeDasharray={`${s.dash * progress} ${circ - s.dash * progress}`}
           strokeDashoffset={-s.offset}
         />
       ))}
@@ -185,6 +216,13 @@ export default function AuthPage() {
   } = useMerchantWallet();
   const [isConnecting, setIsConnecting] = useState(false);
   const timeoutRef = useRef<number | null>(null);
+  const [introProgress, setIntroProgress] = useState(0);
+  const [displayedActivity, setDisplayedActivity] = useState(() =>
+    ACTIVITY.slice(2),
+  );
+  const [newActivityIds, setNewActivityIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   useEffect(() => {
     if (!authenticated || (ready && connected)) setIsConnecting(false);
@@ -196,6 +234,57 @@ export default function AuthPage() {
     },
     [],
   );
+
+  useEffect(() => {
+    let frame = 0;
+    const duration = 1300;
+    const start = performance.now();
+
+    const animate = (now: number) => {
+      const raw = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - raw, 3);
+      setIntroProgress(eased);
+      if (raw < 1) {
+        frame = window.requestAnimationFrame(animate);
+      }
+    };
+
+    frame = window.requestAnimationFrame(animate);
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const stagedItems = [ACTIVITY[1], ACTIVITY[0]];
+    const timers: number[] = [];
+
+    stagedItems.forEach((item, index) => {
+      const timer = window.setTimeout(
+        () => {
+          setDisplayedActivity((prev) =>
+            [item, ...prev].slice(0, ACTIVITY.length),
+          );
+          setNewActivityIds((prev) => {
+            const next = new Set(prev);
+            next.add(item.id);
+            return next;
+          });
+
+          window.requestAnimationFrame(() => {
+            setNewActivityIds((prev) => {
+              const next = new Set(prev);
+              next.delete(item.id);
+              return next;
+            });
+          });
+        },
+        450 + index * 700,
+      );
+
+      timers.push(timer);
+    });
+
+    return () => timers.forEach((timer) => window.clearTimeout(timer));
+  }, []);
 
   function handleConnect() {
     setIsConnecting(true);
@@ -328,7 +417,7 @@ export default function AuthPage() {
                 >
                   <p className="text-xs text-slate-400 mb-2">{m.label}</p>
                   <p className="text-[26px] font-bold text-slate-900 leading-none tracking-tight">
-                    {m.value}
+                    {m.formatter(m.target * introProgress)}
                   </p>
                   <div className="mt-3 flex items-center justify-between">
                     <span className="text-xs font-medium text-violet-600">
@@ -375,7 +464,7 @@ export default function AuthPage() {
                   </div>
                   <div className="flex min-w-0 flex-1 flex-col">
                     <div className="min-h-[190px] flex-1">
-                      <AreaChart />
+                      <AreaChart progress={introProgress} />
                     </div>
                     <div className="mt-2 flex justify-between text-[9px] text-slate-300">
                       {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"].map(
@@ -393,10 +482,17 @@ export default function AuthPage() {
                   Recent Activity
                 </p>
                 <div className="space-y-2">
-                  {ACTIVITY.map((e, i) => {
+                  {displayedActivity.map((e) => {
                     const Icon = e.icon;
                     return (
-                      <div key={i} className="flex items-center gap-2.5">
+                      <div
+                        key={e.id}
+                        className={`flex items-center gap-2.5 transition-all duration-500 ${
+                          newActivityIds.has(e.id)
+                            ? "-translate-y-2 opacity-0"
+                            : "translate-y-0 opacity-100"
+                        }`}
+                      >
                         <span
                           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border ${e.tone}`}
                         >
@@ -428,10 +524,10 @@ export default function AuthPage() {
                 </p>
                 <div className="flex items-center gap-4">
                   <div className="relative shrink-0">
-                    <DonutChart />
+                    <DonutChart progress={introProgress} />
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
                       <span className="text-base font-bold text-slate-900 leading-none">
-                        187
+                        {Math.round(187 * introProgress)}
                       </span>
                       <span className="text-[9px] text-slate-400 mt-0.5">
                         Total
@@ -452,9 +548,9 @@ export default function AuthPage() {
                           <span className="text-slate-600">{p.label}</span>
                         </span>
                         <span className="text-slate-400">
-                          {p.pct}%{" "}
+                          {Math.round(p.pct * introProgress)}%{" "}
                           <span className="text-slate-300 text-[10px]">
-                            {p.count}
+                            {Math.round(p.count * introProgress)}
                           </span>
                         </span>
                       </div>

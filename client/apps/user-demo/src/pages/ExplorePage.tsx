@@ -72,7 +72,7 @@ export function ExplorePage() {
             Recuro Memberships
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-black leading-tight text-white">
+            <h1 className="text-3xl md:text-4xl font-black leading-tight">
               Discover plans, keep control.
             </h1>
             <p className="mt-2 text-sm text-gray-300 leading-relaxed">
@@ -102,9 +102,7 @@ export function ExplorePage() {
               key={feature.title}
               className="p-4 border-netflix-gray bg-netflix-darkGray hover:border-netflix-red/40 transition-colors"
             >
-              <h3 className="text-sm font-semibold text-white">
-                {feature.title}
-              </h3>
+              <h3 className="text-sm font-semibold">{feature.title}</h3>
               <p className="mt-1 text-xs text-gray-400">{feature.desc}</p>
             </Card>
           ))}
