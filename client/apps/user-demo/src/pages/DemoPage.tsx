@@ -104,7 +104,7 @@ export function DemoPage() {
                   </p>
                 </div>
                 {plan.highlighted && (
-                  <Badge className="bg-primary/12 text-primary border-primary/25">
+                  <Badge className="shrink-0 whitespace-nowrap bg-primary/12 text-primary text-[10px] leading-none border-primary/25 px-2.5 py-1">
                     Most Popular
                   </Badge>
                 )}

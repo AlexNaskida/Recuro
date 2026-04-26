@@ -113,7 +113,7 @@ export function ExplorePage() {
         {/* Plans section */}
         <section className="space-y-3">
           <div>
-            <h2 className="text-xl font-bold text-white">Featured Plans</h2>
+            <h2 className="text-xl font-bold">Featured Plans</h2>
             <p className="text-sm text-gray-400">
               Browse and subscribe to available memberships
             </p>
