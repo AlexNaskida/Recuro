@@ -19,11 +19,11 @@ export function Topbar() {
             <Zap className="h-5 w-5 font-bold" />
           </div>
           <span className="text-xl font-bold tracking-tight text-foreground">
-            Merchant Demo
+            Merchant
           </span>
-          <span className="hidden sm:block rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary uppercase tracking-wider">
+          {/* <span className="hidden sm:block rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary uppercase tracking-wider">
             Devnet
-          </span>
+          </span> */}
         </div>
 
         {/* Nav */}
