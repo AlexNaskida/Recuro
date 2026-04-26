@@ -27,10 +27,12 @@ export interface ComparisonRow {
   competitors: string;
 }
 
-export interface BlogPost {
+export type BlogPost = {
+  slug: string;
   tag: string;
   title: string;
   date: string;
   readTime: string;
-  imageSrc: string;
-}
+  excerpt?: string;
+  body?: string;
+};

@@ -1,6 +1,18 @@
 import { BLOG_POSTS } from "@/lib/constants";
 import Button from "@/components/ui/Button";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
+
+function BlogThumbnail({ className = "" }: { className?: string }) {
+  return (
+    <div className={`flex items-center justify-center bg-surface ${className}`}>
+      <img
+        src="/Recuro.svg"
+        alt="Recuro"
+        className="h-16 w-16 select-none pointer-events-none"
+        draggable={false}
+      />
+    </div>
+  );
+}
 
 export default function BlogCards() {
   return (
@@ -25,24 +37,27 @@ export default function BlogCards() {
             key={post.title}
             className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition-transform duration-200 hover:-translate-y-1"
           >
-            <div className="border-b border-dashed border-border bg-bg">
-              <ImagePlaceholder
-                tint="neutral"
-                imageSrc={post.imageSrc}
-                imageAlt={post.title}
-                className="min-h-[140px] border-0 shadow-none"
-              />
+            <div className="border-b border-dashed border-border">
+              <BlogThumbnail className="min-h-[140px]" />
             </div>
             <div className="space-y-3 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
                 {post.tag}
               </p>
               <h3 className="font-display text-xl font-extrabold tracking-tight text-text-primary">
-                {post.title}
+                <a href={`/blog/${post.slug}`} className="hover:underline">
+                  {post.title}
+                </a>
               </h3>
               <p className="text-sm text-text-tertiary">
                 {post.date} · {post.readTime}
               </p>
+              <a
+                href={`/blog/${post.slug}`}
+                className="inline-flex text-sm font-semibold text-accent hover:opacity-80"
+              >
+                Read article →
+              </a>
             </div>
           </article>
         ))}
