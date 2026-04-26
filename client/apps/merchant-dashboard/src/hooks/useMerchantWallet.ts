@@ -8,8 +8,19 @@ export function useMerchantWallet() {
   const { wallets, ready: walletsReady } = useWallets();
   const { signTransaction } = useSignTransaction();
 
-  const connectedWallet = wallets[0] ?? null;
-  const walletAddress = connectedWallet?.address ?? "";
+  const connectedWallet =
+    wallets.find(
+      (wallet) =>
+        typeof wallet.address === "string" && wallet.address.length > 0,
+    ) ?? null;
+  const fallbackWalletAddress =
+    ((privy.user as any)?.wallet?.address as string | undefined) ??
+    (((privy.user as any)?.linkedAccounts as Array<any> | undefined)?.find(
+      (account) =>
+        account?.chainType === "solana" && typeof account?.address === "string",
+    )?.address as string | undefined) ??
+    "";
+  const walletAddress = connectedWallet?.address ?? fallbackWalletAddress;
 
   const publicKey = useMemo(() => {
     if (!walletAddress) return null;
@@ -52,10 +63,10 @@ export function useMerchantWallet() {
   }, [connectedWallet, publicKey, signTransaction]);
 
   return {
-    ready: privy.ready && walletsReady,
+    ready: privy.ready,
     authenticated: privy.authenticated,
-    connected: privy.authenticated && !!connectedWallet,
-    connecting: !privy.ready || !walletsReady,
+    connected: privy.authenticated && !!walletAddress,
+    connecting: !privy.ready,
     publicKey,
     walletAddress,
     wallet: anchorWallet,

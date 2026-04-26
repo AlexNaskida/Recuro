@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 import {
   Pause,
@@ -120,7 +120,6 @@ function Sparkline({ d }: { d: string }) {
 }
 
 function AreaChart({ progress }: { progress: number }) {
-  // Smooth rising line from left to right.
   const line =
     "M0,126 C18,124 38,118 60,108 C84,97 108,82 132,72 C156,62 180,60 204,50 C228,40 252,36 276,22 C286,16 293,10 300,6";
   const area = `${line} L300,130 L0,130 Z`;
@@ -149,11 +148,9 @@ function AreaChart({ progress }: { progress: number }) {
           strokeDasharray="3 3"
         />
       ))}
-
       <clipPath id="chartReveal">
         <rect x="0" y="0" width={revealWidth} height="130" />
       </clipPath>
-
       <g clipPath="url(#chartReveal)">
         <path d={area} fill="url(#ag)" />
         <path
@@ -205,6 +202,7 @@ function DonutChart({ progress }: { progress: number }) {
 }
 
 export default function AuthPage() {
+  const navigate = useNavigate();
   const {
     ready,
     authenticated,
@@ -214,6 +212,7 @@ export default function AuthPage() {
     link,
     login,
   } = useMerchantWallet();
+
   const [isConnecting, setIsConnecting] = useState(false);
   const timeoutRef = useRef<number | null>(null);
   const [introProgress, setIntroProgress] = useState(0);
@@ -224,10 +223,21 @@ export default function AuthPage() {
     () => new Set(),
   );
 
+  // ── Redirect once Privy is fully ready AND wallet is hydrated ──
   useEffect(() => {
-    if (!authenticated || (ready && connected)) setIsConnecting(false);
+    if (ready && authenticated && connected) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [ready, authenticated, connected, navigate]);
+
+  // ── Reset spinner whenever auth state settles ──
+  useEffect(() => {
+    if (!authenticated || (ready && connected)) {
+      setIsConnecting(false);
+    }
   }, [authenticated, ready, connected]);
 
+  // ── Cleanup timeout on unmount ──
   useEffect(
     () => () => {
       if (timeoutRef.current) window.clearTimeout(timeoutRef.current);
@@ -235,40 +245,39 @@ export default function AuthPage() {
     [],
   );
 
+  // ── Animate dashboard intro on mount ──
   useEffect(() => {
     let frame = 0;
     const duration = 1300;
     const start = performance.now();
-
     const animate = (now: number) => {
       const raw = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - raw, 3);
       setIntroProgress(eased);
-      if (raw < 1) {
-        frame = window.requestAnimationFrame(animate);
-      }
+      if (raw < 1) frame = window.requestAnimationFrame(animate);
     };
-
     frame = window.requestAnimationFrame(animate);
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  // ── Stage activity feed items ──
   useEffect(() => {
     const stagedItems = [ACTIVITY[1], ACTIVITY[0]];
     const timers: number[] = [];
-
     stagedItems.forEach((item, index) => {
       const timer = window.setTimeout(
         () => {
           setDisplayedActivity((prev) =>
-            [item, ...prev].slice(0, ACTIVITY.length),
+            [item, ...prev.filter((entry) => entry.id !== item.id)].slice(
+              0,
+              ACTIVITY.length,
+            ),
           );
           setNewActivityIds((prev) => {
             const next = new Set(prev);
             next.add(item.id);
             return next;
           });
-
           window.requestAnimationFrame(() => {
             setNewActivityIds((prev) => {
               const next = new Set(prev);
@@ -279,18 +288,16 @@ export default function AuthPage() {
         },
         450 + index * 700,
       );
-
       timers.push(timer);
     });
-
-    return () => timers.forEach((timer) => window.clearTimeout(timer));
+    return () => timers.forEach((t) => window.clearTimeout(t));
   }, []);
 
   function handleConnect() {
     setIsConnecting(true);
     const action = authenticated
-      ? (connectWallet ?? link ?? connectOrCreateWallet)
-      : (login ?? connectWallet ?? connectOrCreateWallet);
+      ? (connectOrCreateWallet ?? connectWallet ?? link)
+      : (login ?? connectOrCreateWallet ?? connectWallet);
     try {
       if (!action) throw new Error("No wallet action available");
       void action();
@@ -304,9 +311,6 @@ export default function AuthPage() {
       timeoutRef.current = null;
     }, 15_000);
   }
-
-  if (ready && authenticated && connected)
-    return <Navigate to="/dashboard" replace />;
 
   return (
     <div className="min-h-screen bg-[#050b24] text-white lg:grid lg:grid-cols-[1fr_1.15fr] lg:divide-x lg:divide-white/10">
@@ -356,12 +360,9 @@ export default function AuthPage() {
 
       {/* ── RIGHT: dashboard preview ─────────────────────── */}
       <section className="relative hidden lg:flex lg:items-end lg:justify-end overflow-hidden">
-        {/* cross-hatch bg */}
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,rgba(167,139,250,0.14)_1px,transparent_0)] [background-size:22px_22px] opacity-50" />
-        {/* glow */}
         <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-violet-600/10 blur-3xl" />
 
-        {/* Card — flush right + bottom, open top-right corner via border trick */}
         <div
           className="relative flex overflow-hidden bg-white shadow-[0_32px_80px_-10px_rgba(2,6,23,0.8)]"
           style={{
@@ -380,12 +381,11 @@ export default function AuthPage() {
               <div
                 key={i}
                 className={`flex h-11 w-11 items-center justify-center rounded-xl transition-colors
-                ${i === 0 ? "bg-violet-100 text-violet-600" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
+                  ${i === 0 ? "bg-violet-100 text-violet-600" : "text-slate-400 hover:bg-slate-100 hover:text-slate-600"}`}
               >
                 <Icon className="h-[22px] w-[22px]" />
               </div>
             ))}
-            {/* Bottom */}
             <div className="mt-auto flex h-11 w-11 items-center justify-center rounded-xl text-slate-400 hover:bg-slate-100">
               <Settings className="h-[22px] w-[22px]" />
             </div>
@@ -593,8 +593,7 @@ export default function AuthPage() {
                         {p.rev}
                       </span>
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0
-                        ${
+                        className={`text-[10px] px-2 py-0.5 rounded-full border font-medium shrink-0 ${
                           p.s === "active"
                             ? "text-violet-600 bg-violet-50 border-violet-200"
                             : "text-amber-600 bg-amber-50 border-amber-200"
