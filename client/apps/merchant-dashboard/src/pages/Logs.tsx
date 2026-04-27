@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { EventParser } from "@coral-xyz/anchor";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Accordion,
@@ -564,17 +563,6 @@ export default function Logs() {
           On-chain subscription activity for your plans
         </p>
       </div>
-
-      {usingMock && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {publicKey
-              ? "No on-chain activity found for your plans."
-              : "Connect your wallet to see real execution logs."}
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Filter */}
       <div className="flex gap-2 flex-wrap">

@@ -31,20 +31,35 @@ export interface CreatePlanInput {
 }
 
 export function useCreatePlan() {
-  const { publicKey, connected } = useMerchantWallet();
+  const { publicKey, connected, canSignTransactions } = useMerchantWallet();
   const { program } = useAnchorProgram();
   const [loading, setLoading] = useState(false);
 
+  const canCreate = !!program && !!publicKey && canSignTransactions;
+  const createDisabledReason = !connected
+    ? "Connect wallet first"
+    : !canSignTransactions
+      ? "Wallet session is not ready for signing. Reconnect your wallet in Privy and try again."
+      : !program
+        ? "Program is not ready"
+        : !publicKey
+          ? "Wallet public key is missing"
+          : null;
+
   const createPlan = async (input: CreatePlanInput): Promise<string | null> => {
-    if (!program || !connected || !publicKey)
-      throw new Error("Wallet not connected");
+    if (!canCreate) {
+      throw new Error(createDisabledReason ?? "Wallet is not ready");
+    }
 
     setLoading(true);
     try {
       const planId = new BN(Date.now());
       const planPubkey = getPlanPDA(publicKey, planId);
       const usdcMint = new PublicKey(USDC_MINT);
-      const merchantTokenAccount = getAssociatedTokenAddress(usdcMint, publicKey);
+      const merchantTokenAccount = getAssociatedTokenAddress(
+        usdcMint,
+        publicKey,
+      );
 
       const sig = await program.methods
         .createPlan({
@@ -80,6 +95,7 @@ export function useCreatePlan() {
   return {
     createPlan,
     loading,
-    canCreate: !!program && connected && !!publicKey,
+    canCreate,
+    createDisabledReason,
   };
 }
