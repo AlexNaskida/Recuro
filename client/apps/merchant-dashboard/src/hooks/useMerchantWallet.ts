@@ -62,10 +62,13 @@ export function useMerchantWallet() {
     };
   }, [connectedWallet, publicKey, signTransaction]);
 
+  const canSignTransactions = !!anchorWallet;
+
   return {
     ready: privy.ready,
     authenticated: privy.authenticated,
     connected: privy.authenticated && !!walletAddress,
+    canSignTransactions,
     connecting: !privy.ready,
     publicKey,
     walletAddress,

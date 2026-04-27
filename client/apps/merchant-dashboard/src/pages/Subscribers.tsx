@@ -21,11 +21,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Copy, Check, AlertCircle } from "lucide-react";
+import { Copy, Check } from "lucide-react";
 import WalletIdenticon from "@/components/WalletIdenticon";
 import { useSubscribers } from "@/hooks/useSubscribers";
-import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
 function truncateWallet(addr: string) {
   return addr.slice(0, 4) + "..." + addr.slice(-4);
@@ -39,8 +37,7 @@ const statusStyles: Record<string, string> = {
 };
 
 export default function Subscribers() {
-  const { connected } = useMerchantWallet();
-  const { subscribers, loading, usingMock } = useSubscribers();
+  const { subscribers, loading } = useSubscribers();
   const [planFilter, setPlanFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
@@ -67,17 +64,6 @@ export default function Subscribers() {
 
   return (
     <div className="space-y-4">
-      {usingMock && (
-        <Alert>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {connected
-              ? "No on-chain subscribers found."
-              : "Connect wallet to see real subscriber data."}
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="flex gap-3">
         <Select value={planFilter} onValueChange={setPlanFilter}>
           <SelectTrigger className="w-40">

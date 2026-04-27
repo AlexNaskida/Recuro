@@ -10,6 +10,38 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string) {
+  return new Promise<T>((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise
+      .then((value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        window.clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
+
+function deriveAssociatedTokenAddress(
+  mint: PublicKey,
+  owner: PublicKey,
+): PublicKey {
+  const tokenProgramId = new PublicKey(
+    "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+  );
+  const associatedTokenProgramId = new PublicKey(
+    "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+  );
+
+  return PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), tokenProgramId.toBuffer(), mint.toBuffer()],
+    associatedTokenProgramId,
+  )[0];
+}
+
 function buildOptimisticSubscription(
   subscriptionPubkey: PublicKey,
   planPubkey: PublicKey,
@@ -160,44 +192,47 @@ export function useSubscribe() {
       }
 
       const plan = new PublicKey(planPubkey);
-      const info = await sdk.provider.connection.getAccountInfo(
-        plan,
-        "confirmed",
+      const decodedPlan = await withTimeout(
+        sdk.fetchPlan(plan),
+        12_000,
+        "Timed out reading plan account from RPC.",
       );
-      if (!info) {
-        throw new Error(
-          "Plan account not found on devnet. Use a newly created plan.",
-        );
-      }
 
-      if (!info.owner.equals(sdk.programId)) {
-        throw new Error(
-          `Selected plan belongs to another program (${info.owner.toBase58()}). Use a plan owned by ${sdk.programId.toBase58()}.`,
-        );
-      }
-
-      const decodedPlan = await sdk.fetchPlan(plan);
       if (!decodedPlan) {
-        throw new Error(
-          `Plan could not be decoded by program ${sdk.programId.toBase58()}. Submitted=${plan.toBase58()} owner=${info.owner.toBase58()}.`,
-        );
+        throw new Error("Plan not found on chain.");
       }
 
-      const [expectedPlanPda] = PublicKey.findProgramAddressSync(
-        [
-          Buffer.from("plan"),
-          decodedPlan.merchant.toBuffer(),
-          decodedPlan.planId.toArrayLike(Buffer, "le", 8),
-        ],
+      if (decodedPlan.status !== "Active") {
+        throw new Error("Plan is not accepting new subscribers.");
+      }
+
+      const subscriber = wallet.publicKey;
+      const [subscriptionPubkey] = PublicKey.findProgramAddressSync(
+        [Buffer.from("subscription"), plan.toBuffer(), subscriber.toBuffer()],
         sdk.programId,
       );
-      if (!expectedPlanPda.equals(plan)) {
-        throw new Error(
-          `Plan PDA mismatch. submitted=${plan.toBase58()} expected=${expectedPlanPda.toBase58()} program=${sdk.programId.toBase58()}.`,
-        );
-      }
 
-      return sdk.createSubscription({ planPubkey: plan });
+      const subscriberTokenAccount = deriveAssociatedTokenAddress(
+        sdk.usdcMint,
+        subscriber,
+      );
+
+      const signature = await withTimeout(
+        (sdk.program as any).methods
+          .createSubscription()
+          .accountsPartial({
+            subscriber,
+            usdcMint: sdk.usdcMint,
+            plan,
+            subscription: subscriptionPubkey,
+            subscriberTokenAccount,
+          })
+          .rpc({ commitment: "confirmed" }),
+        30_000,
+        "No wallet prompt or RPC confirmation within 30s. Reconnect wallet and try again.",
+      );
+
+      return { signature: String(signature), subscriptionPubkey };
     },
     onSuccess: async (result, variables) => {
       const queryKey = SUBSCRIPTION_QUERY_KEYS.my(wallet?.publicKey.toBase58());

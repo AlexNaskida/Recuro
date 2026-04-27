@@ -48,7 +48,15 @@ export function Topbar() {
         </nav>
 
         {/* Wallet */}
-        <WalletMultiButton />
+        <WalletMultiButton
+          style={{
+            height: 40,
+            borderRadius: 12,
+            fontSize: 14,
+            padding: "0 16px",
+          }}
+          className="!bg-primary !text-primary-foreground !border !border-primary/25 hover:!bg-primary/90 hover:!border-primary/40 transition-colors"
+        />
       </div>
     </header>
   );
