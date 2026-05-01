@@ -1,8 +1,8 @@
 import { POWERED_STATS } from "@/lib/constants";
 import {
-  SaaSPreview,
-  MembershipPreview,
-  ContentPreview,
+  ProtocolPreview,
+  WalletPreview,
+  KeeperPreview,
 } from "@/components/sections/PoweredByVisuals";
 
 export default function PoweredBy() {
@@ -13,7 +13,7 @@ export default function PoweredBy() {
           Powered by Recuro
         </p>
         <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">
-          Subscription infrastructure that composes with your stack
+          On-chain subscriptions with 24/7 keeper coverage
         </h2>
       </div>
 
@@ -29,9 +29,9 @@ export default function PoweredBy() {
       </div>
 
       <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <SaaSPreview />
-        <MembershipPreview />
-        <ContentPreview />
+        <ProtocolPreview />
+        <WalletPreview />
+        <KeeperPreview />
       </div>
     </section>
   );

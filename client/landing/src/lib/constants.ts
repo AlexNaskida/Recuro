@@ -38,7 +38,7 @@ export const STATS: StatItem[] = [
 ];
 
 export const POWERED_STATS: StatItem[] = [
-  { value: "$100M+", label: "subscription volume modeled" },
+  { value: "$100M+", label: "recurring volume modeled" },
   { value: "24/7", label: "keeper execution coverage" },
   { value: "1", label: "price source per plan" },
 ];
@@ -50,10 +50,10 @@ export const FEATURE_ROWS: FeatureRowData[] = [
     description:
       "Launch subscription billing with Solana's on-chain price immutability and a user experience that rivals Web2 in minutes, not months.",
     checklist: [
-      "SaaS platforms with monthly or annual billing",
-      "Membership programs with cancellation anytime",
-      "Content platforms with subscription-gated access",
-      "Service marketplaces with recurring billing",
+      "Recurring USDC subscriptions for merchants and creators",
+      "Wallet-based memberships with instant cancellation",
+      "Gated access for communities, courses, and updates",
+      "Service marketplaces that need predictable billing",
       "Plan price locked forever in the on-chain Plan account",
     ],
     ctaLabel: "Integration guide →",
