@@ -1,4 +1,4 @@
-// PoweredByVisuals.tsx — three mini app previews matching Recuro dashboard style
+// PoweredByVisuals.tsx — protocol-native previews for the landing page
 import { cn } from "@/lib/cn";
 
 function DashCard({
@@ -42,19 +42,18 @@ function Badge({
   );
 }
 
-// ─── 1. SaaS — plan setup + billing overview ──────────────────────────────────
-export function SaaSPreview() {
+// ─── 1. Protocol — plan setup + billing overview ──────────────────────────────
+export function ProtocolPreview() {
   return (
     <div className="flex flex-col gap-2.5 p-4 bg-gradient-to-br from-slate-50 to-violet-50/20 rounded-2xl border border-gray-200 h-full">
       <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
-        SaaS billing
+        Protocol plans
       </div>
 
-      {/* Plan summary cards */}
       <div className="grid grid-cols-2 gap-2">
         {[
           {
-            name: "Starter",
+            name: "Creator",
             price: "$9.99",
             subs: 47,
             status: "active" as const,
@@ -88,7 +87,7 @@ export function SaaSPreview() {
       <DashCard className="p-2.5">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-semibold text-gray-700">
-            Monthly Revenue
+            Plan totals
           </span>
           <span className="text-[10px] font-bold text-violet-600">
             $4,308.25
@@ -120,14 +119,13 @@ export function SaaSPreview() {
         </div>
       </DashCard>
 
-      {/* Latest payment row */}
       <DashCard className="px-3 py-2">
         <div className="text-[9px] font-semibold text-gray-400 mb-1.5">
-          Latest payments
+          Latest executions
         </div>
         {[
           { wallet: "9WzD...wsG", plan: "Pro", amount: "$29.99" },
-          { wallet: "FQJ2...GKY", plan: "Starter", amount: "$9.99" },
+          { wallet: "FQJ2...GKY", plan: "Creator", amount: "$9.99" },
         ].map((r, i) => (
           <div
             key={i}
@@ -149,74 +147,44 @@ export function SaaSPreview() {
   );
 }
 
-// ─── 2. Membership — tier access + subscriber profile ────────────────────────
-export function MembershipPreview() {
-  const tiers = [
+// ─── 2. Wallet — scoped approval + revoke flow ───────────────────────────────
+export function WalletPreview() {
+  const approvals = [
     {
-      name: "Community",
-      price: "$0",
-      members: 1240,
-      access: ["Public posts", "Discord read"],
-      color: "bg-gray-200",
+      label: "One-cycle delegate",
+      value: "Exact amount only",
+      color: "bg-emerald-400",
     },
     {
-      name: "Member",
-      price: "$9.99",
-      members: 312,
-      access: ["All community", "Monthly AMA"],
-      color: "bg-violet-400",
-    },
-    {
-      name: "Pro",
-      price: "$29.99",
-      members: 88,
-      access: ["All member", "1:1 sessions", "Courses"],
-      color: "bg-violet-600",
+      label: "Wallet control",
+      value: "Revoke in Phantom",
+      color: "bg-violet-500",
     },
   ];
 
   return (
     <div className="flex flex-col gap-2.5 p-4 bg-gradient-to-br from-slate-50 to-violet-50/20 rounded-2xl border border-gray-200 h-full">
       <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
-        Membership
+        Subscriber safety
       </div>
 
-      {/* Tiers */}
-      {tiers.map((t) => (
-        <DashCard key={t.name} className="p-2.5">
-          <div className="flex items-center justify-between mb-1.5">
+      {approvals.map((item) => (
+        <DashCard key={item.label} className="p-2.5">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5">
-              <div className={cn("h-2 w-2 rounded-full", t.color)} />
+              <div className={cn("h-2 w-2 rounded-full", item.color)} />
               <span className="text-[10px] font-semibold text-gray-800">
-                {t.name}
+                {item.label}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-bold text-gray-900">
-                {t.price}
-                <span className="text-[8px] font-normal text-gray-400">
-                  /mo
-                </span>
-              </span>
-              <span className="text-[9px] text-gray-400">
-                {t.members.toLocaleString()} members
-              </span>
-            </div>
+            <span className="text-[9px] text-gray-400">Active now</span>
           </div>
-          <div className="flex flex-wrap gap-1">
-            {t.access.map((a) => (
-              <span
-                key={a}
-                className="text-[8px] bg-gray-50 border border-gray-100 text-gray-500 rounded px-1.5 py-0.5"
-              >
-                {a}
-              </span>
-            ))}
+          <div className="mt-1.5 text-[10px] font-medium text-gray-500">
+            {item.value}
           </div>
         </DashCard>
       ))}
 
-      {/* Cancel indicator */}
       <DashCard className="px-3 py-2 flex items-center gap-2">
         <div className="h-6 w-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center shrink-0">
           <svg
@@ -243,47 +211,37 @@ export function MembershipPreview() {
   );
 }
 
-// ─── 3. Content — gated content platform ─────────────────────────────────────
-export function ContentPreview() {
-  const posts = [
+// ─── 3. Keeper — execution coverage and redundancy ───────────────────────────
+export function KeeperPreview() {
+  const keepers = [
     {
-      title: "Q2 Investor Update",
-      plan: "Pro",
-      status: "gated" as const,
-      date: "Apr 24",
-    },
-    {
-      title: "Architecture Deep Dive",
-      plan: "Member",
-      status: "gated" as const,
-      date: "Apr 20",
-    },
-    {
-      title: "Why we chose Solana",
-      plan: "Public",
+      name: "Primary",
       status: "active" as const,
-      date: "Apr 15",
+      detail: "Merchant-run keeper",
     },
     {
-      title: "Keeper economics explainer",
-      plan: "Member",
+      name: "Backup",
+      status: "active" as const,
+      detail: "Managed service fallback",
+    },
+    {
+      name: "Public",
       status: "gated" as const,
-      date: "Apr 10",
+      detail: "Permissionless execution",
     },
   ];
 
   return (
     <div className="flex flex-col gap-2.5 p-4 bg-gradient-to-br from-slate-50 to-violet-50/20 rounded-2xl border border-gray-200 h-full">
       <div className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
-        Content platform
+        Keeper network
       </div>
 
-      {/* Stats row */}
       <div className="grid grid-cols-3 gap-2">
         {[
-          { label: "Subscribers", value: "843" },
-          { label: "Posts", value: "34" },
-          { label: "MRR", value: "$2.1k" },
+          { label: "Uptime", value: "24/7" },
+          { label: "Missed cycles", value: "0" },
+          { label: "Fallbacks", value: "3" },
         ].map((s) => (
           <DashCard key={s.label} className="p-2 text-center">
             <div className="text-sm font-bold text-gray-900">{s.value}</div>
@@ -292,26 +250,25 @@ export function ContentPreview() {
         ))}
       </div>
 
-      {/* Content list */}
       <DashCard>
         <div className="px-3 py-2 border-b border-gray-100 text-[9px] font-semibold text-gray-400 uppercase tracking-wide">
-          Recent posts
+          Execution queue
         </div>
-        {posts.map((p, i) => (
+        {keepers.map((keeper, i) => (
           <div
             key={i}
             className={cn(
               "flex items-center gap-2 px-3 py-2 text-[10px]",
-              i < posts.length - 1 && "border-b border-gray-50",
+              i < keepers.length - 1 && "border-b border-gray-50",
             )}
           >
             <div
               className={cn(
                 "h-5 w-5 rounded flex items-center justify-center shrink-0",
-                p.status === "gated" ? "bg-violet-50" : "bg-emerald-50",
+                keeper.status === "gated" ? "bg-violet-50" : "bg-emerald-50",
               )}
             >
-              {p.status === "gated" ? (
+              {keeper.status === "gated" ? (
                 <svg
                   className="h-2.5 w-2.5 text-violet-500"
                   viewBox="0 0 16 16"
@@ -337,23 +294,13 @@ export function ContentPreview() {
                 </svg>
               )}
             </div>
-            <span className="flex-1 font-medium text-gray-700 truncate">
-              {p.title}
-            </span>
-            <span
-              className={cn(
-                "text-[9px] px-1.5 py-0.5 rounded-full border shrink-0",
-                p.plan === "Pro" &&
-                  "text-violet-600 bg-violet-50 border-violet-200",
-                p.plan === "Member" &&
-                  "text-blue-600 bg-blue-50 border-blue-200",
-                p.plan === "Public" &&
-                  "text-emerald-600 bg-emerald-50 border-emerald-200",
-              )}
-            >
-              {p.plan}
-            </span>
-            <span className="text-gray-300 text-[9px] shrink-0">{p.date}</span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-gray-700 truncate">
+                {keeper.name}
+              </div>
+              <div className="text-[9px] text-gray-400">{keeper.detail}</div>
+            </div>
+            <Badge variant={keeper.status} />
           </div>
         ))}
       </DashCard>
