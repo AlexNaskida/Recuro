@@ -162,6 +162,41 @@ pub struct AuthorizePayment<'info> {
     pub clock: Sysvar<'info, Clock>,
 }
 
+#[derive(Accounts)]
+pub struct ResetLastExecuted<'info> {
+    /// The authorized Recuro program, calling via CPI
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    /// The Guard account for this subscription
+    #[account(
+        mut,
+        seeds = [b"guard", guard_account.subscription.as_ref()],
+        bump = guard_account.bump,
+    )]
+    pub guard_account: Account<'info, GuardAccount>,
+}
+
+#[derive(Accounts)]
+pub struct CloseGuard<'info> {
+    /// The authorized Recuro program, calling via CPI
+    #[account(mut)]
+    pub caller: Signer<'info>,
+
+    /// The Guard account to close
+    #[account(
+        mut,
+        seeds = [b"guard", guard_account.subscription.as_ref()],
+        bump = guard_account.bump,
+        close = subscriber,
+    )]
+    pub guard_account: Account<'info, GuardAccount>,
+
+    /// Subscriber receives rent back
+    #[account(mut, address = guard_account.subscriber)]
+    pub subscriber: SystemAccount<'info>,
+}
+
 pub fn handler_authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
     let guard = &mut ctx.accounts.guard_account;
@@ -233,6 +268,38 @@ pub fn handler_authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
     Ok(())
 }
 
+pub fn handler_reset_last_executed(ctx: Context<ResetLastExecuted>) -> Result<()> {
+    let guard = &mut ctx.accounts.guard_account;
+
+    require_eq!(
+        ctx.accounts.caller.key(),
+        guard.recuro_program,
+        GuardError::UnauthorizedCaller
+    );
+
+    guard.last_executed_at = 0;
+
+    msg!(
+        "[guard.reset_last_executed] subscription={}",
+        guard.subscription
+    );
+
+    Ok(())
+}
+
+pub fn handler_close_guard(ctx: Context<CloseGuard>) -> Result<()> {
+    let guard = &ctx.accounts.guard_account;
+
+    require_eq!(
+        ctx.accounts.caller.key(),
+        guard.recuro_program,
+        GuardError::UnauthorizedCaller
+    );
+
+    msg!("[guard.close] subscription={} closed", guard.subscription);
+    Ok(())
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Program entry point
 // ─────────────────────────────────────────────────────────────────────────────
@@ -251,5 +318,13 @@ pub mod recuro_guard {
 
     pub fn authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
         handler_authorize_payment(ctx)
+    }
+
+    pub fn reset_last_executed(ctx: Context<ResetLastExecuted>) -> Result<()> {
+        handler_reset_last_executed(ctx)
+    }
+
+    pub fn close_guard(ctx: Context<CloseGuard>) -> Result<()> {
+        handler_close_guard(ctx)
     }
 }

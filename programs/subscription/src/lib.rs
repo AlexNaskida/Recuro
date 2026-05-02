@@ -75,6 +75,10 @@ pub mod subscription {
         instructions::cancel_subscription::handler(ctx)
     }
 
+    pub fn close_subscription(ctx: Context<CloseSubscription>) -> Result<()> {
+        instructions::close_subscription::handler(ctx)
+    }
+
     // ── Billing (keeper) ───────────────────────────────────────────────────
     pub fn execute_payment(ctx: Context<ExecutePayment>) -> Result<()> {
         instructions::execute_payment::handler(ctx)

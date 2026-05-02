@@ -4,6 +4,7 @@ use crate::{
     state::{Plan, Subscription, SubscriptionCancelled, SubscriptionStatus},
 };
 use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Revoke, Token, TokenAccount};
 
 #[derive(Accounts)]
 pub struct CancelSubscription<'info> {
@@ -25,6 +26,15 @@ pub struct CancelSubscription<'info> {
     #[account(mut, address = subscription.plan)]
     pub plan: Account<'info, Plan>,
 
+    #[account(
+        mut,
+        address = subscription.subscriber_token_account
+            @ SubscriptionError::InvalidSubscriberTokenAccount,
+    )]
+    pub subscriber_token_account: Account<'info, TokenAccount>,
+
+    pub token_program: Program<'info, Token>,
+
     pub system_program: Program<'info, System>,
 }
 
@@ -42,6 +52,16 @@ pub fn handler(ctx: Context<CancelSubscription>) -> Result<()> {
     sub.status = SubscriptionStatus::Cancelled;
     sub.ended_at = now;
     plan.active_subscribers = plan.active_subscribers.saturating_sub(1);
+
+    if authority == sub.subscriber {
+        token::revoke(CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Revoke {
+                source: ctx.accounts.subscriber_token_account.to_account_info(),
+                authority: ctx.accounts.authority.to_account_info(),
+            },
+        ))?;
+    }
 
     emit!(SubscriptionCancelled {
         subscription: sub.key(),
