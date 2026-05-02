@@ -31,6 +31,8 @@ pub enum SubscriptionError {
     AlreadyCancelled,
     #[msg("Subscription has already expired due to repeated payment failures")]
     AlreadyExpired,
+    #[msg("Subscription must be Cancelled or Expired to be closed")]
+    SubscriptionNotTerminal,
     #[msg("Subscription is still within its trial period; no payment due yet")]
     InTrialPeriod,
     #[msg("Next payment date has not been reached yet")]

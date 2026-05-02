@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
 use recuro_guard::cpi::accounts::AuthorizePayment as GuardAuthorizePayment;
 use recuro_guard::program::RecuroGuard;
 use recuro_guard::GuardAccount;
@@ -31,7 +31,7 @@ pub struct ExecutePayment<'info> {
 
     /// Protocol config - reads fee_bps and treasury
     #[account(seeds = [b"config"], bump = config.bump)]
-    pub config: Account<'info, ProtocolConfig>,
+    pub config: Box<Account<'info, ProtocolConfig>>,
 
     #[account(
         mut,
@@ -39,10 +39,10 @@ pub struct ExecutePayment<'info> {
         bump  = subscription.bump,
         constraint = subscription.is_active() @ SubscriptionError::SubscriptionNotActive,
     )]
-    pub subscription: Account<'info, Subscription>,
+    pub subscription: Box<Account<'info, Subscription>>,
 
     #[account(mut, address = subscription.plan)]
-    pub plan: Account<'info, Plan>,
+    pub plan: Box<Account<'info, Plan>>,
 
     /// Subscriber's USDC ATA - source of ALL funds (plan amount + fee)
     #[account(
@@ -50,7 +50,7 @@ pub struct ExecutePayment<'info> {
         address = subscription.subscriber_token_account
             @ SubscriptionError::InvalidSubscriberTokenAccount,
     )]
-    pub subscriber_token_account: Account<'info, TokenAccount>,
+    pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Merchant's USDC ATA - receives the full plan amount
     #[account(
@@ -58,7 +58,7 @@ pub struct ExecutePayment<'info> {
         address = plan.merchant_token_account
             @ SubscriptionError::InvalidMerchantTokenAccount,
     )]
-    pub merchant_token_account: Account<'info, TokenAccount>,
+    pub merchant_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Guard account - validates payment authorization and timing
     #[account(
@@ -67,19 +67,21 @@ pub struct ExecutePayment<'info> {
         bump = guard_account.bump,
         constraint = guard_account.subscription == subscription.key(),
     )]
-    pub guard_account: Account<'info, GuardAccount>,
+    pub guard_account: Box<Account<'info, GuardAccount>>,
 
     /// USDC mint for guarded transfer_checked
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
-    pub usdc_mint: Account<'info, Mint>,
+    pub usdc_mint: Box<Account<'info, Mint>>,
 
     /// Protocol treasury ATA - receives the fee
     #[account(
         mut,
         constraint = treasury_token_account.owner == config.treasury
             @ SubscriptionError::InvalidTreasuryTokenAccount,
+        constraint = treasury_token_account.mint == plan.usdc_mint
+            @ SubscriptionError::InvalidTreasuryTokenAccount,
     )]
-    pub treasury_token_account: Account<'info, TokenAccount>,
+    pub treasury_token_account: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: read-only reference to the subscriber wallet
     #[account(address = subscription.subscriber)]
@@ -208,17 +210,19 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
 
     // ── Transfer 2: fee → treasury ────────────────────────────────────────────
     if fee > 0 {
-        token::transfer(
+        token::transfer_checked(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
-                Transfer {
+                TransferChecked {
                     from: ctx.accounts.subscriber_token_account.to_account_info(),
                     to: ctx.accounts.treasury_token_account.to_account_info(),
+                    mint: ctx.accounts.usdc_mint.to_account_info(),
                     authority: subscription_account_info.clone(),
                 },
                 signer_seeds,
             ),
             fee,
+            ctx.accounts.usdc_mint.decimals,
         )?;
     }
 

@@ -9,7 +9,9 @@ use recuro_guard::program::RecuroGuard;
 use crate::{
     constants::*,
     errors::SubscriptionError,
-    state::{Plan, PlanStatus, Subscription, SubscriptionCreated, SubscriptionStatus},
+    state::{
+        Plan, PlanStatus, ProtocolConfig, Subscription, SubscriptionCreated, SubscriptionStatus,
+    },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,6 +37,10 @@ pub struct CreateSubscription<'info> {
         constraint = plan.has_capacity()              @ SubscriptionError::PlanAtCapacity,
     )]
     pub plan: Account<'info, Plan>,
+
+    /// Protocol config - provides the live fee basis points
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Account<'info, ProtocolConfig>,
 
     /// Subscription PDA - created on first subscribe, reused on re-subscribe after cancel/expiry
     #[account(
@@ -67,13 +73,18 @@ pub struct CreateSubscription<'info> {
     )]
     pub merchant_token_account: Account<'info, TokenAccount>,
 
-    /// Guard PDA - created for this subscription, authorizes payments
-    /// CHECK: created by Guard program CPI
-    #[account(mut)]
-    pub guard_account: AccountInfo<'info>,
-
     /// Guard program
     pub guard_program: Program<'info, RecuroGuard>,
+
+    /// Guard PDA - created for this subscription, authorizes payments
+    /// CHECK: PDA address is verified by seeds; account is initialized in guard CPI
+    #[account(
+        mut,
+        seeds = [b"guard", subscription.key().as_ref()],
+        bump,
+        seeds::program = guard_program.key(),
+    )]
+    pub guard_account: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -83,6 +94,7 @@ pub struct CreateSubscription<'info> {
 
 pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     let plan = &mut ctx.accounts.plan;
+    let config = &ctx.accounts.config;
     let subscription = &mut ctx.accounts.subscription;
     let now = Clock::get()?.unix_timestamp;
 
@@ -145,7 +157,7 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     // amount across 12 billing cycles (including fees).
     // Note: the fee is included in approval
     let fee_per_cycle = (plan.amount_usdc as u128)
-        .saturating_mul(25)
+        .saturating_mul(config.fee_bps as u128)
         .saturating_div(10_000) as u64;
     let total_per_cycle = plan
         .amount_usdc
