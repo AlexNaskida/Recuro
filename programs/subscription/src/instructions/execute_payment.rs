@@ -17,8 +17,14 @@ use crate::{
 // Fee model: "fee on top"
 //   Subscriber pays:  plan_amount + fee
 //   Merchant gets:    plan_amount  (full advertised price, always)
-//   Treasury gets:    fee
+//   Keeper gets:      60% of fee (incentive for execution)
+//   Treasury gets:    40% of fee (protocol revenue)
 //   fee = plan_amount * fee_bps / 10_000
+//
+// Keeper Identity:
+//   - Keeper is identified by their public key (the signer of the transaction)
+//   - Keeper must provide their own USDC ATA which receives their 60% reward
+//   - All keeper accounts are verified via Anchor constraints
 //
 // Caller: any keeper (off-chain bot that watches next_payment_at).
 // The program validates timing - early calls are silently skipped.
@@ -73,7 +79,7 @@ pub struct ExecutePayment<'info> {
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Box<Account<'info, Mint>>,
 
-    /// Protocol treasury ATA - receives the fee
+    /// Protocol treasury ATA - receives 40% of the fee
     #[account(
         mut,
         constraint = treasury_token_account.owner == config.treasury
@@ -82,6 +88,17 @@ pub struct ExecutePayment<'info> {
             @ SubscriptionError::InvalidTreasuryTokenAccount,
     )]
     pub treasury_token_account: Box<Account<'info, TokenAccount>>,
+
+    /// Keeper's USDC ATA - receives 60% of the fee as reward
+    /// Must be owned by the keeper signer to ensure rewards go to the correct address
+    #[account(
+        mut,
+        constraint = keeper_token_account.owner == keeper.key()
+            @ SubscriptionError::InvalidMint,
+        constraint = keeper_token_account.mint == plan.usdc_mint
+            @ SubscriptionError::InvalidMint,
+    )]
+    pub keeper_token_account: Box<Account<'info, TokenAccount>>,
 
     /// CHECK: read-only reference to the subscriber wallet
     #[account(address = subscription.subscriber)]
@@ -208,8 +225,31 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
 
     recuro_guard::cpi::authorize_payment(cpi_context)?;
 
-    // ── Transfer 2: fee → treasury ────────────────────────────────────────────
+    // ── Transfer 2: Split fee between keeper (60%) and treasury (40%) ─────────
     if fee > 0 {
+        // Calculate keeper reward (60% of fee) and treasury portion (40%)
+        let keeper_reward: u64 = (fee as u128).saturating_mul(60).saturating_div(100) as u64;
+        let treasury_portion: u64 = fee
+            .checked_sub(keeper_reward)
+            .ok_or(SubscriptionError::ArithmeticOverflow)?;
+
+        // Transfer keeper reward (keeper identity verified via keeper_token_account.owner constraint)
+        token::transfer_checked(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                TransferChecked {
+                    from: ctx.accounts.subscriber_token_account.to_account_info(),
+                    to: ctx.accounts.keeper_token_account.to_account_info(),
+                    mint: ctx.accounts.usdc_mint.to_account_info(),
+                    authority: subscription_account_info.clone(),
+                },
+                signer_seeds,
+            ),
+            keeper_reward,
+            ctx.accounts.usdc_mint.decimals,
+        )?;
+
+        // Transfer treasury portion
         token::transfer_checked(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -221,7 +261,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 },
                 signer_seeds,
             ),
-            fee,
+            treasury_portion,
             ctx.accounts.usdc_mint.decimals,
         )?;
     }
