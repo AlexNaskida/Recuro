@@ -10,20 +10,20 @@ Funds stay in the subscriber's wallet until payment time. Billing is automated b
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                      Solana Blockchain                        │
-│                                                               │
+│                      Solana Blockchain                       │
+│                                                              │
 │  ┌─────────────┐       ┌──────────────────────────────────┐  │
 │  │  Plan PDA   │◄──────│     Subscription Program         │  │
 │  │  (merchant) │       │       (Anchor / Rust)            │  │
-│  └─────────────┘       └──────────────┬─────────────────┘  │
+│  └─────────────┘       └──────────────┬───────────────────┘  │
 │                                        │                     │
 │  ┌──────────────────────┐              │ CPI                 │
-│  │  Subscription PDA    │◄─────────────┘                    │
+│  │  Subscription PDA    │◄─────────────┘                     │
 │  │  (per subscriber)    │                                    │
 │  └──────────┬───────────┘                                    │
-│             │                                                 │
-│             │ SPL delegate approval (exact amount only)       │
-│             ▼                                                 │
+│             │                                                │
+│             │ SPL delegate approval (exact amount only)      │
+│             ▼                                                │
 │  ┌──────────────────────┐                                    │
 │  │        Guard         │  checks:                           │
 │  │   (per subscription) │  ✓ correct merchant?               │
@@ -32,12 +32,12 @@ Funds stay in the subscriber's wallet until payment time. Billing is automated b
 │  │                      │  ✓ status == active?               │
 │  └──────────┬───────────┘                                    │
 │             │  only releases funds if all checks pass        │
-│             ▼                                                 │
-│  ┌──────────────────────┐   ┌──────────────────────────┐    │
-│  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │    │
-│  │  (funds stay here)   │   │  (receives payment)      │    │
-│  └──────────────────────┘   └──────────────────────────┘    │
-│                                                               │
+│             ▼                                                │
+│  ┌──────────────────────┐   ┌──────────────────────────┐     │
+│  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │     │
+│  │  (funds stay here)   │   │  (receives payment)      │     │
+│  └──────────────────────┘   └──────────────────────────┘     │
+│                                                              │
 │  ┌──────────────────────┐                                    │
 │  │  On-Chain Thread     │  fires execute_payment() every     │
 │  │                      │  billing interval automatically    │
