@@ -11,12 +11,17 @@ export interface Subscriber {
   planPubkey: string;
   status: "active" | "paused" | "cancelled" | "expired";
   startedAt: number;
+  lastPaidAt: number;
+  lastFailedAt: number;
+  endedAt: number;
   started: string;
   lastPayment: string;
   nextPayment: string;
+  nextPaymentAt: number;
   amountUsdc: number;
   totalPaid: number;
   paymentCount: number;
+  totalFailures: number;
   failedPaymentCount: number;
 }
 
@@ -40,10 +45,15 @@ function toMock(s: any): Subscriber {
     status:
       s.status === "past_due" ? "active" : (s.status as Subscriber["status"]),
     startedAt: Number.isNaN(startedAt) ? 0 : startedAt,
+    lastPaidAt: 0,
+    lastFailedAt: 0,
+    endedAt: 0,
     planPubkey: "",
     nextPayment: "-",
+    nextPaymentAt: 0,
     amountUsdc: 0,
     paymentCount: 0,
+    totalFailures: 0,
     failedPaymentCount: 0,
   };
 }
@@ -141,21 +151,28 @@ export function useSubscribers(planPubkeys?: string[]) {
         const real: Subscriber[] = allSubs.map((a: any) => {
           const acc = a.account;
           const planPk = acc.plan.toBase58();
+          const startedAt = acc.startedAt.toNumber();
+          const lastPaidAt = acc.lastPaidAt.toNumber();
+          const lastFailedAt = acc.lastFailedAt?.toNumber?.() ?? 0;
+          const endedAt = acc.endedAt?.toNumber?.() ?? 0;
+          const nextPaymentAt = acc.nextPaymentAt.toNumber();
           return {
             wallet: acc.subscriber.toBase58(),
             plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
             planPubkey: planPk,
             status: decodeSubStatus(acc.status),
-            startedAt: acc.startedAt.toNumber() * 1000,
-            started: unixToDate(acc.startedAt.toNumber()),
-            lastPayment:
-              acc.lastPaidAt.toNumber() > 0
-                ? unixToDate(acc.lastPaidAt.toNumber())
-                : "-",
-            nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
+            startedAt: startedAt * 1000,
+            lastPaidAt: lastPaidAt * 1000,
+            lastFailedAt: lastFailedAt * 1000,
+            endedAt: endedAt * 1000,
+            started: unixToDate(startedAt),
+            lastPayment: lastPaidAt > 0 ? unixToDate(lastPaidAt) : "-",
+            nextPayment: unixToDate(nextPaymentAt),
+            nextPaymentAt: nextPaymentAt * 1000,
             amountUsdc: microToUsdc(acc.amountUsdc),
             totalPaid: microToUsdc(acc.totalPaid),
             paymentCount: acc.paymentCount.toNumber(),
+            totalFailures: Number(acc.totalFailures ?? 0),
             failedPaymentCount: Number(acc.failedPaymentCount ?? 0),
           };
         });
@@ -217,21 +234,28 @@ export function useSubscribers(planPubkeys?: string[]) {
       const real: Subscriber[] = allSubs.map((a: any) => {
         const acc = a.account;
         const planPk = acc.plan.toBase58();
+        const startedAt = acc.startedAt.toNumber();
+        const lastPaidAt = acc.lastPaidAt.toNumber();
+        const lastFailedAt = acc.lastFailedAt?.toNumber?.() ?? 0;
+        const endedAt = acc.endedAt?.toNumber?.() ?? 0;
+        const nextPaymentAt = acc.nextPaymentAt.toNumber();
         return {
           wallet: acc.subscriber.toBase58(),
           plan: planNames[planPk] ?? planPk.slice(0, 8) + "...",
           planPubkey: planPk,
           status: decodeSubStatus(acc.status),
-          startedAt: acc.startedAt.toNumber() * 1000,
-          started: unixToDate(acc.startedAt.toNumber()),
-          lastPayment:
-            acc.lastPaidAt.toNumber() > 0
-              ? unixToDate(acc.lastPaidAt.toNumber())
-              : "-",
-          nextPayment: unixToDate(acc.nextPaymentAt.toNumber()),
+          startedAt: startedAt * 1000,
+          lastPaidAt: lastPaidAt * 1000,
+          lastFailedAt: lastFailedAt * 1000,
+          endedAt: endedAt * 1000,
+          started: unixToDate(startedAt),
+          lastPayment: lastPaidAt > 0 ? unixToDate(lastPaidAt) : "-",
+          nextPayment: unixToDate(nextPaymentAt),
+          nextPaymentAt: nextPaymentAt * 1000,
           amountUsdc: microToUsdc(acc.amountUsdc),
           totalPaid: microToUsdc(acc.totalPaid),
           paymentCount: acc.paymentCount.toNumber(),
+          totalFailures: Number(acc.totalFailures ?? 0),
           failedPaymentCount: Number(acc.failedPaymentCount ?? 0),
         };
       });
@@ -245,7 +269,7 @@ export function useSubscribers(planPubkeys?: string[]) {
     } finally {
       setLoading(false);
     }
-  }, [program, publicKey, planPubkeys]);
+  }, [connected, program, publicKey, planPubkeys]);
 
   useEffect(() => {
     fetchSubscribers();

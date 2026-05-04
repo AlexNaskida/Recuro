@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, Loader2, Users, DollarSign, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { type Plan, usePlans } from "@/hooks/usePlans";
-import { useCreatePlan } from "@/hooks/useCreatePlan";
+import { usePlanActions } from "@/hooks/usePlanActions";
 import { useAnchorProgram } from "@/hooks/useAnchorProgram";
 import { PlanActionsMenu } from "@/components/plans/PlanActionsMenu";
 import { DeletePlanConfirmDialog } from "@/components/plans/DeletePlanConfirmDialog";
@@ -37,10 +37,15 @@ export default function Plans() {
   const { plans, loading, refetch } = usePlans();
   const {
     createPlan,
-    loading: deploying,
+    deletePlan,
+    creatingPlan: deploying,
+    deletingPlan: deleting,
     canCreate,
     createDisabledReason,
-  } = useCreatePlan();
+    deleteDisabledReason,
+  } = usePlanActions({
+    onPlanUpdated: refetch,
+  });
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
@@ -53,7 +58,6 @@ export default function Plans() {
   const [unarchivingPlanId, setUnarchivingPlanId] = useState<string | null>(
     null,
   );
-  const [deletingPlanId, setDeletingPlanId] = useState<string | null>(null);
   const [deleteConfirmPlan, setDeleteConfirmPlan] = useState<Plan | null>(null);
   const [infoPlan, setInfoPlan] = useState<Plan | null>(null);
   const [statusFilter, setStatusFilter] = useState<
@@ -107,7 +111,6 @@ export default function Plans() {
       setPrice("");
       setInterval("monthly");
       setMerchantReceiveAddress("");
-      refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       toast.error("Deploy failed", { description: message });
@@ -332,7 +335,7 @@ export default function Plans() {
 
   const handleDeletePlan = async (planPubkey: string) => {
     if (!program || !publicKey) {
-      toast.error("Connect wallet first");
+      toast.error(deleteDisabledReason ?? "Connect wallet first");
       return;
     }
 
@@ -341,27 +344,16 @@ export default function Plans() {
       return;
     }
 
-    setDeletingPlanId(planPubkey);
     try {
-      const signature = await program.methods
-        .deletePlan()
-        .accounts({
-          merchant: publicKey,
-          plan: new PublicKey(planPubkey),
-          systemProgram: SystemProgram.programId,
-        })
-        .rpc({ commitment: "confirmed" });
+      const signature = await deletePlan(planPubkey);
 
       toast.success("Plan deleted", {
-        description: `Tx: ${signature.slice(0, 8)}...`,
+        description: `Tx: ${signature?.slice(0, 8)}...`,
       });
       setDeleteConfirmPlan(null);
-      await refetch();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       toast.error("Delete failed", { description: message });
-    } finally {
-      setDeletingPlanId(null);
     }
   };
 
@@ -570,7 +562,9 @@ export default function Plans() {
                     resumingPlanId={resumingPlanId}
                     archivingPlanId={archivingPlanId}
                     unarchivingPlanId={unarchivingPlanId}
-                    deletingPlanId={deletingPlanId}
+                    deletingPlanId={
+                      deleting ? (deleteConfirmPlan?.pubkey ?? null) : null
+                    }
                     onInfo={setInfoPlan}
                     onEdit={openEditDialog}
                     onPause={handlePausePlan}
@@ -605,9 +599,9 @@ export default function Plans() {
 
       <DeletePlanConfirmDialog
         plan={deleteConfirmPlan}
-        deleting={!!deletingPlanId}
+        deleting={deleting}
         onOpenChange={(open) => {
-          if (!open && !deletingPlanId) setDeleteConfirmPlan(null);
+          if (!open && !deleting) setDeleteConfirmPlan(null);
         }}
         onConfirm={handleDeletePlan}
       />

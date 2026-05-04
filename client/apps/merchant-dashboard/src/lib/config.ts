@@ -11,6 +11,9 @@ function parseEnvBoolean(
 export const CLUSTER = import.meta.env.VITE_SOLANA_CLUSTER ?? "devnet";
 export const PROGRAM_ID = import.meta.env.VITE_PROGRAM_ID;
 export const RPC_URL = import.meta.env.VITE_RPC_URL ?? DEFAULT_RPC_URL;
+export const QVAC_BASE_URL =
+  import.meta.env.VITE_QVAC_BASE_URL ?? "http://localhost:11434/v1";
+export const QVAC_MODEL = import.meta.env.VITE_QVAC_MODEL ?? "recuro-assistant";
 
 export const STABLECOIN_MINTS = {
   USDC: import.meta.env.VITE_USDC_MINT ?? "",
