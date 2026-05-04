@@ -385,10 +385,39 @@ export function cleanLlmOutput(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>\n*/g, "").trim();
 }
 
-export function extractThinkingContent(text: string): string | null {
-  // Extract thinking content from between tags
-  const match = text.match(/<think>([\s\S]*?)<\/think>/);
-  return match ? match[1].trim() : null;
+export function splitAssistantOutput(text: string): {
+  content: string;
+  thinking: string;
+} {
+  let remaining = text;
+  let content = "";
+  let thinking = "";
+
+  while (remaining.length > 0) {
+    const thinkStart = remaining.indexOf("<think>");
+
+    if (thinkStart === -1) {
+      content += remaining;
+      break;
+    }
+
+    content += remaining.slice(0, thinkStart);
+    const afterStart = remaining.slice(thinkStart + "<think>".length);
+    const thinkEnd = afterStart.indexOf("</think>");
+
+    if (thinkEnd === -1) {
+      thinking += afterStart;
+      break;
+    }
+
+    thinking += afterStart.slice(0, thinkEnd);
+    remaining = afterStart.slice(thinkEnd + "</think>".length);
+  }
+
+  return {
+    content: content.trim(),
+    thinking: thinking.trim(),
+  };
 }
 
 export function buildAssistantSystemPrompt(context: AssistantContext): string {

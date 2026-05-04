@@ -23,12 +23,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   assistantTools,
   buildAssistantContext,
   buildAssistantSystemPrompt,
+  splitAssistantOutput,
   formatCurrency,
-  cleanLlmOutput,
   type AssistantToolCall,
 } from "@/lib/assistant";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
@@ -53,7 +55,7 @@ type ChatMessage = {
   id: string;
   role: ChatRole;
   content: string;
-  thinking?: string; // Extracted thinking content (if present)
+  thinking?: string;
   toolCallId?: string;
   name?: string;
 };
@@ -108,6 +110,138 @@ type ToolCallAccumulator = {
   name?: string;
   arguments: string;
 };
+
+function AssistantMarkdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => (
+          <p className="mb-2 last:mb-0 whitespace-pre-wrap">{children}</p>
+        ),
+        strong: ({ children }) => (
+          <strong className="font-semibold">{children}</strong>
+        ),
+        ul: ({ children }) => (
+          <ul className="mb-2 list-disc space-y-1 pl-5 last:mb-0">
+            {children}
+          </ul>
+        ),
+        ol: ({ children }) => (
+          <ol className="mb-2 list-decimal space-y-1 pl-5 last:mb-0">
+            {children}
+          </ol>
+        ),
+        li: ({ children }) => (
+          <li className="whitespace-pre-wrap">{children}</li>
+        ),
+        blockquote: ({ children }) => (
+          <blockquote className="my-2 border-l-2 border-primary/50 pl-3 text-muted-foreground">
+            {children}
+          </blockquote>
+        ),
+        a: ({ children, href }) => (
+          <a
+            href={href}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary underline underline-offset-4"
+          >
+            {children}
+          </a>
+        ),
+        code: ({ children, className }) => {
+          const isBlock = className?.includes("language-");
+          return isBlock ? (
+            <code className="rounded-md bg-background/80 px-1.5 py-0.5 font-mono text-[0.85em]">
+              {children}
+            </code>
+          ) : (
+            <code className="rounded bg-background/80 px-1 py-0.5 font-mono text-[0.85em] text-foreground">
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => (
+          <pre className="my-3 overflow-x-auto rounded-2xl border border-border/60 bg-background/80 p-3 text-xs leading-5 text-foreground">
+            {children}
+          </pre>
+        ),
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
+
+function ThinkingBubble({
+  message,
+  expanded,
+  onToggle,
+  streaming,
+}: {
+  message: ChatMessage;
+  expanded: boolean;
+  onToggle: () => void;
+  streaming: boolean;
+}) {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 rounded-3xl border border-l-2 border-l-primary/30 border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <span className="flex items-center gap-2">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          <span className="opacity-90">Thinking...</span>
+        </span>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-background/70 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-background"
+        >
+          <span>Details</span>
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 shrink-0 transition-transform duration-200",
+              expanded && "rotate-180",
+            )}
+          />
+        </button>
+      </div>
+      <div
+        className={cn(
+          "overflow-hidden transition-[max-height,opacity,margin-top] duration-200 ease-out",
+          expanded ? "mt-2 max-h-96 opacity-100" : "max-h-0 opacity-0",
+        )}
+      >
+        <div className="overflow-hidden rounded-2xl border border-border/50 bg-background/40 px-3 py-2 text-xs leading-5 text-muted-foreground/90">
+          {message.thinking ? (
+            <AssistantMarkdown content={message.thinking} />
+          ) : (
+            <p className="italic">No detailed reasoning was returned.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AnswerBubble({
+  message,
+  streaming,
+}: {
+  message: ChatMessage;
+  streaming: boolean;
+}) {
+  return (
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 rounded-3xl border border-l-2 border-l-primary border-border/80 bg-card px-4 py-3 text-sm leading-6 text-foreground shadow-sm">
+      <AssistantMarkdown content={message.content} />
+      {streaming ? (
+        <span className="ml-1 inline-block animate-pulse align-baseline text-primary">
+          ▍
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 const SUGGESTED_QUESTIONS = [
   "What's my revenue trend this week?",
@@ -208,7 +342,7 @@ function normalizeDeletePlanArguments(args: Record<string, unknown>) {
 
 async function parseSseStream(
   response: Response,
-  onDelta: (delta: string) => void,
+  onUpdate: (state: { content: string; thinking: string }) => void,
 ): Promise<{ content: string; toolCalls: AssistantToolCall[] }> {
   if (!response.body) {
     throw new Error("QVAC did not return a readable stream");
@@ -217,7 +351,9 @@ async function parseSseStream(
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let rawContent = "";
   let content = "";
+  let thinking = "";
   const toolAccumulators = new Map<number, ToolCallAccumulator>();
 
   while (true) {
@@ -252,8 +388,11 @@ async function parseSseStream(
       if (!delta) continue;
 
       if (delta.content) {
-        content += delta.content;
-        onDelta(delta.content);
+        rawContent += delta.content;
+        const parsed = splitAssistantOutput(rawContent);
+        content = parsed.content;
+        thinking = parsed.thinking;
+        onUpdate(parsed);
       }
 
       if (delta.tool_calls?.length) {
@@ -273,6 +412,7 @@ async function parseSseStream(
 
   return {
     content,
+    thinking,
     toolCalls: Array.from(toolAccumulators.values())
       .map(buildToolCallFromAccumulator)
       .filter((toolCall): toolCall is AssistantToolCall => toolCall !== null),
@@ -407,14 +547,18 @@ export default function MerchantAssistant() {
     setStreamingMessageId(assistantId);
     setMessages((current) => [
       ...current,
-      { id: assistantId, role: "assistant", content: "" },
+      { id: assistantId, role: "assistant", content: "", thinking: "" },
     ]);
 
-    const result = await parseSseStream(response, (delta) => {
+    const result = await parseSseStream(response, (state) => {
       setMessages((current) =>
         current.map((message) =>
           message.id === assistantId
-            ? { ...message, content: message.content + delta }
+            ? {
+                ...message,
+                content: state.content,
+                thinking: state.thinking,
+              }
             : message,
         ),
       );
@@ -754,12 +898,14 @@ export default function MerchantAssistant() {
   };
 
   const shouldShowSuggestedQuestions = useMemo(() => {
+    // Hide while AI is answering
+    if (sending) return false;
     // Show on initial state (only greeting message)
     if (messages.length <= 1) return true;
     // Show after assistant responds (last message is from assistant)
     const lastMessage = messages[messages.length - 1];
     return lastMessage?.role === "assistant";
-  }, [messages]);
+  }, [messages, sending]);
 
   const displayedSuggestedQuestions = useMemo(() => {
     // Show all questions initially, then 3 random ones after communication starts
@@ -851,36 +997,57 @@ export default function MerchantAssistant() {
               <>
                 <ScrollArea className="flex-1 px-4 py-4">
                   <div className="space-y-3 pr-1">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={cn(
-                          "max-w-[92%] rounded-3xl border px-4 py-3 text-sm leading-6 shadow-sm",
-                          message.role === "user"
-                            ? "ml-auto bg-primary text-primary-foreground"
-                            : message.role === "tool"
-                              ? "mr-auto bg-muted/60 text-muted-foreground"
-                              : "mr-auto bg-card",
-                        )}
-                      >
-                        {message.role === "tool" ? (
-                          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                            Tool result
+                    {messages.map((message) =>
+                      message.role === "assistant" ? (
+                        <div
+                          key={message.id}
+                          className="mr-auto max-w-[92%] space-y-2"
+                        >
+                          <ThinkingBubble
+                            message={message}
+                            expanded={expandedThinking.has(message.id)}
+                            onToggle={() => {
+                              setExpandedThinking((current) => {
+                                const next = new Set(current);
+                                if (next.has(message.id)) {
+                                  next.delete(message.id);
+                                } else {
+                                  next.add(message.id);
+                                }
+                                return next;
+                              });
+                            }}
+                            streaming={streamingMessageId === message.id}
+                          />
+                          {message.content.trim().length > 0 ||
+                          streamingMessageId !== message.id ? (
+                            <AnswerBubble
+                              message={message}
+                              streaming={streamingMessageId === message.id}
+                            />
+                          ) : null}
+                        </div>
+                      ) : (
+                        <div
+                          key={message.id}
+                          className={cn(
+                            "max-w-[92%] rounded-3xl border px-4 py-3 text-sm leading-6 shadow-sm",
+                            message.role === "user"
+                              ? "ml-auto bg-primary text-primary-foreground"
+                              : "mr-auto bg-muted/60 text-muted-foreground",
+                          )}
+                        >
+                          {message.role === "tool" ? (
+                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                              Tool result
+                            </p>
+                          ) : null}
+                          <p className="whitespace-pre-wrap">
+                            {message.content}
                           </p>
-                        ) : null}
-                        <p className="whitespace-pre-wrap">
-                          {message.role === "assistant"
-                            ? cleanLlmOutput(message.content)
-                            : message.content}
-                        </p>
-                        {streamingMessageId === message.id && (
-                          <span className="mt-2 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Thinking with local QVAC
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      ),
+                    )}
                     <div ref={scrollRef} />
                   </div>
                 </ScrollArea>
