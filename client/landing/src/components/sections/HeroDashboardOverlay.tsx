@@ -228,55 +228,66 @@ export default function HeroDashboardOverlay() {
         <span className="h-3 w-3 rounded-full bg-emerald-400" />
       </div>
 
-      <div className="p-5 space-y-3">
+      <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3">
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
-              <DollarSign className="h-3.5 w-3.5" /> Total Revenue
+        <div className="grid grid-cols-3 gap-2 sm:gap-3">
+          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-2.5 py-2.5 sm:px-4 sm:py-3.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2">
+              <DollarSign className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <span className="truncate">Total Revenue</span>
             </div>
-            <div className="text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-2">
+            <div className="text-sm sm:text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-1.5 sm:mb-2">
               ${revenue.toLocaleString()}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-violet-600 font-medium">
-                ↗ +12.5% vs last period
+            <div className="flex items-center justify-between gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs text-violet-600 font-medium truncate">
+                ↗ +12.5%<span className="hidden sm:inline"> vs last period</span>
               </span>
-              <Sparkline d={SPARKLINE_D.revenue} inView={inView} />
+              <span className="hidden sm:block shrink-0">
+                <Sparkline d={SPARKLINE_D.revenue} inView={inView} />
+              </span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
-              <Users className="h-3.5 w-3.5" /> Active Subscribers
+          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-2.5 py-2.5 sm:px-4 sm:py-3.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2">
+              <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <span className="truncate">Active Subscribers</span>
             </div>
-            <div className="text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-2">
+            <div className="text-sm sm:text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-1.5 sm:mb-2">
               {subscribers}
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Across 4 plans</span>
-              <Sparkline d={SPARKLINE_D.subscribers} inView={inView} />
+            <div className="flex items-center justify-between gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs text-gray-400 truncate">
+                Across 4 plans
+              </span>
+              <span className="hidden sm:block shrink-0">
+                <Sparkline d={SPARKLINE_D.subscribers} inView={inView} />
+              </span>
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
-            <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-2">
-              <CheckCircle className="h-3.5 w-3.5" /> Success Rate
+          <div className="rounded-xl border border-gray-100 bg-gray-50/60 px-2.5 py-2.5 sm:px-4 sm:py-3.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 text-[10px] sm:text-xs text-gray-400 mb-1.5 sm:mb-2">
+              <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+              <span className="truncate">Success Rate</span>
             </div>
-            <div className="text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-2">
+            <div className="text-sm sm:text-[22px] font-bold text-gray-900 tracking-tight leading-none mb-1.5 sm:mb-2">
               {(success / 10).toFixed(1)}%
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-violet-600 font-medium">
+            <div className="flex items-center justify-between gap-1 min-w-0">
+              <span className="text-[10px] sm:text-xs text-violet-600 font-medium truncate">
                 ↗ Payment success
               </span>
-              <Sparkline d={SPARKLINE_D.success} inView={inView} />
+              <span className="hidden sm:block shrink-0">
+                <Sparkline d={SPARKLINE_D.success} inView={inView} />
+              </span>
             </div>
           </div>
         </div>
 
         {/* Chart + Activity */}
-        <div className="grid grid-cols-[1.15fr_0.85fr] gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-[1.15fr_0.85fr] gap-2.5 sm:gap-3">
           <div className="flex h-full flex-col rounded-xl border border-gray-100 bg-gray-50/60 px-4 py-3.5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-semibold text-gray-800">
@@ -293,7 +304,7 @@ export default function HeroDashboardOverlay() {
                 </span>
               </div>
             </div>
-            <div className="flex flex-1 gap-2 min-h-[220px]">
+            <div className="flex flex-1 gap-2 min-h-[140px] sm:min-h-[220px]">
               <div className="flex flex-col justify-between pb-5 text-[10px] text-gray-300 shrink-0">
                 <span>$34k</span>
                 <span>$26k</span>

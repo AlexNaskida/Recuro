@@ -65,7 +65,7 @@ export default function Navbar() {
         <button
           type="button"
           onClick={() => setOpen((value) => !value)}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-text-primary md:hidden"
+          className="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-surface text-text-primary md:hidden"
           aria-expanded={open}
           aria-label="Toggle navigation"
         >

@@ -17,7 +17,7 @@ function BlogThumbnail({ className = "" }: { className?: string }) {
 export default function BlogCards() {
   return (
     <section className="mx-auto max-w-[1100px] px-4 py-20 sm:px-6 lg:px-8">
-      <div className="flex items-end justify-between gap-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-tertiary">
             Ecosystem
