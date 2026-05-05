@@ -1,18 +1,21 @@
 import { useMemo } from "react";
 import { Transaction, PublicKey } from "@solana/web3.js";
 import { usePrivy } from "@privy-io/react-auth";
-import { useWallets, useSignTransaction } from "@privy-io/react-auth/solana";
+import { useWallet } from "@solana/wallet-adapter-react";
 
 export function useMerchantWallet() {
   const privy = usePrivy();
-  const { wallets, ready: walletsReady } = useWallets();
-  const { signTransaction } = useSignTransaction();
+  const {
+    publicKey: adapterPublicKey,
+    signTransaction: adapterSignTransaction,
+    signAllTransactions: adapterSignAllTransactions,
+  } = useWallet();
 
-  const connectedWallet =
-    wallets.find(
-      (wallet) =>
-        typeof wallet.address === "string" && wallet.address.length > 0,
-    ) ?? null;
+  const connectedWallet = adapterPublicKey
+    ? {
+        address: adapterPublicKey.toString(),
+      }
+    : null;
   const fallbackWalletAddress =
     ((privy.user as any)?.wallet?.address as string | undefined) ??
     (((privy.user as any)?.linkedAccounts as Array<any> | undefined)?.find(
@@ -28,39 +31,36 @@ export function useMerchantWallet() {
   }, [walletAddress]);
 
   const anchorWallet = useMemo(() => {
-    if (!connectedWallet || !publicKey) return null;
+    if (!adapterPublicKey || !publicKey) return null;
 
     return {
       publicKey,
       signTransaction: async (transaction: Transaction) => {
-        const serialized = transaction.serialize({
-          requireAllSignatures: false,
-          verifySignatures: false,
-        });
-        const result = await signTransaction({
-          transaction: serialized,
-          wallet: connectedWallet,
-        });
-        return Transaction.from(result.signedTransaction);
+        if (!adapterSignTransaction)
+          throw new Error("wallet cannot sign transactions");
+        const signed = await adapterSignTransaction(transaction);
+        return signed;
       },
       signAllTransactions: async (transactions: Transaction[]) => {
-        const signedTransactions = [] as Transaction[];
-
-        for (const transaction of transactions) {
-          const signed = await signTransaction({
-            transaction: transaction.serialize({
-              requireAllSignatures: false,
-              verifySignatures: false,
-            }),
-            wallet: connectedWallet,
-          });
-          signedTransactions.push(Transaction.from(signed.signedTransaction));
+        if (adapterSignAllTransactions) {
+          return adapterSignAllTransactions(transactions);
         }
 
-        return signedTransactions;
+        const signed: Transaction[] = [];
+        for (const tx of transactions) {
+          if (!adapterSignTransaction)
+            throw new Error("wallet cannot sign transactions");
+          signed.push(await adapterSignTransaction(tx));
+        }
+        return signed;
       },
     };
-  }, [connectedWallet, publicKey, signTransaction]);
+  }, [
+    adapterPublicKey,
+    publicKey,
+    adapterSignTransaction,
+    adapterSignAllTransactions,
+  ]);
 
   const canSignTransactions = !!anchorWallet;
 
@@ -73,7 +73,7 @@ export function useMerchantWallet() {
     publicKey,
     walletAddress,
     wallet: anchorWallet,
-    walletCount: wallets.length,
+    walletCount: connectedWallet ? 1 : 0,
     connectWallet: privy.connectWallet,
     connectOrCreateWallet: privy.connectOrCreateWallet,
     link: privy.link,

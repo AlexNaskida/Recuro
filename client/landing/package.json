@@ -9,9 +9,11 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@privy-io/react-auth": "1.28.2",
     "clsx": "^2.1.1",
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.400.0",
+    "mocha": "11.3.0",
     "next": "^16.2.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

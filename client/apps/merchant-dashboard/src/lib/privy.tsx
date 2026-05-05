@@ -1,14 +1,7 @@
 import type { ReactNode } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
-import {
-  defaultSolanaRpcsPlugin,
-  toSolanaWalletConnectors,
-} from "@privy-io/react-auth/solana";
 
 const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID ?? "").trim();
-const SOLANA_RPCS = defaultSolanaRpcsPlugin().getDefaultRpcs({
-  appId: PRIVY_APP_ID,
-});
 
 function PrivyConfigError({ reason }: { reason: string }) {
   return (
@@ -62,9 +55,6 @@ function PrivyConfigError({ reason }: { reason: string }) {
   );
 }
 
-// initialise ONCE outside the component — not on every render
-const solanaConnectors = toSolanaWalletConnectors({ shouldAutoConnect: false });
-
 export function PrivyAppProvider({ children }: { children: ReactNode }) {
   if (!PRIVY_APP_ID)
     return <PrivyConfigError reason="VITE_PRIVY_APP_ID is missing." />;
@@ -73,24 +63,6 @@ export function PrivyAppProvider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={PRIVY_APP_ID}
       clientId={import.meta.env.VITE_PRIVY_CLIENT_ID ?? ""}
-      config={{
-        appearance: {
-          walletChainType: "solana-only",
-        },
-        externalWallets: {
-          solana: {
-            connectors: solanaConnectors, // ← this is what registers Phantom Solana
-          },
-        },
-        embeddedWallets: {
-          solana: {
-            createOnLogin: "users-without-wallets",
-          },
-        },
-        solana: {
-          rpcs: SOLANA_RPCS,
-        },
-      }}
     >
       {children}
     </PrivyProvider>

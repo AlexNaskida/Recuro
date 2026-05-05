@@ -12,6 +12,11 @@
     "moduleDetection": "force",
     "noEmit": true,
 
+    /* Force single vite instance so plugin-react-swc and defineConfig share types */
+    "paths": {
+      "vite": ["../../../node_modules/vite/dist/node/index"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": false,

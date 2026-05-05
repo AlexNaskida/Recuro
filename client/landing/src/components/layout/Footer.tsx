@@ -66,7 +66,7 @@ export default function Footer() {
 
         {groups.map((group) => (
           <div key={group.title}>
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/45">
+            <h3 className="text-sm font-semibold tracking-[0.18em] text-white/45">
               {group.title}
             </h3>
             <ul className="mt-4 space-y-3 text-sm text-white/70">

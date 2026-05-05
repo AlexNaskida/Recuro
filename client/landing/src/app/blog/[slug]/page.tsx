@@ -70,7 +70,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       <Navbar />
       <main className="mx-auto max-w-[860px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">
+          <p className="text-xs font-semibold tracking-[0.24em] text-accent">
             {post.tag}
           </p>
           <Button href="/blog" variant="ghost" size="sm">
@@ -85,6 +85,15 @@ export default async function BlogPostPage({ params }: PageProps) {
         <p className="mt-4 text-sm text-text-tertiary">
           {post.date} · {post.readTime}
         </p>
+
+        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+          <img
+            src={post.imageSrc}
+            alt={post.imageAlt}
+            className="h-auto w-full object-cover"
+            draggable={false}
+          />
+        </div>
 
         {post.excerpt && (
           <p className="mt-8 rounded-2xl border border-border bg-surface px-5 py-4 text-base leading-7 text-text-secondary">
