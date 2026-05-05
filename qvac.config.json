@@ -6,8 +6,7 @@
     },
     "models": {
       "recuro-assistant": {
-        "src": "registry://hf/unsloth/Qwen3-0.6B-GGUF/blob/50968a4468ef4233ed78cd7c3de230dd1d61a56b/Qwen3-0.6B-Q4_0.gguf",
-        "type": "llm",
+        "model": "QWEN3_600M_INST_Q4",
         "default": true,
         "preload": true,
         "config": {
