@@ -33,6 +33,8 @@ export type BlogPost = {
   title: string;
   date: string;
   readTime: string;
+  imageSrc: string;
+  imageAlt: string;
   excerpt?: string;
   body?: string;
 };

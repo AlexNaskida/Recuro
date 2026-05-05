@@ -146,6 +146,9 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Why subscription billing needs on-chain price immutability",
     date: "Apr 25, 2026",
     readTime: "4 min read",
+    imageSrc:
+      "/images/why-subscription-billing-needs-on-chain-price-immutability.png",
+    imageAlt: "On-chain plan value locked in an immutable billing timeline",
     excerpt:
       "Most recurring billing systems let the merchant change the price at will. Recuro locks the price in a Plan account at creation time — the number written to the blockchain is the number that gets pulled every cycle, forever.",
     body: `Most subscription systems make one critical promise and then quietly break it in practice: “you will be charged the price you agreed to.” In a traditional setup, the price lives in a private database controlled by the merchant or billing vendor. That means the value can be changed unilaterally, retroactively, or accidentally through internal tooling. Even honest teams can introduce drift between checkout, invoicing, and payment execution when multiple services update plan metadata independently.
@@ -166,6 +169,9 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Delegate approvals that stop at exactly one cycle",
     date: "Apr 14, 2026",
     readTime: "6 min read",
+    imageSrc: "/images/delegate-approvals-that-stop-at-exactly-one-cycle.png",
+    imageAlt:
+      "Scoped token approval gate showing one cycle payment limit and safety boundaries",
     excerpt:
       "Most Solana protocols ask for an unlimited SPL token approval. Recuro scopes the delegate to exactly one cycle amount, so the blast radius of a compromised keeper is a single payment — not your entire wallet.",
     body: `Recurring payments are convenient only when users feel safe leaving them on. The biggest security mistake in many crypto billing flows is requesting a very large token approval up front and treating that as “good UX.” It is easy for protocol operators, but it creates an unacceptable worst-case outcome for users: if execution keys are compromised, if monitoring fails, or if a contract path is abused, the effective loss ceiling can become the subscriber’s entire token balance.
@@ -188,6 +194,9 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "How open keepers make recurring payments resilient",
     date: "Apr 10, 2026",
     readTime: "5 min read",
+    imageSrc: "/images/how-open-keepers-make-recurring-payments-resilient.png",
+    imageAlt:
+      "Decentralized keeper network executing recurring payments with resilient routing",
     excerpt:
       "Centralized keeper services are a single point of failure. Recuro's open keeper architecture lets anyone execute payments — removing operational risk from your revenue stream.",
     body: `Recurring billing systems do not fail only because of bad logic. They fail because of operations. Even with perfect plan math and strong authorization checks, someone still has to trigger the payment transaction at the right time. In traditional stacks this is a scheduler inside your infrastructure. In on-chain systems, it is a keeper network. If that execution layer is centralized, your protocol quietly inherits a single point of failure.

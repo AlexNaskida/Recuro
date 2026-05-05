@@ -86,6 +86,15 @@ export default async function BlogPostPage({ params }: PageProps) {
           {post.date} · {post.readTime}
         </p>
 
+        <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
+          <img
+            src={post.imageSrc}
+            alt={post.imageAlt}
+            className="h-auto w-full object-cover"
+            draggable={false}
+          />
+        </div>
+
         {post.excerpt && (
           <p className="mt-8 rounded-2xl border border-border bg-surface px-5 py-4 text-base leading-7 text-text-secondary">
             {post.excerpt}

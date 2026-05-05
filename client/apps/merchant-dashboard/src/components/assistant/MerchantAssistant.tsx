@@ -194,7 +194,9 @@ function ThinkingBubble({
           ) : (
             <Sparkles className="h-3.5 w-3.5 text-primary/60" />
           )}
-          <span className="opacity-90">{streaming ? "Thinking..." : "Thought"}</span>
+          <span className="opacity-90">
+            {streaming ? "Thinking..." : "Thought"}
+          </span>
         </span>
         <button
           type="button"
@@ -283,14 +285,65 @@ function readJsonArguments(value: string) {
   }
 }
 
+function parseActionFromContent(content: string): AssistantToolCall | null {
+  const markerIdx = content.indexOf("ACTION_JSON:");
+  if (markerIdx === -1) return null;
+
+  const after = content.slice(markerIdx + "ACTION_JSON:".length).trimStart();
+  const start = after.indexOf("{");
+  if (start === -1) return null;
+
+  // Count braces to find the matching closing brace (handles nested objects)
+  let depth = 0;
+  let end = -1;
+  for (let i = start; i < after.length; i++) {
+    if (after[i] === "{") depth++;
+    else if (after[i] === "}") {
+      depth--;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end === -1) return null;
+
+  try {
+    const parsed = JSON.parse(after.slice(start, end + 1)) as {
+      tool?: string;
+      args?: Record<string, unknown>;
+      arguments?: Record<string, unknown>;
+    };
+    const name = parsed.tool;
+    if (!name || !VALID_TOOL_NAMES.includes(name as AssistantToolName))
+      return null;
+    return {
+      id: makeId(),
+      name: name as AssistantToolName,
+      // model may use "args" or "arguments"
+      arguments: parsed.args ?? parsed.arguments ?? {},
+    };
+  } catch {
+    return null;
+  }
+}
+
+const VALID_TOOL_NAMES: AssistantToolName[] = [
+  "create_plan",
+  "delete_plan",
+  "launch_promo_code",
+  "update_plan_price",
+];
+
 function buildToolCallFromAccumulator(
   accumulator: ToolCallAccumulator,
 ): AssistantToolCall | null {
   if (!accumulator.name) return null;
-  const name =
-    accumulator.name === "create_plan" || accumulator.name === "delete_plan"
-      ? accumulator.name
-      : null;
+  const name = VALID_TOOL_NAMES.includes(
+    accumulator.name as AssistantToolName,
+  )
+    ? (accumulator.name as AssistantToolName)
+    : null;
   if (!name) return null;
 
   return {
@@ -311,18 +364,13 @@ function normalizeCreatePlanArguments(args: Record<string, unknown>) {
     args.merchantReceiveAddress ?? "",
   ).trim();
 
-  if (
-    !name ||
-    !description ||
-    !Number.isFinite(amountUsdc) ||
-    amountUsdc <= 0
-  ) {
+  if (!name || !Number.isFinite(amountUsdc) || amountUsdc <= 0) {
     return null;
   }
 
   return {
     name,
-    description,
+    description: description || name,
     amountUsdc,
     intervalDays,
     trialDays,
@@ -568,7 +616,7 @@ export default function MerchantAssistant() {
     });
 
     setStreamingMessageId(null);
-    return result;
+    return { ...result, assistantId };
   };
 
   const sendMessage = async () => {
@@ -585,7 +633,28 @@ export default function MerchantAssistant() {
 
     try {
       const result = await runConversation(nextMessages);
-      const toolCall = result.toolCalls[0];
+      let toolCall = result.toolCalls[0];
+
+      if (!toolCall) {
+        const actionFromContent = parseActionFromContent(result.content);
+        if (actionFromContent) {
+          toolCall = actionFromContent;
+          setMessages((current) =>
+            current.map((msg) =>
+              msg.id === result.assistantId
+                ? {
+                    ...msg,
+                    content: msg.content
+                      .split("\n")
+                      .filter((l) => !l.trimStart().startsWith("ACTION_JSON:"))
+                      .join("\n")
+                      .trim(),
+                  }
+                : msg,
+            ),
+          );
+        }
+      }
 
       if (toolCall) {
         if (toolCall.name === "create_plan") {
@@ -723,7 +792,26 @@ export default function MerchantAssistant() {
 
       runConversation(nextMessages)
         .then((result) => {
-          const toolCall = result.toolCalls[0];
+          let toolCall = result.toolCalls[0];
+
+          if (!toolCall) {
+            const actionFromContent = parseActionFromContent(result.content);
+            if (actionFromContent) {
+              toolCall = actionFromContent;
+              setMessages((current) =>
+                current.map((msg) =>
+                  msg.id === result.assistantId
+                    ? {
+                        ...msg,
+                        content: msg.content
+                          .replace(/ACTION_JSON:\s*\{[\s\S]*?\}\n?/g, "")
+                          .trim(),
+                      }
+                    : msg,
+                ),
+              );
+            }
+          }
 
           if (toolCall) {
             if (toolCall.name === "create_plan") {
@@ -1087,8 +1175,9 @@ export default function MerchantAssistant() {
                       rows={4}
                       onKeyDown={(event) => {
                         if (
-                          (event.metaKey || event.ctrlKey) &&
-                          event.key === "Enter"
+                          event.key === "Enter" &&
+                          !event.shiftKey &&
+                          !event.nativeEvent.isComposing
                         ) {
                           event.preventDefault();
                           void sendMessage();
@@ -1097,7 +1186,7 @@ export default function MerchantAssistant() {
                     />
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-xs text-muted-foreground">
-                        Cmd/Ctrl + Enter to send
+                        Enter to send, Shift + Enter for new line
                       </p>
                       <Button
                         onClick={() => void sendMessage()}

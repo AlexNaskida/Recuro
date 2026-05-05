@@ -1,14 +1,22 @@
 import { BLOG_POSTS } from "@/lib/constants";
 import Button from "@/components/ui/Button";
+import type { BlogPost } from "@/types";
 
-function BlogThumbnail({ className = "" }: { className?: string }) {
+function BlogThumbnail({
+  className = "",
+  post,
+}: {
+  className?: string;
+  post: BlogPost;
+}) {
   return (
-    <div className={`flex items-center justify-center bg-surface ${className}`}>
+    <div className={`overflow-hidden bg-surface ${className}`}>
       <img
-        src="/Recuro.svg"
-        alt="Recuro"
-        className="h-16 w-16 select-none pointer-events-none"
+        src={post.imageSrc}
+        alt={post.imageAlt}
+        className="h-full w-full object-cover"
         draggable={false}
+        loading="lazy"
       />
     </div>
   );
@@ -38,7 +46,7 @@ export default function BlogCards() {
             className="overflow-hidden rounded-2xl border border-border bg-surface shadow-card transition-transform duration-200 hover:-translate-y-1"
           >
             <div className="border-b border-dashed border-border">
-              <BlogThumbnail className="min-h-[140px]" />
+              <BlogThumbnail post={post} className="min-h-[140px]" />
             </div>
             <div className="space-y-3 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">

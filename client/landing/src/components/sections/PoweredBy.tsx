@@ -13,7 +13,7 @@ export default function PoweredBy() {
           Powered by Recuro
         </p>
         <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">
-          On-chain subscriptions with 24/7 keeper coverage
+          Subscriptions with 24/7 on-chain thread coverage
         </h2>
       </div>
 
