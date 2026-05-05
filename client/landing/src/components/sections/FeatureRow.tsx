@@ -16,15 +16,12 @@ export default function FeatureRow({ data }: { data: FeatureRowData }) {
           />
         </div>
         <div className={cn("space-y-6", data.reverse && "md:order-1")}>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-accent">
+          <p className="text-xs font-semibold tracking-[0.24em] text-accent">
             {data.tag}
           </p>
           <h3 className="font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">
             {data.title}
           </h3>
-          <p className="max-w-xl text-base leading-7 text-text-secondary">
-            {data.description}
-          </p>
           <CheckList items={data.checklist} />
           <Button href={data.ctaHref} variant="primary" size="md">
             {data.ctaLabel}

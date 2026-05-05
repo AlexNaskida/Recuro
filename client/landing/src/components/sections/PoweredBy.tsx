@@ -9,7 +9,7 @@ export default function PoweredBy() {
   return (
     <section className="mx-auto max-w-[1100px] px-4 py-20 sm:px-6 lg:px-8">
       <div className="text-center">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-tertiary">
+        <p className="text-xs font-semibold tracking-[0.24em] text-text-tertiary">
           Powered by Recuro
         </p>
         <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">

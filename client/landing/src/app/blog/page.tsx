@@ -31,7 +31,7 @@ export default function BlogPage() {
       <main className="mx-auto max-w-[1100px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="flex flex-wrap items-end justify-between gap-6">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-tertiary">
+            <p className="text-xs font-semibold tracking-[0.24em] text-text-tertiary">
               Blog
             </p>
             <h1 className="mt-3 max-w-3xl font-display text-[clamp(32px,4.8vw,52px)] font-extrabold tracking-tight text-text-primary">
@@ -57,7 +57,7 @@ export default function BlogPage() {
                 <BlogThumbnail post={post} className="min-h-[160px]" />
               </div>
               <div className="space-y-3 p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
+                <p className="text-xs font-semibold tracking-[0.22em] text-accent">
                   {post.tag}
                 </p>
                 <h2 className="font-display text-xl font-extrabold tracking-tight text-text-primary">

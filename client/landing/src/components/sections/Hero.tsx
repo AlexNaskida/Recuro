@@ -6,7 +6,7 @@ export default function Hero() {
   return (
     <section
       id="why-recuro"
-      className="mx-auto max-w-[1200px] px-4 pb-16 pt-14 text-center sm:px-6 lg:px-8 lg:pb-20 lg:pt-20"
+      className="mx-auto max-w-[1200px] px-4 pb-16 pt-6 text-center sm:px-6 lg:px-8 lg:pb-20 lg:pt-20"
     >
       <div className="mx-auto max-w-3xl">
         <Badge>Non-custodial recurring payments on Solana</Badge>
@@ -33,7 +33,7 @@ export default function Hero() {
       </div>
 
       {/* 675px * 1.25 = 844px */}
-      <div className="mt-14 mx-auto max-w-[844px]">
+      <div className="mt-6 lg:mt-14 mx-auto max-w-[844px]">
         <HeroDashboardOverlay />
       </div>
     </section>

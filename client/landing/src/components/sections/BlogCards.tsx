@@ -27,7 +27,7 @@ export default function BlogCards() {
     <section className="mx-auto max-w-[1100px] px-4 py-20 sm:px-6 lg:px-8">
       <div className="flex items-end justify-between gap-6">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-tertiary">
+          <p className="text-xs font-semibold tracking-[0.24em] text-text-tertiary">
             Ecosystem
           </p>
           <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">
@@ -49,7 +49,7 @@ export default function BlogCards() {
               <BlogThumbnail post={post} className="min-h-[140px]" />
             </div>
             <div className="space-y-3 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-accent">
+              <p className="text-xs font-semibold tracking-[0.22em] text-accent">
                 {post.tag}
               </p>
               <h3 className="font-display text-xl font-extrabold tracking-tight text-text-primary">

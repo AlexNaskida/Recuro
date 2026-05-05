@@ -213,7 +213,7 @@ function NonCustodialVisual() {
 
       {/* Table */}
       <DashCard>
-        <div className="grid grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr] text-[9px] font-semibold text-gray-400 uppercase tracking-wide px-3.5 py-2 border-b border-gray-100">
+        <div className="grid grid-cols-[1.6fr_0.8fr_0.7fr_0.9fr] text-[9px] font-semibold text-gray-400 tracking-wide px-3.5 py-2 border-b border-gray-100">
           <span>Wallet</span>
           <span>Plan</span>
           <span>Status</span>

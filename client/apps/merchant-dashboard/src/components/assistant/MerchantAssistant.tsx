@@ -32,6 +32,7 @@ import {
   splitAssistantOutput,
   formatCurrency,
   type AssistantToolCall,
+  type AssistantToolName,
 } from "@/lib/assistant";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 import { usePlans } from "@/hooks/usePlans";
@@ -339,9 +340,7 @@ function buildToolCallFromAccumulator(
   accumulator: ToolCallAccumulator,
 ): AssistantToolCall | null {
   if (!accumulator.name) return null;
-  const name = VALID_TOOL_NAMES.includes(
-    accumulator.name as AssistantToolName,
-  )
+  const name = VALID_TOOL_NAMES.includes(accumulator.name as AssistantToolName)
     ? (accumulator.name as AssistantToolName)
     : null;
   if (!name) return null;
@@ -394,7 +393,11 @@ function normalizeDeletePlanArguments(args: Record<string, unknown>) {
 async function parseSseStream(
   response: Response,
   onUpdate: (state: { content: string; thinking: string }) => void,
-): Promise<{ content: string; toolCalls: AssistantToolCall[] }> {
+): Promise<{
+  content: string;
+  thinking: string;
+  toolCalls: AssistantToolCall[];
+}> {
   if (!response.body) {
     throw new Error("QVAC did not return a readable stream");
   }
@@ -533,6 +536,18 @@ export default function MerchantAssistant() {
         ? "QVAC online"
         : "AI assistant offline";
 
+  const checkConnectivity = async () => {
+    setCheckingConnectivity(true);
+    try {
+      const response = await fetch(`${QVAC_BASE_URL}/models`);
+      setOnline(response.ok);
+    } catch {
+      setOnline(false);
+    } finally {
+      setCheckingConnectivity(false);
+    }
+  };
+
   const scrollToBottom = () => {
     window.requestAnimationFrame(() => {
       scrollRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -542,19 +557,19 @@ export default function MerchantAssistant() {
   useEffect(() => {
     if (!open) return;
 
-    const checkConnectivity = async () => {
-      setCheckingConnectivity(true);
-      try {
-        const response = await fetch(`${QVAC_BASE_URL}/models`);
-        setOnline(response.ok);
-      } catch {
-        setOnline(false);
-      } finally {
-        setCheckingConnectivity(false);
-      }
-    };
-
     void checkConnectivity();
+
+    const intervalId = window.setInterval(() => {
+      void checkConnectivity();
+    }, 5000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
 
     if (messages.length === 0) {
       setMessages([
@@ -738,6 +753,7 @@ export default function MerchantAssistant() {
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      setOnline(false);
       toast.error("Assistant request failed", { description: message });
       setMessages((current) => [
         ...current,
@@ -1063,7 +1079,7 @@ export default function MerchantAssistant() {
               </div>
             </div>
 
-            {!online ? (
+            {online === false ? (
               <div className="m-4 flex flex-1 flex-col justify-center gap-4 rounded-3xl border border-dashed bg-muted/25 p-5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2 text-foreground">
                   <WifiOff className="h-4 w-4" />
@@ -1080,9 +1096,11 @@ export default function MerchantAssistant() {
                   <p>Set the recuro-assistant model in qvac.config.json.</p>
                 </div>
               </div>
-            ) : contextLoading ? (
+            ) : online === null || contextLoading ? (
               <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
-                Loading merchant context...
+                {online === null
+                  ? "Checking local AI runtime..."
+                  : "Loading merchant context..."}
               </div>
             ) : (
               <>

@@ -5,7 +5,7 @@ export default function DarkCTA() {
     <section className="relative overflow-hidden bg-dark text-white">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(124,58,237,0.28),transparent_35%),radial-gradient(circle_at_bottom,rgba(22,163,74,0.12),transparent_30%)]" />
       <div className="relative mx-auto max-w-[1100px] px-4 py-20 text-center sm:px-6 lg:px-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/45">
+        <p className="text-xs font-semibold tracking-[0.24em] text-white/45">
           Ready to ship
         </p>
         <h2 className="mx-auto mt-4 max-w-3xl font-display text-3xl font-extrabold tracking-tight sm:text-5xl">

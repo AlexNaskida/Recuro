@@ -54,7 +54,7 @@ export default function RoadmapPage() {
       <Navbar />
       <main className="mx-auto max-w-[1100px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-text-tertiary">
+          <p className="text-xs font-semibold tracking-[0.24em] text-text-tertiary">
             Roadmap
           </p>
           <h1 className="mt-3 font-display text-[clamp(32px,4.8vw,52px)] font-extrabold tracking-tight text-text-primary">
@@ -73,10 +73,10 @@ export default function RoadmapPage() {
               key={column.id}
               className="rounded-2xl border border-border bg-surface p-5 shadow-card"
             >
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+              <p className="text-xs font-semibold tracking-[0.2em] text-accent">
                 {column.quarter}
               </p>
-              <p className="mt-2 inline-flex rounded-full border border-border bg-bg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-text-tertiary">
+              <p className="mt-2 inline-flex rounded-full border border-border bg-bg px-2.5 py-1 text-[11px] font-semibold tracking-[0.12em] text-text-tertiary">
                 {column.status}
               </p>
               <ul className="mt-5 space-y-3 text-sm leading-6 text-text-secondary">
