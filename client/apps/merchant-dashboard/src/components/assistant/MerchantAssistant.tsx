@@ -1003,22 +1003,25 @@ export default function MerchantAssistant() {
                           key={message.id}
                           className="mr-auto max-w-[92%] space-y-2"
                         >
-                          <ThinkingBubble
-                            message={message}
-                            expanded={expandedThinking.has(message.id)}
-                            onToggle={() => {
-                              setExpandedThinking((current) => {
-                                const next = new Set(current);
-                                if (next.has(message.id)) {
-                                  next.delete(message.id);
-                                } else {
-                                  next.add(message.id);
-                                }
-                                return next;
-                              });
-                            }}
-                            streaming={streamingMessageId === message.id}
-                          />
+                          {(streamingMessageId === message.id ||
+                            !!message.thinking) && (
+                            <ThinkingBubble
+                              message={message}
+                              expanded={expandedThinking.has(message.id)}
+                              onToggle={() => {
+                                setExpandedThinking((current) => {
+                                  const next = new Set(current);
+                                  if (next.has(message.id)) {
+                                    next.delete(message.id);
+                                  } else {
+                                    next.add(message.id);
+                                  }
+                                  return next;
+                                });
+                              }}
+                              streaming={streamingMessageId === message.id}
+                            />
+                          )}
                           {message.content.trim().length > 0 ||
                           streamingMessageId !== message.id ? (
                             <AnswerBubble

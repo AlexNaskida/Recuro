@@ -1,16 +1,7 @@
 import type { ReactNode } from "react";
-// Do not statically import @privy-io/react-auth here — the package's
-// optional subpaths and build outputs can confuse Vite during prebundle.
-// For local development we provide a no-op wrapper so the app can render
-// without the Privy runtime. Reintroduce the real provider when the
-// package is available and works with Vite's resolver.
+import { PrivyProvider } from "@privy-io/react-auth";
 
 const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID ?? "").trim();
-// If Privy's optional solana helpers are not available in the installed package,
-// fall back to an empty RPC map and no external connectors. This keeps the
-// provider usable for authentication while Solana wallet adapter is handled
-// locally by the app.
-const SOLANA_RPCS: Record<string, string> = {};
 
 function PrivyConfigError({ reason }: { reason: string }) {
   return (
@@ -64,14 +55,16 @@ function PrivyConfigError({ reason }: { reason: string }) {
   );
 }
 
-// initialise ONCE outside the component — not on every render
-const solanaConnectors: any[] = [];
-
 export function PrivyAppProvider({ children }: { children: ReactNode }) {
   if (!PRIVY_APP_ID)
     return <PrivyConfigError reason="VITE_PRIVY_APP_ID is missing." />;
-  // No-op provider: render children directly. This keeps auth-related
-  // imports out of the dependency graph so Vite can start. Replace with
-  // the actual PrivyProvider when the package is compatible.
-  return <>{children}</>;
+
+  return (
+    <PrivyProvider
+      appId={PRIVY_APP_ID}
+      clientId={import.meta.env.VITE_PRIVY_CLIENT_ID ?? ""}
+    >
+      {children}
+    </PrivyProvider>
+  );
 }
