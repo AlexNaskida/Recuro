@@ -16,7 +16,7 @@ export default function FeatureRow({ data }: { data: FeatureRowData }) {
           />
         </div>
         <div className={cn("space-y-6", data.reverse && "md:order-1")}>
-          <p className="text-xs font-semibold tracking-[0.24em] text-accent">
+          <p className="text-base font-bold tracking-[0.24em] text-accent">
             {data.tag}
           </p>
           <h3 className="font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">

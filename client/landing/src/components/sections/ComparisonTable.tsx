@@ -4,11 +4,6 @@ export default function ComparisonTable() {
   return (
     <section className="mx-auto max-w-[1100px] px-4 py-20 sm:px-6 lg:px-8">
       <div className="text-center">
-        <div className="flex items-center justify-center gap-3 text-text-tertiary">
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
-          <span className="h-1.5 w-1.5 rounded-full bg-accent/40" />
-          <span className="h-1.5 w-1.5 rounded-full bg-border" />
-        </div>
         <h2 className="mt-4 font-display text-3xl font-extrabold tracking-tight text-text-primary sm:text-4xl">
           Compare Recuro with legacy subscription rails
         </h2>
