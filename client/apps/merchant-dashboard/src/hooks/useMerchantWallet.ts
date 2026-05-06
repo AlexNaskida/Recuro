@@ -1,7 +1,14 @@
 import { useEffect, useMemo } from "react";
-import { Transaction, PublicKey } from "@solana/web3.js";
+import {
+  Transaction,
+  VersionedTransaction,
+  PublicKey,
+} from "@solana/web3.js";
 import { usePrivy } from "@privy-io/react-auth";
-import { useWallet } from "@solana/wallet-adapter-react";
+import {
+  useSignTransaction,
+  useWallets as useSolanaWallets,
+} from "@privy-io/react-auth/solana";
 
 // Only accept Solana addresses (base58, 32–44 chars). Skip EVM (0x…) addresses.
 const isLikelySolanaAddress = (value: unknown): value is string =>
@@ -9,43 +16,30 @@ const isLikelySolanaAddress = (value: unknown): value is string =>
 
 export function useMerchantWallet() {
   const privy = usePrivy();
-  const {
-    publicKey: adapterPublicKey,
-    signTransaction: adapterSignTransaction,
-    signAllTransactions: adapterSignAllTransactions,
-  } = useWallet();
+  const { wallets: solanaWallets } = useSolanaWallets();
+  const { signTransaction: privySignTransaction } = useSignTransaction();
 
-  const connectedWallet = adapterPublicKey
-    ? {
-        address: adapterPublicKey.toString(),
-      }
-    : null;
-
+  // Pick the active Solana wallet from Privy. Prefer one matching a Solana
+  // address found in privy.user (covers external + embedded wallets).
   const linkedAccounts =
     ((privy.user as any)?.linkedAccounts as Array<any> | undefined) ?? [];
+  const preferredAddress =
+    (linkedAccounts.find(
+      (a) =>
+        a?.chainType === "solana" && isLikelySolanaAddress(a?.address),
+    )?.address as string | undefined) ??
+    (linkedAccounts.find((a) => isLikelySolanaAddress(a?.address))
+      ?.address as string | undefined);
 
-  // First, prefer an explicitly Solana-tagged linked account
-  const linkedSolanaAddress = linkedAccounts.find(
-    (account) =>
-      account?.chainType === "solana" && isLikelySolanaAddress(account?.address),
-  )?.address as string | undefined;
+  const activeWallet =
+    solanaWallets.find((w) => w.address === preferredAddress) ??
+    solanaWallets.find((w) => isLikelySolanaAddress(w.address)) ??
+    null;
 
-  // Otherwise, take any base58-shaped address from linkedAccounts
-  const anyBase58Linked = linkedAccounts.find((account) =>
-    isLikelySolanaAddress(account?.address),
-  )?.address as string | undefined;
-
-  const privyWalletAddress = (privy.user as any)?.wallet?.address as
-    | string
-    | undefined;
-
-  const fallbackWalletAddress =
-    (isLikelySolanaAddress(privyWalletAddress) && privyWalletAddress) ||
-    linkedSolanaAddress ||
-    anyBase58Linked ||
+  const walletAddress =
+    activeWallet?.address ??
+    preferredAddress ??
     "";
-
-  const walletAddress = connectedWallet?.address ?? fallbackWalletAddress;
 
   // If authenticated but we couldn't find a Solana address (e.g. a leftover
   // EVM session from a previous config), force a logout so the user can
@@ -67,36 +61,42 @@ export function useMerchantWallet() {
   }, [walletAddress]);
 
   const anchorWallet = useMemo(() => {
-    if (!adapterPublicKey || !publicKey) return null;
+    if (!publicKey || !activeWallet) return null;
+
+    const signOne = async <T extends Transaction | VersionedTransaction>(
+      tx: T,
+    ): Promise<T> => {
+      const isVersioned = "version" in tx;
+      const serialized = isVersioned
+        ? (tx as VersionedTransaction).serialize()
+        : (tx as Transaction).serialize({ requireAllSignatures: false });
+      const { signedTransaction } = await privySignTransaction({
+        transaction: serialized,
+        wallet: activeWallet,
+      });
+      return (
+        isVersioned
+          ? VersionedTransaction.deserialize(signedTransaction)
+          : Transaction.from(signedTransaction)
+      ) as T;
+    };
 
     return {
       publicKey,
-      signTransaction: async (transaction: Transaction) => {
-        if (!adapterSignTransaction)
-          throw new Error("wallet cannot sign transactions");
-        const signed = await adapterSignTransaction(transaction);
-        return signed;
-      },
-      signAllTransactions: async (transactions: Transaction[]) => {
-        if (adapterSignAllTransactions) {
-          return adapterSignAllTransactions(transactions);
-        }
-
-        const signed: Transaction[] = [];
-        for (const tx of transactions) {
-          if (!adapterSignTransaction)
-            throw new Error("wallet cannot sign transactions");
-          signed.push(await adapterSignTransaction(tx));
+      signTransaction: signOne,
+      signAllTransactions: async <
+        T extends Transaction | VersionedTransaction,
+      >(
+        txs: T[],
+      ): Promise<T[]> => {
+        const signed: T[] = [];
+        for (const tx of txs) {
+          signed.push(await signOne(tx));
         }
         return signed;
       },
     };
-  }, [
-    adapterPublicKey,
-    publicKey,
-    adapterSignTransaction,
-    adapterSignAllTransactions,
-  ]);
+  }, [publicKey, activeWallet, privySignTransaction]);
 
   const canSignTransactions = !!anchorWallet;
 
@@ -109,7 +109,7 @@ export function useMerchantWallet() {
     publicKey,
     walletAddress,
     wallet: anchorWallet,
-    walletCount: connectedWallet ? 1 : 0,
+    walletCount: activeWallet ? 1 : 0,
     connectWallet: privy.connectWallet,
     connectOrCreateWallet: privy.connectOrCreateWallet,
     link: privy.link,
