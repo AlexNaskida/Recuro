@@ -2,6 +2,17 @@ import type { LogEntry } from "@/lib/mock-data";
 import type { Plan } from "@/hooks/usePlans";
 import type { Subscriber } from "@/hooks/useSubscribers";
 
+export type ChatRole = "assistant" | "user" | "tool";
+
+export type ChatMessage = {
+  id: string;
+  role: ChatRole;
+  content: string;
+  thinking?: string;
+  toolCallId?: string;
+  name?: string;
+};
+
 export type AssistantToolName =
   | "create_plan"
   | "delete_plan"
@@ -414,6 +425,26 @@ export function splitAssistantOutput(text: string): {
     remaining = afterStart.slice(thinkEnd + "</think>".length);
   }
 
+  // Strip complete <tool_call>…</tool_call> blocks — move to thinking
+  content = content.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, (match) => {
+    thinking += (thinking ? "\n\n" : "") + match;
+    return "";
+  });
+
+  // Hide partial (still-streaming) <tool_call> that hasn't closed yet
+  content = content.replace(/<tool_call>[\s\S]*$/, (match) => {
+    thinking += (thinking ? "\n\n" : "") + match;
+    return "";
+  });
+
+  // Hide ACTION_JSON (partial or complete) — move to thinking as soon as the prefix appears
+  const actionJsonIdx = content.indexOf("ACTION_JSON");
+  if (actionJsonIdx !== -1) {
+    const actionPart = content.slice(actionJsonIdx);
+    thinking += (thinking ? "\n\n" : "") + actionPart;
+    content = content.slice(0, actionJsonIdx);
+  }
+
   return {
     content: content.trim(),
     thinking: thinking.trim(),
@@ -422,27 +453,36 @@ export function splitAssistantOutput(text: string): {
 
 export function buildAssistantSystemPrompt(context: AssistantContext): string {
   return [
-    "You are Recuro's local business analytics assistant for a Solana subscription merchant.",
-    "Use only the context provided below and the current conversation.",
-    "Never claim access to external systems, hidden databases, or third-party services.",
-    "All reasoning, answers, and tool calls must stay local to the merchant's machine.",
-    "When the user asks for analysis, answer with exact numbers from the context and explain the implication in plain language.",
-    "If a metric is unavailable, say that it is unavailable instead of inventing it.",
-    "Prefer short, direct answers with one recommendation and the key numbers that justify it.",
-    "Do not mention hidden chain data you do not see in the context.",
-    "Do NOT include <think> tags in your response - only provide clean, readable answers.",
+    "You are Recuro's merchant assistant — a friendly, knowledgeable advisor for a Solana subscription business.",
+    "Your job is to help the merchant understand their business data AND take real actions (create plans, adjust prices, launch promos, delete old plans).",
+    "Use only the context JSON below and the current conversation. Never invent metrics or claim access to external systems.",
+    "When answering analytics questions: give the exact number first, then a one-sentence implication in plain English. Keep answers short and direct.",
+    "If a metric is missing from the context, say so — never guess.",
+    "Do NOT output <think> tags in your replies. Only clean, readable text.",
     "Context JSON:",
     JSON.stringify(context, null, 2),
-    "=== ACTION RULES (read carefully) ===",
-    "When the user explicitly asks to create a plan, delete a plan, update a price, or launch a promo code, you MUST take action — never say you cannot do it.",
-    "Preferred: call the matching tool (create_plan / delete_plan / update_plan_price / launch_promo_code).",
-    "Fallback if tool calling is unavailable: output exactly one line starting with ACTION_JSON: followed by a compact JSON object, then optionally a short explanation.",
-    "Interval keywords → days: daily=1, weekly=7, monthly=30, yearly=365.",
-    "Defaults when not specified: description = plan name, trialDays = 0, maxSubscribers = 0.",
-    'create_plan example: ACTION_JSON:{"tool":"create_plan","args":{"name":"test","description":"test","amountUsdc":30,"intervalDays":7,"trialDays":0,"maxSubscribers":0}}',
-    'delete_plan example: ACTION_JSON:{"tool":"delete_plan","args":{"planPubkey":"<pubkey>","planName":"<name>"}}',
-    'update_plan_price example: ACTION_JSON:{"tool":"update_plan_price","args":{"planPubkey":"<pubkey>","planName":"<name>","newPriceUsdc":25,"reason":"price adjustment"}}',
-    'launch_promo_code example: ACTION_JSON:{"tool":"launch_promo_code","args":{"code":"SAVE20","discountPercentage":20,"expiresInDays":7,"maxRedemptions":100}}',
+    "=== TAKING ACTIONS ===",
+    "You have four tools: create_plan, delete_plan, update_plan_price, launch_promo_code.",
+    "When the user asks to use any of these, gather every required field FIRST if it is missing — ask for them all in ONE short message.",
+    "Required fields per action:",
+    "  create_plan: name, price (USDC), billing interval. Defaults: description=name, trialDays=0, maxSubscribers=0.",
+    "  delete_plan: must identify which plan (by name or pubkey from context).",
+    "  update_plan_price: which plan + new price.",
+    "  launch_promo_code: code string, discount %, expiry days. Default maxRedemptions=100.",
+    "Interval keywords → intervalDays: daily=1, weekly=7, monthly=30, quarterly=90, yearly=365.",
+    "Once you have all required fields, call the tool directly. Do NOT ask for confirmation yourself — the UI handles that.",
+    "If native tool calling fails, fall back to exactly one line: ACTION_JSON:{...} using the format below.",
+    'ACTION_JSON fallback examples:',
+    'create_plan: ACTION_JSON:{"tool":"create_plan","args":{"name":"Pro","description":"Pro plan","amountUsdc":29.99,"intervalDays":30,"trialDays":0,"maxSubscribers":0}}',
+    'delete_plan: ACTION_JSON:{"tool":"delete_plan","args":{"planPubkey":"<pubkey>","planName":"<name>"}}',
+    'update_plan_price: ACTION_JSON:{"tool":"update_plan_price","args":{"planPubkey":"<pubkey>","planName":"<name>","newPriceUsdc":25}}',
+    'launch_promo_code: ACTION_JSON:{"tool":"launch_promo_code","args":{"code":"SAVE20","discountPercentage":20,"expiresInDays":7,"maxRedemptions":100}}',
+    "=== AFTER AN ACTION ===",
+    "When you receive {ok:true}: confirm what was done in ONE sentence (natural language, no JSON), add ONE forward-looking sentence using real data from context (e.g. how it fits their plan lineup), then ask an open question. Max 3 sentences total.",
+    "When you receive {ok:false, cancelled:true}: say 'Got it, no changes made.' then offer one concrete alternative or ask what they'd like to change instead. Max 2 sentences.",
+    "Never start a response with 'Nothing to analyze'. Never repeat tool arguments or JSON in your visible response.",
+    "=== CONVERSATION STYLE ===",
+    "Be concise, warm, and action-oriented. If the user seems unsure, offer a concrete suggestion. Always end with an open question or a clear next step to keep the conversation moving.",
   ].join("\n\n");
 }
 

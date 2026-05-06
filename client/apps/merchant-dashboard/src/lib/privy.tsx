@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import { PrivyProvider } from "@privy-io/react-auth";
+import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 
 const PRIVY_APP_ID = (import.meta.env.VITE_PRIVY_APP_ID ?? "").trim();
+
+const solanaConnectors = toSolanaWalletConnectors({
+  shouldAutoConnect: true,
+});
 
 function PrivyConfigError({ reason }: { reason: string }) {
   return (
@@ -63,6 +68,17 @@ export function PrivyAppProvider({ children }: { children: ReactNode }) {
     <PrivyProvider
       appId={PRIVY_APP_ID}
       clientId={import.meta.env.VITE_PRIVY_CLIENT_ID ?? ""}
+      config={{
+        appearance: {
+          walletChainType: "solana-only",
+        },
+        externalWallets: {
+          solana: { connectors: solanaConnectors },
+        },
+        embeddedWallets: {
+          solana: { createOnLogin: "users-without-wallets" },
+        },
+      }}
     >
       {children}
     </PrivyProvider>
