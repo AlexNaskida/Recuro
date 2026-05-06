@@ -183,7 +183,7 @@ function ThinkingBubble({
   streaming: boolean;
 }) {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 rounded-3xl border border-l-2 border-l-primary/30 border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground shadow-sm">
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 w-full max-w-full overflow-hidden break-words rounded-3xl border border-l-2 border-l-primary/30 border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground shadow-sm [overflow-wrap:anywhere]">
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
           {streaming ? (
@@ -236,7 +236,7 @@ function AnswerBubble({
   displayContent?: string;
 }) {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 rounded-3xl border border-l-2 border-l-primary border-border/80 bg-card px-4 py-3 text-sm leading-6 text-foreground shadow-sm">
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 w-full max-w-full overflow-hidden break-words rounded-3xl border border-l-2 border-l-primary border-border/80 bg-card px-4 py-3 text-sm leading-6 text-foreground shadow-sm [overflow-wrap:anywhere]">
       <AssistantMarkdown content={displayContent ?? message.content} />
       {streaming ? (
         <span className="ml-0.5 inline-block h-[1em] w-0.5 animate-blink bg-primary align-middle" />
@@ -1213,8 +1213,14 @@ export default function MerchantAssistant() {
             <div className="border-b bg-background/80 px-5 py-4 backdrop-blur-sm">
               <DialogHeader className="space-y-2 text-left">
                 <DialogTitle className="flex items-center gap-2 pr-8 text-base">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Bot className="h-4 w-4" />
+                    {online ? (
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+                      </span>
+                    ) : null}
                   </div>
                   Merchant AI Chat
                 </DialogTitle>
@@ -1237,9 +1243,6 @@ export default function MerchantAssistant() {
                   )}
                   {statusLabel}
                 </Badge>
-                <span>
-                  Revenue tracked locally: {formatCurrency(totalRevenue)}
-                </span>
                 <div className="ml-auto flex items-center gap-1.5">
                   <button
                     type="button"
