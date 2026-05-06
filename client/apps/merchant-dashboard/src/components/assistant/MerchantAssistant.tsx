@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useChatStorage, titleFromMessage, formatChatDate } from "@/hooks/useChatStorage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,7 +22,6 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -33,6 +33,8 @@ import {
   formatCurrency,
   type AssistantToolCall,
   type AssistantToolName,
+  type ChatMessage,
+  type ChatRole,
 } from "@/lib/assistant";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 import { usePlans } from "@/hooks/usePlans";
@@ -47,19 +49,13 @@ import {
   Sparkles,
   WifiOff,
   ChevronDown,
+  History,
+  Plus,
+  Trash2,
+  ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
 
-type ChatRole = "assistant" | "user" | "tool";
-
-type ChatMessage = {
-  id: string;
-  role: ChatRole;
-  content: string;
-  thinking?: string;
-  toolCallId?: string;
-  name?: string;
-};
 
 type PendingAction =
   | {
@@ -187,7 +183,7 @@ function ThinkingBubble({
   streaming: boolean;
 }) {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 rounded-3xl border border-l-2 border-l-primary/30 border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground shadow-sm">
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-150 w-full max-w-full overflow-hidden break-words rounded-3xl border border-l-2 border-l-primary/30 border-border/60 bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground shadow-sm [overflow-wrap:anywhere]">
       <div className="flex items-center justify-between gap-3">
         <span className="flex items-center gap-2">
           {streaming ? (
@@ -218,7 +214,7 @@ function ThinkingBubble({
           expanded ? "mt-2 max-h-96 opacity-100" : "max-h-0 opacity-0",
         )}
       >
-        <div className="overflow-hidden rounded-2xl border border-border/50 bg-background/40 px-3 py-2 text-xs leading-5 text-muted-foreground/90">
+        <div className="max-h-72 overflow-y-auto pr-1">
           {message.thinking ? (
             <AssistantMarkdown content={message.thinking} />
           ) : (
@@ -233,21 +229,28 @@ function ThinkingBubble({
 function AnswerBubble({
   message,
   streaming,
+  displayContent,
 }: {
   message: ChatMessage;
   streaming: boolean;
+  displayContent?: string;
 }) {
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 rounded-3xl border border-l-2 border-l-primary border-border/80 bg-card px-4 py-3 text-sm leading-6 text-foreground shadow-sm">
-      <AssistantMarkdown content={message.content} />
+    <div className="animate-in fade-in slide-in-from-bottom-1 duration-200 w-full max-w-full overflow-hidden break-words rounded-3xl border border-l-2 border-l-primary border-border/80 bg-card px-4 py-3 text-sm leading-6 text-foreground shadow-sm [overflow-wrap:anywhere]">
+      <AssistantMarkdown content={displayContent ?? message.content} />
       {streaming ? (
-        <span className="ml-1 inline-block animate-pulse align-baseline text-primary">
-          ▍
-        </span>
+        <span className="ml-0.5 inline-block h-[1em] w-0.5 animate-blink bg-primary align-middle" />
       ) : null}
     </div>
   );
 }
+
+const GREETING: ChatMessage = {
+  id: "greeting",
+  role: "assistant",
+  content:
+    "I can answer questions about revenue, churn, plan performance, and billing health using your local on-chain data.",
+};
 
 const SUGGESTED_QUESTIONS = [
   "What's my revenue trend this week?",
@@ -287,6 +290,26 @@ function readJsonArguments(value: string) {
 }
 
 function parseActionFromContent(content: string): AssistantToolCall | null {
+  // Try <tool_call> XML tags first (used by some Ollama models)
+  const toolCallMatch = content.match(/<tool_call>([\s\S]*?)<\/tool_call>/);
+  if (toolCallMatch) {
+    try {
+      const parsed = JSON.parse(toolCallMatch[1].trim()) as {
+        name?: string;
+        arguments?: Record<string, unknown>;
+      };
+      const name = parsed.name;
+      if (name && VALID_TOOL_NAMES.includes(name as AssistantToolName)) {
+        return {
+          id: makeId(),
+          name: name as AssistantToolName,
+          arguments: parsed.arguments ?? {},
+        };
+      }
+    } catch {}
+  }
+
+  // Fall back to ACTION_JSON: marker
   const markerIdx = content.indexOf("ACTION_JSON:");
   if (markerIdx === -1) return null;
 
@@ -497,9 +520,13 @@ export default function MerchantAssistant() {
     },
   });
 
+  const storage = useChatStorage();
+
   const [online, setOnline] = useState<boolean | null>(null);
   const [checkingConnectivity, setCheckingConnectivity] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [view, setView] = useState<"chat" | "history">("chat");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
@@ -512,6 +539,14 @@ export default function MerchantAssistant() {
     new Set(),
   );
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const initializedRef = useRef(false);
+
+  // Typewriter effect
+  const twTargetRef = useRef("");
+  const twPosRef = useRef(0);
+  const twIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const twMsgIdRef = useRef<string | null>(null);
+  const [twText, setTwText] = useState("");
 
   const context = useMemo(
     () =>
@@ -569,19 +604,74 @@ export default function MerchantAssistant() {
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
-
-    if (messages.length === 0) {
-      setMessages([
-        {
-          id: makeId(),
-          role: "assistant",
-          content:
-            "I can answer questions about revenue, churn, plan performance, and billing health using your local on-chain data.",
-        },
-      ]);
+    if (!open) {
+      initializedRef.current = false;
+      return;
     }
-  }, [messages.length, open]);
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    if (storage.index.length > 0) {
+      const latest = storage.index[0];
+      const msgs = storage.loadMessages(latest.id);
+      setCurrentChatId(latest.id);
+      setMessages(msgs.length > 0 ? msgs : [GREETING]);
+    } else {
+      const { id } = storage.createChat();
+      setCurrentChatId(id);
+      setMessages([GREETING]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  useEffect(() => {
+    if (!currentChatId || messages.length === 0) return;
+    const firstUserMsg = messages.find((m) => m.role === "user");
+    const title = firstUserMsg
+      ? titleFromMessage(firstUserMsg.content)
+      : undefined;
+    storage.persistMessages(currentChatId, messages, title);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, currentChatId]);
+
+  // Keep typewriter target in sync with the streaming message content
+  useEffect(() => {
+    if (!streamingMessageId) return;
+    const msg = messages.find((m) => m.id === streamingMessageId);
+    if (msg && twMsgIdRef.current === streamingMessageId) {
+      twTargetRef.current = msg.content;
+    }
+  }, [messages, streamingMessageId]);
+
+  // Start/stop typewriter interval when streaming state changes
+  useEffect(() => {
+    if (streamingMessageId) {
+      twMsgIdRef.current = streamingMessageId;
+      twTargetRef.current = "";
+      twPosRef.current = 0;
+      setTwText("");
+
+      const id = setInterval(() => {
+        const target = twTargetRef.current;
+        const pos = twPosRef.current;
+        if (pos < target.length) {
+          twPosRef.current = pos + 1;
+          setTwText(target.slice(0, pos + 1));
+        }
+      }, 20);
+
+      twIntervalRef.current = id;
+      return () => clearInterval(id);
+    } else {
+      // Stream ended — stop interval and snap to full content
+      if (twIntervalRef.current) {
+        clearInterval(twIntervalRef.current);
+        twIntervalRef.current = null;
+      }
+      setTwText(twTargetRef.current);
+      twPosRef.current = twTargetRef.current.length;
+    }
+  }, [streamingMessageId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -651,24 +741,48 @@ export default function MerchantAssistant() {
       let toolCall = result.toolCalls[0];
 
       if (!toolCall) {
-        const actionFromContent = parseActionFromContent(result.content);
-        if (actionFromContent) {
-          toolCall = actionFromContent;
-          setMessages((current) =>
-            current.map((msg) =>
-              msg.id === result.assistantId
-                ? {
-                    ...msg,
-                    content: msg.content
-                      .split("\n")
-                      .filter((l) => !l.trimStart().startsWith("ACTION_JSON:"))
-                      .join("\n")
-                      .trim(),
-                  }
-                : msg,
-            ),
-          );
-        }
+        const actionFromContent =
+          parseActionFromContent(result.content) ??
+          parseActionFromContent(result.thinking);
+        if (actionFromContent) toolCall = actionFromContent;
+      }
+
+      const hasActionJson = result.content.includes("ACTION_JSON:");
+      const hasToolCallTag = /<tool_call>/.test(result.content);
+      if (hasActionJson || hasToolCallTag) {
+        setMessages((current) =>
+          current.map((msg) => {
+            if (msg.id !== result.assistantId) return msg;
+            let cleaned = msg.content;
+            let extra = "";
+            if (hasActionJson) {
+              const actionLines = cleaned
+                .split("\n")
+                .filter((l) => l.trimStart().startsWith("ACTION_JSON:"))
+                .join("\n");
+              cleaned = cleaned
+                .split("\n")
+                .filter((l) => !l.trimStart().startsWith("ACTION_JSON:"))
+                .join("\n")
+                .trim();
+              extra += actionLines;
+            }
+            if (hasToolCallTag) {
+              cleaned = cleaned
+                .replace(/<tool_call>[\s\S]*?<\/tool_call>/g, "")
+                .trim();
+            }
+            return {
+              ...msg,
+              content: cleaned,
+              thinking: msg.thinking
+                ? extra
+                  ? `${msg.thinking}\n\n${extra}`
+                  : msg.thinking
+                : extra || msg.thinking,
+            };
+          }),
+        );
       }
 
       if (toolCall) {
@@ -811,22 +925,29 @@ export default function MerchantAssistant() {
           let toolCall = result.toolCalls[0];
 
           if (!toolCall) {
-            const actionFromContent = parseActionFromContent(result.content);
-            if (actionFromContent) {
-              toolCall = actionFromContent;
-              setMessages((current) =>
-                current.map((msg) =>
-                  msg.id === result.assistantId
-                    ? {
-                        ...msg,
-                        content: msg.content
-                          .replace(/ACTION_JSON:\s*\{[\s\S]*?\}\n?/g, "")
-                          .trim(),
-                      }
-                    : msg,
-                ),
-              );
-            }
+            const actionFromContent =
+          parseActionFromContent(result.content) ??
+          parseActionFromContent(result.thinking);
+            if (actionFromContent) toolCall = actionFromContent;
+          }
+
+          if (result.content.includes("ACTION_JSON:")) {
+            setMessages((current) =>
+              current.map((msg) =>
+                msg.id === result.assistantId
+                  ? {
+                      ...msg,
+                      content: msg.content
+                        .split("\n")
+                        .filter(
+                          (l) => !l.trimStart().startsWith("ACTION_JSON:"),
+                        )
+                        .join("\n")
+                        .trim(),
+                    }
+                  : msg,
+              ),
+            );
           }
 
           if (toolCall) {
@@ -1000,29 +1121,72 @@ export default function MerchantAssistant() {
     }
   };
 
-  const cancelPendingAction = () => {
+  const cancelPendingAction = async () => {
+    if (!pendingAction) return;
+    const result = JSON.stringify({
+      ok: false,
+      cancelled: true,
+      action: pendingAction.name,
+    });
+    const id = pendingAction.id;
     setPendingAction(null);
+    setSending(true);
+    try {
+      await continueWithToolResult(result, id);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      toast.error("Failed to get cancel response", { description: message });
+    } finally {
+      setSending(false);
+    }
   };
 
-  const shouldShowSuggestedQuestions = useMemo(() => {
-    // Hide while AI is answering
-    if (sending) return false;
-    // Show on initial state (only greeting message)
-    if (messages.length <= 1) return true;
-    // Show after assistant responds (last message is from assistant)
-    const lastMessage = messages[messages.length - 1];
-    return lastMessage?.role === "assistant";
-  }, [messages, sending]);
+  const createNewChat = () => {
+    const { id } = storage.createChat();
+    setCurrentChatId(id);
+    setMessages([GREETING]);
+    setView("chat");
+    setInput("");
+  };
 
-  const displayedSuggestedQuestions = useMemo(() => {
-    // Show all questions initially, then 3 random ones after communication starts
-    if (messages.length <= 1) {
-      return SUGGESTED_QUESTIONS;
+  const switchToChat = (chatId: string) => {
+    const msgs = storage.loadMessages(chatId);
+    setCurrentChatId(chatId);
+    setMessages(msgs.length > 0 ? msgs : [GREETING]);
+    setView("chat");
+    setInput("");
+  };
+
+  const deleteChatItem = (chatId: string) => {
+    storage.deleteChat(chatId);
+    if (currentChatId === chatId) {
+      createNewChat();
     }
-    // After communication: show 3 random questions
-    const shuffled = [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3);
-  }, [messages]);
+  };
+
+  const shouldShowSuggestedQuestions =
+    !sending &&
+    !streamingMessageId &&
+    (messages.length <= 1 ||
+      messages[messages.length - 1]?.role === "assistant");
+
+  // Stable suggested questions — only re-shuffle once per completed AI turn
+  const [displayedSuggestedQuestions, setDisplayedSuggestedQuestions] =
+    useState<string[]>(SUGGESTED_QUESTIONS);
+
+  useEffect(() => {
+    if (streamingMessageId) return; // don't update mid-stream
+    if (messages.length <= 1) {
+      setDisplayedSuggestedQuestions(SUGGESTED_QUESTIONS);
+      return;
+    }
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role === "assistant") {
+      const shuffled = [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5);
+      setDisplayedSuggestedQuestions(shuffled.slice(0, 3));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamingMessageId, messages.length]);
 
   const totalRevenue = context.totals.revenueTotal;
   const contextLoading = plansLoading || subscribersLoading || activityLoading;
@@ -1048,9 +1212,15 @@ export default function MerchantAssistant() {
           <div className="flex h-full w-full flex-col overflow-hidden bg-[radial-gradient(circle_at_top,rgba(120,119,198,0.14),transparent_45%),linear-gradient(to_bottom,rgba(255,255,255,0.02),transparent)]">
             <div className="border-b bg-background/80 px-5 py-4 backdrop-blur-sm">
               <DialogHeader className="space-y-2 text-left">
-                <DialogTitle className="flex items-center gap-2 text-base">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                <DialogTitle className="flex items-center gap-2 pr-8 text-base">
+                  <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Bot className="h-4 w-4" />
+                    {online ? (
+                      <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+                      </span>
+                    ) : null}
                   </div>
                   Merchant AI Chat
                 </DialogTitle>
@@ -1073,13 +1243,73 @@ export default function MerchantAssistant() {
                   )}
                   {statusLabel}
                 </Badge>
-                <span>
-                  Revenue tracked locally: {formatCurrency(totalRevenue)}
-                </span>
+                <div className="ml-auto flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={createNewChat}
+                    className="inline-flex items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    title="New chat"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setView(view === "history" ? "chat" : "history")
+                    }
+                    className={cn(
+                      "inline-flex items-center justify-center rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+                      view === "history" && "bg-muted text-foreground",
+                    )}
+                    title="Chat history"
+                  >
+                    <History className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {online === false ? (
+            {view === "history" ? (
+              <div className="flex flex-1 flex-col overflow-hidden">
+                <ScrollArea className="flex-1">
+                  <div className="space-y-0.5 p-2">
+                    {storage.index.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-muted-foreground">
+                        No saved chats
+                      </p>
+                    ) : (
+                      storage.index.map((chat) => (
+                        <div
+                          key={chat.id}
+                          className={cn(
+                            "group flex items-center gap-2 rounded-xl px-3 py-2.5 transition-colors hover:bg-muted/50",
+                            currentChatId === chat.id && "bg-muted/50",
+                          )}
+                        >
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 text-left"
+                            onClick={() => switchToChat(chat.id)}
+                          >
+                            <p className="truncate text-sm">{chat.title}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {formatChatDate(chat.updatedAt)}
+                            </p>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteChatItem(chat.id)}
+                            className="rounded p-1 opacity-0 transition-all hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            ) : online === false ? (
               <div className="m-4 flex flex-1 flex-col justify-center gap-4 rounded-3xl border border-dashed bg-muted/25 p-5 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2 text-foreground">
                   <WifiOff className="h-4 w-4" />
@@ -1104,16 +1334,15 @@ export default function MerchantAssistant() {
               </div>
             ) : (
               <>
-                <ScrollArea className="flex-1 px-4 py-4">
-                  <div className="space-y-3 pr-1">
+                <ScrollArea className="flex-1 overflow-x-hidden px-4 py-4">
+                  <div className="w-full space-y-3 pr-1">
                     {messages.map((message) =>
                       message.role === "assistant" ? (
                         <div
                           key={message.id}
-                          className="mr-auto max-w-[92%] space-y-2"
+                          className="mr-auto min-w-0 max-w-[92%] space-y-2"
                         >
-                          {(streamingMessageId === message.id ||
-                            !!message.thinking) && (
+                          {!!message.thinking && (
                             <ThinkingBubble
                               message={message}
                               expanded={expandedThinking.has(message.id)}
@@ -1132,59 +1361,50 @@ export default function MerchantAssistant() {
                             />
                           )}
                           {message.content.trim().length > 0 ||
-                          streamingMessageId !== message.id ? (
+                          streamingMessageId === message.id ? (
                             <AnswerBubble
                               message={message}
                               streaming={streamingMessageId === message.id}
+                              displayContent={
+                                streamingMessageId === message.id
+                                  ? twText
+                                  : undefined
+                              }
                             />
                           ) : null}
                         </div>
-                      ) : (
+                      ) : message.role === "user" ? (
                         <div
                           key={message.id}
-                          className={cn(
-                            "max-w-[92%] rounded-3xl border px-4 py-3 text-sm leading-6 shadow-sm",
-                            message.role === "user"
-                              ? "ml-auto bg-primary text-primary-foreground"
-                              : "mr-auto bg-muted/60 text-muted-foreground",
-                          )}
+                          className="ml-auto max-w-[92%] rounded-3xl border bg-primary px-4 py-3 text-sm leading-6 text-primary-foreground shadow-sm"
                         >
-                          {message.role === "tool" ? (
-                            <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                              Tool result
-                            </p>
-                          ) : null}
                           <p className="whitespace-pre-wrap">
                             {message.content}
                           </p>
                         </div>
-                      ),
+                      ) : null,
                     )}
                     <div ref={scrollRef} />
                   </div>
                 </ScrollArea>
 
-                <div className="border-t bg-background/90 p-4 backdrop-blur-sm">
-                  {shouldShowSuggestedQuestions && (
-                    <div className="mb-3">
-                      <p className="mb-2 text-xs font-medium text-muted-foreground">
-                        Quick questions:
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {displayedSuggestedQuestions.map((question) => (
-                          <button
-                            key={question}
-                            onClick={() => handleSuggestedQuestion(question)}
-                            disabled={sending || !online}
-                            className="whitespace-nowrap rounded-full border border-border bg-card/50 px-3 py-1.5 text-xs hover:bg-card/80 disabled:opacity-50 transition-colors text-muted-foreground hover:text-foreground"
-                          >
-                            {question}
-                          </button>
-                        ))}
-                      </div>
-                      <Separator className="mt-3" />
+                {shouldShowSuggestedQuestions && (
+                  <div className="px-4 pb-2 pt-1">
+                    <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      {displayedSuggestedQuestions.map((question) => (
+                        <button
+                          key={question}
+                          onClick={() => handleSuggestedQuestion(question)}
+                          disabled={sending || !online}
+                          className="shrink-0 whitespace-nowrap rounded-full border border-border bg-card/50 px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-card/80 hover:text-foreground disabled:opacity-50"
+                        >
+                          {question}
+                        </button>
+                      ))}
                     </div>
-                  )}
+                  </div>
+                )}
+                <div className="border-t bg-background/90 p-4 backdrop-blur-sm">
                   <div className="space-y-2">
                     <Textarea
                       value={input}
@@ -1228,7 +1448,7 @@ export default function MerchantAssistant() {
 
       <AlertDialog
         open={!!pendingAction}
-        onOpenChange={(openState) => !openState && cancelPendingAction()}
+        onOpenChange={(openState) => !openState && void cancelPendingAction()}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -1276,7 +1496,7 @@ export default function MerchantAssistant() {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelPendingAction} disabled={sending}>
+            <AlertDialogCancel onClick={() => void cancelPendingAction()} disabled={sending}>
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

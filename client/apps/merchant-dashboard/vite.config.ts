@@ -7,6 +7,12 @@ export default defineConfig(() => ({
     host: "::",
     port: 8080,
     hmr: { overlay: false },
+    proxy: {
+      "/v1": {
+        target: "http://localhost:11434",
+        changeOrigin: true,
+      },
+    },
   },
   resolve: {
     alias: {

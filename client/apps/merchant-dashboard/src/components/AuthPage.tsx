@@ -296,7 +296,7 @@ export default function AuthPage() {
   function handleConnect() {
     setIsConnecting(true);
     const action = authenticated
-      ? (connectOrCreateWallet ?? connectWallet ?? link)
+      ? (connectWallet ?? link)
       : (login ?? connectOrCreateWallet ?? connectWallet);
     try {
       if (!action) throw new Error("No wallet action available");

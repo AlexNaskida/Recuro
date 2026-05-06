@@ -58,6 +58,56 @@ Funds stay in the subscriber's wallet until payment time. Billing is automated b
 
 ---
 
+## QVAC AI Assistant (merchant dashboard)
+
+A **local-first** AI assistant lives inside the merchant dashboard. It runs against a QVAC runtime on `http://localhost:11434/v1` — no merchant data ever leaves the machine. The assistant pulls live on-chain context (plans, subscribers, revenue, churn, payment events) and helps the merchant analyze and operate their business through natural conversation.
+
+### What it can do
+
+- **Multiple chats with per-chat memory.** Open the assistant, click `+` for a new chat, or open the history panel to switch between past conversations. Each chat persists its full message history (and the model's reasoning) in `localStorage` keyed by chat ID — switching back resumes exactly where you left off.
+- **Business advisory.** Ask it open-ended questions like _"how can I attract more customers?"_, _"which plans should I scale?"_, _"how do I reduce churn?"_ — it reads your real plan/subscriber data from chain state and grounds suggestions in your actual numbers (MRR, success rates, at-risk subscribers, revenue trends).
+- **On-chain action execution with explicit approval.** The assistant can propose and execute four merchant actions:
+  - `create_plan` — spin up a new subscription plan
+  - `update_plan_price` — adjust an existing plan's price
+  - `delete_plan` — archive a plan
+  - `launch_promo_code` — create a discount code
+
+  Every proposed action surfaces a **confirmation dialog** that summarizes the call and arguments. Nothing executes on-chain until the merchant clicks **Confirm**. Rejecting (or closing the dialog) is treated as a cancellation and the assistant offers an alternative or asks what to change.
+
+- **Streaming + reasoning view.** Responses stream in at a steady typewriter pace so they're readable, with the model's chain-of-thought collapsed behind a "Thought" toggle.
+
+### How it works
+
+```
+┌────────────────────────────────────────────────────────────┐
+│              Merchant dashboard (browser)                  │
+│                                                            │
+│  ┌─────────────────────┐     ┌──────────────────────────┐  │
+│  │  MerchantAssistant  │────►│  QVAC runtime (local)    │  │
+│  │  (chat UI)          │ SSE │  http://localhost:11434  │  │
+│  └──────────┬──────────┘     └──────────────────────────┘  │
+│             │                                              │
+│             │ tool_call: create_plan / update_plan_price   │
+│             ▼                                              │
+│  ┌─────────────────────┐                                   │
+│  │  Confirm dialog     │  merchant must approve            │
+│  └──────────┬──────────┘                                   │
+│             │ confirmed                                    │
+│             ▼                                              │
+│  ┌─────────────────────┐     ┌──────────────────────────┐  │
+│  │  usePlanActions     │────►│  Solana program          │  │
+│  │  (signs via Privy)  │ tx  │  (on-chain execution)    │  │
+│  └─────────────────────┘     └──────────────────────────┘  │
+│                                                            │
+│  Chat state, message history, and per-chat memories are    │
+│  stored only in localStorage. No remote sync.              │
+└────────────────────────────────────────────────────────────┘
+```
+
+The merchant context (plans, subscribers, recent on-chain events, revenue totals, churn signals, at-risk subscribers) is built fresh from the user's wallet on each conversation turn and inserted into the system prompt — so the model always reasons over current data, not stale context.
+
+---
+
 ## Repository layout
 
 ```
