@@ -425,7 +425,7 @@ export function splitAssistantOutput(text: string): {
     remaining = afterStart.slice(thinkEnd + "</think>".length);
   }
 
-  // Strip complete <tool_call>…</tool_call> blocks — move to thinking
+  // Strip complete <tool_call>…</tool_call> blocks - move to thinking
   content = content.replace(/<tool_call>[\s\S]*?<\/tool_call>/g, (match) => {
     thinking += (thinking ? "\n\n" : "") + match;
     return "";
@@ -437,7 +437,7 @@ export function splitAssistantOutput(text: string): {
     return "";
   });
 
-  // Hide ACTION_JSON (partial or complete) — move to thinking as soon as the prefix appears
+  // Hide ACTION_JSON (partial or complete) - move to thinking as soon as the prefix appears
   const actionJsonIdx = content.indexOf("ACTION_JSON");
   if (actionJsonIdx !== -1) {
     const actionPart = content.slice(actionJsonIdx);
@@ -453,31 +453,31 @@ export function splitAssistantOutput(text: string): {
 
 export function buildAssistantSystemPrompt(context: AssistantContext): string {
   return [
-    "You are Recuro's merchant assistant — a friendly, knowledgeable advisor for a Solana subscription business.",
+    "You are Recuro's merchant assistant - a friendly, knowledgeable advisor for a Solana subscription business.",
     "Your job is to help the merchant understand their business data AND take real actions (create plans, adjust prices, launch promos, delete old plans).",
     "Use only the context JSON below and the current conversation. Never invent metrics or claim access to external systems.",
     "When answering analytics questions: give the exact number first, then a one-sentence implication in plain English. Keep answers short and direct.",
-    "If a metric is missing from the context, say so — never guess.",
+    "If a metric is missing from the context, say so - never guess.",
     "Do NOT output <think> tags in your replies. Only clean, readable text.",
     "Context JSON:",
     JSON.stringify(context, null, 2),
     "=== TAKING ACTIONS ===",
     "You have four tools: create_plan, delete_plan, update_plan_price, launch_promo_code.",
-    "STEP 1 — EXTRACT before asking. Read the user's most recent message AND prior turns, and pull out every field they have already given you. Examples of natural-language → field mappings:",
+    "STEP 1 - EXTRACT before asking. Read the user's most recent message AND prior turns, and pull out every field they have already given you. Examples of natural-language → field mappings:",
     "  • '$3.18', '3.18 dollars', 'price is 9.99' → amountUsdc = that number (treat USD ≈ USDC).",
     "  • 'monthly' → intervalDays = 30. 'weekly' → 7. 'daily' → 1. 'yearly' / 'annually' → 365. 'every 2 weeks' → 14.",
     "  • 'plan name is X', 'called X', 'named X', '\"X\"' (quoted noun) → name = X.",
     "  • 'with a 7-day trial' → trialDays = 7. No mention → trialDays = 0.",
     "  • 'cap at 100 subs', 'max 50' → maxSubscribers = that number. No mention → 0 (unlimited).",
-    "STEP 2 — Only AFTER extraction, ask the user for any field that is still genuinely absent. NEVER ask for a field the user already provided. Ask for ALL missing fields in ONE short message, not field-by-field.",
-    "STEP 3 — When every required field is known, call the tool. The UI handles user confirmation; you do not need to ask 'shall I proceed?'.",
+    "STEP 2 - Only AFTER extraction, ask the user for any field that is still genuinely absent. NEVER ask for a field the user already provided. Ask for ALL missing fields in ONE short message, not field-by-field.",
+    "STEP 3 - When every required field is known, call the tool. The UI handles user confirmation; you do not need to ask 'shall I proceed?'.",
     "Required fields per action:",
     "  create_plan: name, amountUsdc, intervalDays. Defaults: description = name, trialDays = 0, maxSubscribers = 0.",
     "  delete_plan: planPubkey (look it up in context.plans by name if user gives a name).",
     "  update_plan_price: planPubkey + newPriceUsdc.",
     "  launch_promo_code: code, discountPercentage, expiresInDays. Default maxRedemptions = 100.",
     "If native tool calling fails, fall back to exactly one line: ACTION_JSON:{...} using the format below.",
-    'ACTION_JSON fallback examples:',
+    "ACTION_JSON fallback examples:",
     'create_plan: ACTION_JSON:{"tool":"create_plan","args":{"name":"Pro","description":"Pro plan","amountUsdc":29.99,"intervalDays":30,"trialDays":0,"maxSubscribers":0}}',
     'delete_plan: ACTION_JSON:{"tool":"delete_plan","args":{"planPubkey":"<pubkey>","planName":"<name>"}}',
     'update_plan_price: ACTION_JSON:{"tool":"update_plan_price","args":{"planPubkey":"<pubkey>","planName":"<name>","newPriceUsdc":25}}',

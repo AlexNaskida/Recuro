@@ -1,4 +1,4 @@
-// PoweredByVisuals.tsx — protocol-native previews for the landing page
+// PoweredByVisuals.tsx - protocol-native previews for the landing page
 import { cn } from "@/lib/cn";
 
 function DashCard({
@@ -42,7 +42,7 @@ function Badge({
   );
 }
 
-// ─── 1. Protocol — plan setup + billing overview ──────────────────────────────
+// ─── 1. Protocol - plan setup + billing overview ──────────────────────────────
 export function ProtocolPreview() {
   return (
     <div className="flex flex-col gap-2.5 p-4 bg-gradient-to-br from-slate-50 to-violet-50/20 rounded-2xl border border-gray-200 h-full">
@@ -147,7 +147,7 @@ export function ProtocolPreview() {
   );
 }
 
-// ─── 2. Wallet — scoped approval + revoke flow ───────────────────────────────
+// ─── 2. Wallet - scoped approval + revoke flow ───────────────────────────────
 export function WalletPreview() {
   const approvals = [
     {
@@ -211,7 +211,7 @@ export function WalletPreview() {
   );
 }
 
-// ─── 3. Keeper — execution coverage and redundancy ───────────────────────────
+// ─── 3. Keeper - execution coverage and redundancy ───────────────────────────
 export function KeeperPreview() {
   const keepers = [
     {
