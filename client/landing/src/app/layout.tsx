@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title:
-      "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
+      "Recuro - Non-custodial recurring stablecoin subscriptions on Solana",
     description:
       "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
     type: "website",
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title:
-      "Recuro — Non-custodial recurring stablecoin subscriptions on Solana",
+      "Recuro - Non-custodial recurring stablecoin subscriptions on Solana",
     description:
       "Accept recurring stablecoin subscriptions on Solana without ever taking custody of subscriber funds.",
   },

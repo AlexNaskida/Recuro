@@ -70,7 +70,7 @@ export const FEATURE_ROWS: FeatureRowData[] = [
     description:
       "Subscribers approve a delegate scoped to exactly one plan amount per cycle. Cancel instantly by revoking approval in Phantom. Zero future exposure.",
     checklist: [
-      "Scoped approval — one amount, one merchant, one cycle",
+      "Scoped approval - one amount, one merchant, one cycle",
       "Price locked forever in the on-chain Plan account",
       "Cancel anytime, no support ticket required",
       "Blast radius limited to one cycle if delegate is compromised",
@@ -86,12 +86,12 @@ export const FEATURE_ROWS: FeatureRowData[] = [
     tag: "Reliability",
     title: "Reliable revenue with open keeper architecture",
     description:
-      "Any keeper can execute payments — no single point of failure. Run your own keeper, use a paid service, or run multiples in parallel.",
+      "Any keeper can execute payments - no single point of failure. Run your own keeper, use a paid service, or run multiples in parallel.",
     checklist: [
       "Multiple keepers ensure reliable payment execution",
-      "Keepers rewarded from the protocol — no perverse incentives",
+      "Keepers rewarded from the protocol - no perverse incentives",
       "Graceful failure with auto-expiry after 3 missed cycles",
-      "Rent returned to subscriber on expiry — no zombie accounts",
+      "Rent returned to subscriber on expiry - no zombie accounts",
     ],
     ctaLabel: "Learn more →",
     ctaHref: "https://recuro.gitbook.io/recuro-sdk",
@@ -150,7 +150,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "/images/why-subscription-billing-needs-on-chain-price-immutability.png",
     imageAlt: "On-chain plan value locked in an immutable billing timeline",
     excerpt:
-      "Most recurring billing systems let the merchant change the price at will. Recuro locks the price in a Plan account at creation time — the number written to the blockchain is the number that gets pulled every cycle, forever.",
+      "Most recurring billing systems let the merchant change the price at will. Recuro locks the price in a Plan account at creation time - the number written to the blockchain is the number that gets pulled every cycle, forever.",
     body: `Most subscription systems make one critical promise and then quietly break it in practice: “you will be charged the price you agreed to.” In a traditional setup, the price lives in a private database controlled by the merchant or billing vendor. That means the value can be changed unilaterally, retroactively, or accidentally through internal tooling. Even honest teams can introduce drift between checkout, invoicing, and payment execution when multiple services update plan metadata independently.
 
   Recuro treats this as a protocol problem, not a UX problem. The amount, interval, and merchant identity are committed to an on-chain Plan account at creation time. Once the plan is created, the amount cannot be edited in place. There is no “silent update” endpoint, no mutable row, and no admin override hidden behind internal permissions. Billing automation always reads from that same account, so execution and agreement remain cryptographically coupled.
@@ -173,7 +173,7 @@ export const BLOG_POSTS: BlogPost[] = [
     imageAlt:
       "Scoped token approval gate showing one cycle payment limit and safety boundaries",
     excerpt:
-      "Most Solana protocols ask for an unlimited SPL token approval. Recuro scopes the delegate to exactly one cycle amount, so the blast radius of a compromised keeper is a single payment — not your entire wallet.",
+      "Most Solana protocols ask for an unlimited SPL token approval. Recuro scopes the delegate to exactly one cycle amount, so the blast radius of a compromised keeper is a single payment - not your entire wallet.",
     body: `Recurring payments are convenient only when users feel safe leaving them on. The biggest security mistake in many crypto billing flows is requesting a very large token approval up front and treating that as “good UX.” It is easy for protocol operators, but it creates an unacceptable worst-case outcome for users: if execution keys are compromised, if monitoring fails, or if a contract path is abused, the effective loss ceiling can become the subscriber’s entire token balance.
 
   Recuro takes the opposite approach. Delegate approvals are scoped to one cycle amount. The protocol reads the amount from the on-chain plan and approves exactly that number, not an arbitrary maximum. Execution consumes that allowance. A future cycle requires a new allowance event through the subscription flow. Security posture is therefore cycle-bounded by design.
@@ -198,7 +198,7 @@ export const BLOG_POSTS: BlogPost[] = [
     imageAlt:
       "Decentralized keeper network executing recurring payments with resilient routing",
     excerpt:
-      "Centralized keeper services are a single point of failure. Recuro's open keeper architecture lets anyone execute payments — removing operational risk from your revenue stream.",
+      "Centralized keeper services are a single point of failure. Recuro's open keeper architecture lets anyone execute payments - removing operational risk from your revenue stream.",
     body: `Recurring billing systems do not fail only because of bad logic. They fail because of operations. Even with perfect plan math and strong authorization checks, someone still has to trigger the payment transaction at the right time. In traditional stacks this is a scheduler inside your infrastructure. In on-chain systems, it is a keeper network. If that execution layer is centralized, your protocol quietly inherits a single point of failure.
 
   Recuro removes that dependency by making execution permissionless. Any keeper can submit a payment transaction for a due subscription. On-chain checks determine whether execution is valid based on timestamp, plan state, and subscription status. Identity is irrelevant. The chain enforces correctness, and the fastest valid transaction wins.

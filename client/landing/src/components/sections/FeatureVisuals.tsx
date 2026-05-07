@@ -1,4 +1,4 @@
-// FeatureVisuals.tsx — styled to match Recuro dashboard exactly
+// FeatureVisuals.tsx - styled to match Recuro dashboard exactly
 import { cn } from "@/lib/cn";
 import { Check, Minus, Pause, Plus, X } from "lucide-react";
 
@@ -42,7 +42,7 @@ function Badge({
   );
 }
 
-// ─── 1. Subscriptions — mimics Plans page ────────────────────────────────────
+// ─── 1. Subscriptions - mimics Plans page ────────────────────────────────────
 function SubscriptionsVisual() {
   const plans = [
     {
@@ -141,7 +141,7 @@ function SubscriptionsVisual() {
   );
 }
 
-// ─── 2. Non-custodial — mimics Subscribers table ─────────────────────────────
+// ─── 2. Non-custodial - mimics Subscribers table ─────────────────────────────
 function NonCustodialVisual() {
   const rows = [
     {
@@ -244,7 +244,7 @@ function NonCustodialVisual() {
   );
 }
 
-// ─── 3. Reliability — mimics Execution Logs ──────────────────────────────────
+// ─── 3. Reliability - mimics Execution Logs ──────────────────────────────────
 function ReliabilityVisual() {
   const filters = [
     "All",
@@ -291,7 +291,7 @@ function ReliabilityVisual() {
       type: "Subscription Paused",
       plan: "Pro",
       wallet: "6yQm...A2Kd",
-      amount: "—",
+      amount: "-",
       date: "2026-04-23",
       color: "text-amber-600 bg-amber-50 border-amber-200",
     },
@@ -299,7 +299,7 @@ function ReliabilityVisual() {
       type: "Subscription Cancelled",
       plan: "Starter",
       wallet: "DRpb...1hy",
-      amount: "—",
+      amount: "-",
       date: "2026-04-22",
       color: "text-gray-500 bg-gray-50 border-gray-200",
     },

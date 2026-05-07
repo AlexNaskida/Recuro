@@ -18,7 +18,7 @@ const ONBOARDING_SCREENS: OnboardingScreen[] = [
   {
     title: "Welcome to Recuro",
     description:
-      "Recuro enables you to accept recurring stablecoin payments on Solana. Your subscribers authorize payments once, and you can charge them automatically on your schedule—no payment processor needed. All transactions are transparent, low-cost, and fully programmable. Let's explore how to get started.",
+      "Recuro enables you to accept recurring stablecoin payments on Solana. Your subscribers authorize payments once, and you can charge them automatically on your schedule-no payment processor needed. All transactions are transparent, low-cost, and fully programmable. Let's explore how to get started.",
     icon: "🚀",
   },
   {
@@ -30,7 +30,7 @@ const ONBOARDING_SCREENS: OnboardingScreen[] = [
   {
     title: "Subscribers Authorize Once",
     description:
-      "When your subscriber clicks your plan link, they connect their wallet and approve a scoped delegation to Recuro's guard program. This authorization is single-transaction and explicitly limited—they control exactly what and when you can charge. No recurring app stores, no third-party custody of funds.",
+      "When your subscriber clicks your plan link, they connect their wallet and approve a scoped delegation to Recuro's guard program. This authorization is single-transaction and explicitly limited-they control exactly what and when you can charge. No recurring app stores, no third-party custody of funds.",
     icon: "✅",
   },
   {

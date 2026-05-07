@@ -13,7 +13,7 @@ import { MERCHANT } from "@/lib/config";
 import { SOLSCAN_TX, SOLSCAN_ACC } from "@/constants";
 import { useMerchantPlans, useSubscribe } from "@/hooks";
 
-// Features are UI-only — not stored on-chain in description
+// Features are UI-only - not stored on-chain in description
 const PLAN_FEATURES: Record<string, string[]> = {
   Starter: [
     "Up to 500 active subscribers",
@@ -110,7 +110,7 @@ export function DemoPage() {
           Subscription Pricing
         </h1>
         <p className="mx-auto max-w-xl text-sm text-muted-foreground">
-          Plans are published on Solana. Approve once — payments run
+          Plans are published on Solana. Approve once - payments run
           automatically.
         </p>
       </div>
@@ -150,7 +150,7 @@ export function DemoPage() {
                   )}
                 </div>
 
-                {/* Price — from chain */}
+                {/* Price - from chain */}
                 <div className="flex items-end gap-1">
                   <span className="text-3xl font-bold">${priceUsd}</span>
                   <span className="pb-1 text-sm text-muted-foreground">
@@ -158,7 +158,7 @@ export function DemoPage() {
                   </span>
                 </div>
 
-                {/* Features — UI only */}
+                {/* Features - UI only */}
                 <ul className="space-y-2 text-sm">
                   {features.map((f) => (
                     <li key={f} className="flex items-center gap-2">
@@ -189,7 +189,7 @@ export function DemoPage() {
                   }}
                 >
                   {isSelected
-                    ? `Selected — ${plan.name}`
+                    ? `Selected - ${plan.name}`
                     : `Select ${plan.name}`}
                 </Button>
               </div>

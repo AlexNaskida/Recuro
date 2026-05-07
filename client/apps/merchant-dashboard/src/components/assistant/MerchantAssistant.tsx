@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useChatStorage, titleFromMessage, formatChatDate } from "@/hooks/useChatStorage";
+import {
+  useChatStorage,
+  titleFromMessage,
+  formatChatDate,
+} from "@/hooks/useChatStorage";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,7 +59,6 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { toast } from "sonner";
-
 
 type PendingAction =
   | {
@@ -621,7 +624,7 @@ export default function MerchantAssistant() {
       setCurrentChatId(id);
       setMessages([GREETING]);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   useEffect(() => {
@@ -631,7 +634,7 @@ export default function MerchantAssistant() {
       ? titleFromMessage(firstUserMsg.content)
       : undefined;
     storage.persistMessages(currentChatId, messages, title);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages, currentChatId]);
 
   // Keep typewriter target in sync with the streaming message content
@@ -663,7 +666,7 @@ export default function MerchantAssistant() {
       twIntervalRef.current = id;
       return () => clearInterval(id);
     } else {
-      // Stream ended — stop interval and snap to full content
+      // Stream ended - stop interval and snap to full content
       if (twIntervalRef.current) {
         clearInterval(twIntervalRef.current);
         twIntervalRef.current = null;
@@ -926,8 +929,8 @@ export default function MerchantAssistant() {
 
           if (!toolCall) {
             const actionFromContent =
-          parseActionFromContent(result.content) ??
-          parseActionFromContent(result.thinking);
+              parseActionFromContent(result.content) ??
+              parseActionFromContent(result.thinking);
             if (actionFromContent) toolCall = actionFromContent;
           }
 
@@ -1170,7 +1173,7 @@ export default function MerchantAssistant() {
     (messages.length <= 1 ||
       messages[messages.length - 1]?.role === "assistant");
 
-  // Stable suggested questions — only re-shuffle once per completed AI turn
+  // Stable suggested questions - only re-shuffle once per completed AI turn
   const [displayedSuggestedQuestions, setDisplayedSuggestedQuestions] =
     useState<string[]>(SUGGESTED_QUESTIONS);
 
@@ -1185,7 +1188,7 @@ export default function MerchantAssistant() {
       const shuffled = [...SUGGESTED_QUESTIONS].sort(() => Math.random() - 0.5);
       setDisplayedSuggestedQuestions(shuffled.slice(0, 3));
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streamingMessageId, messages.length]);
 
   const totalRevenue = context.totals.revenueTotal;
@@ -1496,7 +1499,10 @@ export default function MerchantAssistant() {
             </div>
           )}
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => void cancelPendingAction()} disabled={sending}>
+            <AlertDialogCancel
+              onClick={() => void cancelPendingAction()}
+              disabled={sending}
+            >
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction

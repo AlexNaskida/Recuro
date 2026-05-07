@@ -111,7 +111,7 @@ for (const plan of PLANS) {
       })
       .rpc({ commitment: "confirmed" });
 
-    console.log(`  ✅ Done — tx: ${tx}`);
+    console.log(`  ✅ Done - tx: ${tx}`);
   } catch (err) {
     if (err.message?.includes("already in use")) {
       console.log(`  ⚠️  Already exists, skipping`);

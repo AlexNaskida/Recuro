@@ -283,7 +283,7 @@ export default function SettingsPage() {
               <AccordionContent className="text-sm text-muted-foreground">
                 All payments are deposited directly to your Treasury address
                 (the wallet you specify in settings). You have direct custody of
-                all funds—Recuro never holds your money. Protocol fees are
+                all funds-Recuro never holds your money. Protocol fees are
                 deducted automatically and sent to the treasury address.
               </AccordionContent>
             </AccordionItem>
