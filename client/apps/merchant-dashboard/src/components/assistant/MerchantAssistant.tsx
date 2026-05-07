@@ -309,7 +309,9 @@ function parseActionFromContent(content: string): AssistantToolCall | null {
           arguments: parsed.arguments ?? {},
         };
       }
-    } catch {}
+    } catch {
+      /* empty */
+    }
   }
 
   // Fall back to ACTION_JSON: marker
@@ -1318,11 +1320,7 @@ export default function MerchantAssistant() {
                   <WifiOff className="h-4 w-4" />
                   <span className="font-medium">AI Assistant Offline</span>
                 </div>
-                <p>
-                  Start QVAC locally to enable the assistant. The dashboard
-                  talks to http://localhost:11434/v1 only, and no merchant data
-                  leaves this machine.
-                </p>
+                <p>Contact support if you have any questions or problems</p>
                 <div className="space-y-2 rounded-2xl bg-background p-3 text-xs text-muted-foreground shadow-sm">
                   <p className="font-medium text-foreground">Quick start</p>
                   <p>qvac serve openai</p>
