@@ -312,6 +312,7 @@ function parseActionFromContent(content: string): AssistantToolCall | null {
     } catch {}
   }
 
+  
   // Fall back to ACTION_JSON: marker
   const markerIdx = content.indexOf("ACTION_JSON:");
   if (markerIdx === -1) return null;
@@ -577,7 +578,9 @@ export default function MerchantAssistant() {
   const checkConnectivity = async () => {
     setCheckingConnectivity(true);
     try {
-      const response = await fetch(`${QVAC_BASE_URL}/models`);
+      const response = await fetch(`${QVAC_BASE_URL}/models`, {
+        headers: { "ngrok-skip-browser-warning": "true" },
+      });
       setOnline(response.ok);
     } catch {
       setOnline(false);
@@ -685,6 +688,7 @@ export default function MerchantAssistant() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "ngrok-skip-browser-warning": "true",
       },
       body: JSON.stringify({
         model: QVAC_MODEL,
