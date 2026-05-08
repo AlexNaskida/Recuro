@@ -571,10 +571,10 @@ export default function MerchantAssistant() {
 
   const statusLabel =
     online === null
-      ? "Checking local AI"
+      ? "Connecting"
       : online
-        ? "QVAC online"
-        : "AI assistant offline";
+        ? "Online"
+        : "Coming soon";
 
   const checkConnectivity = async () => {
     setCheckingConnectivity(true);
@@ -880,7 +880,7 @@ export default function MerchantAssistant() {
           id: makeId(),
           role: "assistant",
           content:
-            "I couldn't reach the local QVAC runtime or parse the response. Start QVAC and try again.",
+            "The assistant isn't available right now. Please try again in a moment.",
         },
       ]);
     } finally {
@@ -1054,7 +1054,7 @@ export default function MerchantAssistant() {
               id: makeId(),
               role: "assistant",
               content:
-                "I couldn't reach the local QVAC runtime or parse the response. Start QVAC and try again.",
+                "The assistant isn't available right now. Please try again in a moment.",
             },
           ]);
         })
@@ -1315,23 +1315,29 @@ export default function MerchantAssistant() {
                 </ScrollArea>
               </div>
             ) : online === false ? (
-              <div className="m-4 flex flex-1 flex-col justify-center gap-4 rounded-3xl border border-dashed bg-muted/25 p-5 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2 text-foreground">
-                  <WifiOff className="h-4 w-4" />
-                  <span className="font-medium">AI Assistant Offline</span>
+              <div className="m-4 flex flex-1 flex-col items-center justify-center gap-5 rounded-3xl border border-dashed bg-muted/20 p-8 text-center">
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <Sparkles className="h-6 w-6" />
                 </div>
-                <p>Contact support if you have any questions or problems</p>
-                <div className="space-y-2 rounded-2xl bg-background p-3 text-xs text-muted-foreground shadow-sm">
-                  <p className="font-medium text-foreground">Quick start</p>
-                  <p>qvac serve openai</p>
-                  <p>Set the recuro-assistant model in qvac.config.json.</p>
+                <div className="space-y-2">
+                  <p className="text-base font-semibold text-foreground">
+                    AI Assistant — coming soon
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    We&apos;re putting the finishing touches on the merchant
+                    AI assistant. It will live right here as soon as it&apos;s
+                    ready.
+                  </p>
                 </div>
+                <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs">
+                  In development
+                </Badge>
               </div>
             ) : online === null || contextLoading ? (
               <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                 {online === null
-                  ? "Checking local AI runtime..."
-                  : "Loading merchant context..."}
+                  ? "Preparing your assistant…"
+                  : "Loading your merchant data…"}
               </div>
             ) : (
               <>
