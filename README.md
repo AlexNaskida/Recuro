@@ -8,6 +8,10 @@ Funds stay in the subscriber's wallet until payment time. Billing is automated b
 
 ## Architecture overview
 
+![Recuro architecture — on-chain and off-chain components](./docs/images/architecture.png)
+
+### Detailed flow
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │                      Solana Blockchain                       │
