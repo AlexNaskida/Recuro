@@ -1,6 +1,7 @@
 #[allow(ambiguous_glob_reexports)]
 pub mod archive_plan;
 pub mod cancel_subscription;
+pub mod close_orphan;
 pub mod close_subscription;
 pub mod create_plan;
 pub mod create_subscription;
@@ -18,6 +19,7 @@ pub mod update_plan;
 
 pub use archive_plan::*;
 pub use cancel_subscription::*;
+pub use close_orphan::*;
 pub use close_subscription::*;
 pub use create_plan::*;
 pub use create_subscription::*;

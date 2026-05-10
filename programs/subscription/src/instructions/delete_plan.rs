@@ -32,6 +32,10 @@ pub fn handler(ctx: Context<DeletePlan>) -> Result<()> {
         ctx.accounts.plan.status == PlanStatus::Archived,
         SubscriptionError::PlanNotArchived
     );
+    require!(
+        ctx.accounts.plan.active_subscribers == 0,
+        SubscriptionError::PlanHasActiveSubscribers
+    );
 
     let now = Clock::get()?.unix_timestamp;
 

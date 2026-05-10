@@ -21,10 +21,12 @@ import {
   PublicKey,
   ComputeBudgetProgram,
 } from "@solana/web3.js";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import splToken from "@solana/spl-token";
 import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
+
+const { Token, ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } = splToken;
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -284,8 +286,9 @@ async function executePayment(subPubkey, subAccount, config) {
   // All account addresses sourced from on-chain state - keeper cannot manipulate them
   const subscriberTokenAccount = subAccount.subscriberTokenAccount; // from Subscription PDA
   const merchantTokenAccount = plan.merchantTokenAccount; // from Plan PDA
-  const treasuryTokenAccount = await getAssociatedTokenAddress(
-    // from config.treasury
+  const treasuryTokenAccount = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
     USDC_MINT,
     config.treasury,
   );

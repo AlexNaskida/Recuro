@@ -13,11 +13,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 
@@ -27,11 +22,24 @@ const PROGRAM_ID = new PublicKey(
   "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+const TOKEN_PROGRAM_ID = new PublicKey(
+  "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+);
+const ASSOCIATED_TOKEN_PROGRAM_ID = new PublicKey(
+  "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL",
+);
 
 const PLAN_NAME = "Basic";
 const AMOUNT_USDC = 2_000_000; // $2.00 in μUSDC (6 decimals) 9.999_999 would be $9.999999
 const INTERVAL_SECS = 30; // 30 seconds - fires every 30 seconds
 const TRIAL_SECS = 0;
+
+function getAssociatedTokenAddress(mint, owner) {
+  return PublicKey.findProgramAddressSync(
+    [owner.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), mint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
+}
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 
