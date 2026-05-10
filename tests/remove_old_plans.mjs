@@ -38,6 +38,15 @@ const program = new anchor.Program(
 for (const plan of PLANS_TO_REMOVE) {
   console.log(`\nPlan: ${plan.toBase58()}`);
 
+  const accountInfo = await provider.connection.getAccountInfo(
+    plan,
+    "confirmed",
+  );
+  if (!accountInfo) {
+    console.log("  already deleted or never initialized, skipping");
+    continue;
+  }
+
   try {
     await program.methods
       .archivePlan()
