@@ -93,35 +93,73 @@ pub struct CreateSubscription<'info> {
 }
 
 pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
-    let plan = &mut ctx.accounts.plan;
     let config = &ctx.accounts.config;
-    let subscription = &mut ctx.accounts.subscription;
     let now = Clock::get()?.unix_timestamp;
 
     // ── Guard: block re-subscribe if a non-terminal subscription exists ───────
     // started_at == 0 means the account was just created (init_if_needed path).
-    if subscription.started_at != 0 {
+    if ctx.accounts.subscription.started_at != 0 {
         require!(
-            subscription.status == SubscriptionStatus::Cancelled
-                || subscription.status == SubscriptionStatus::Expired,
+            ctx.accounts.subscription.status == SubscriptionStatus::Cancelled
+                || ctx.accounts.subscription.status == SubscriptionStatus::Expired,
             SubscriptionError::ActiveSubscriptionExists
         );
     }
 
     // ── Calculate timing ──────────────────────────────────────────────────────
-    let trial_ends_at = if plan.trial_seconds > 0 {
-        now.checked_add(plan.trial_seconds)
+    let trial_ends_at = if ctx.accounts.plan.trial_seconds > 0 {
+        now.checked_add(ctx.accounts.plan.trial_seconds)
             .ok_or(SubscriptionError::ArithmeticOverflow)?
     } else {
         0
     };
 
-    let next_payment_at = if plan.trial_seconds > 0 {
-        now.checked_add(plan.trial_seconds)
+    let next_payment_at = if ctx.accounts.plan.trial_seconds > 0 {
+        now.checked_add(ctx.accounts.plan.trial_seconds)
             .ok_or(SubscriptionError::ArithmeticOverflow)?
     } else {
         now // charge immediately on subscribe
     };
+
+    // ── Approve Subscription PDA as SPL delegate (BEFORE mutating subscription) ─
+    // The subscription PDA signs the payment CPI, so it must be the token
+    // delegate for both the guard transfer and the fee split.
+    // Note: the fee is included in approval.
+    // CRITICAL: Approve must happen before any mutations to subscription to ensure
+    // the account_info passed to the CPI is in a clean, unmodified state.
+    let fee_per_cycle = (ctx.accounts.plan.amount_usdc as u128)
+        .saturating_mul(config.fee_bps as u128)
+        .saturating_div(10_000) as u64;
+    let total_per_cycle = ctx.accounts.plan
+        .amount_usdc
+        .checked_add(fee_per_cycle)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    let delegate_amount = total_per_cycle
+        .checked_mul(12)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+
+    msg!(
+        "[create_subscription] Approving delegate_amount={} ({} plan + {} fee × 12 cycles)",
+        delegate_amount,
+        ctx.accounts.plan.amount_usdc,
+        fee_per_cycle
+    );
+
+    approve(
+        CpiContext::new(
+            ctx.accounts.token_program.to_account_info(),
+            Approve {
+                to: ctx.accounts.subscriber_token_account.to_account_info(),
+                delegate: ctx.accounts.subscription.to_account_info(),
+                authority: ctx.accounts.subscriber.to_account_info(),
+            },
+        ),
+        delegate_amount,
+    )?;
+
+    // ── NOW create mutable borrows AFTER approve completes ──────────────────────
+    let plan = &mut ctx.accounts.plan;
+    let subscription = &mut ctx.accounts.subscription;
 
     // ── Populate Subscription PDA ─────────────────────────────────────────────
     // CRITICAL: amount_usdc is copied from the Plan PDA, never from user input.
@@ -151,33 +189,6 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         .total_subscribers_ever
         .checked_add(1)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
-
-    // ── Approve Guard PDA as SPL delegate ──────────────────────────────────────
-    // The Guard PDA handles payment transfers. We approve it for the full
-    // amount across 12 billing cycles (including fees).
-    // Note: the fee is included in approval
-    let fee_per_cycle = (plan.amount_usdc as u128)
-        .saturating_mul(config.fee_bps as u128)
-        .saturating_div(10_000) as u64;
-    let total_per_cycle = plan
-        .amount_usdc
-        .checked_add(fee_per_cycle)
-        .ok_or(SubscriptionError::ArithmeticOverflow)?;
-    let delegate_amount = total_per_cycle
-        .checked_mul(12)
-        .ok_or(SubscriptionError::ArithmeticOverflow)?;
-
-    approve(
-        CpiContext::new(
-            ctx.accounts.token_program.to_account_info(),
-            Approve {
-                to: ctx.accounts.subscriber_token_account.to_account_info(),
-                delegate: ctx.accounts.guard_account.to_account_info(),
-                authority: ctx.accounts.subscriber.to_account_info(),
-            },
-        ),
-        delegate_amount,
-    )?;
 
     // ── Initialize Guard via CPI ──────────────────────────────────────────────
     let subscription_account_info = subscription.to_account_info();

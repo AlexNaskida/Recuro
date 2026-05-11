@@ -71,6 +71,8 @@ pub struct ExecutePayment<'info> {
         mut,
         seeds = [b"guard", subscription.key().as_ref()],
         bump = guard_account.bump,
+        seeds::program = guard_program.key(),
+        owner = guard_program.key() @ SubscriptionError::InvalidMint,
         constraint = guard_account.subscription == subscription.key(),
     )]
     pub guard_account: Box<Account<'info, GuardAccount>>,

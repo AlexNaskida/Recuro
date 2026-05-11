@@ -34,6 +34,9 @@ const PROGRAM_ID = new PublicKey(
   "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+const GUARD_PROGRAM_ID = new PublicKey(
+  "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr",
+);
 
 const RPC_URL = process.env.RPC_URL ?? "https://api.devnet.solana.com";
 const KEYPAIR_PATH =
@@ -103,6 +106,13 @@ const [configPDA] = PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
   PROGRAM_ID,
 );
+
+function deriveGuardPDA(subscriptionPubkey) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("guard"), subscriptionPubkey.toBuffer()],
+    GUARD_PROGRAM_ID,
+  )[0];
+}
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -264,9 +274,11 @@ async function fetchDueSubscriptions(now) {
 //   plan                     → subscription.plan
 //   subscriberTokenAccount   → subscription.subscriberTokenAccount  (stored on-chain, NOT recomputed)
 //   merchantTokenAccount     → plan.merchantTokenAccount            (stored on-chain)
+//   keeperTokenAccount       → ATA(keeper, USDC_MINT)              (keeper fee recipient)
+//   usdcMint                 → USDC_MINT constant
 //   treasuryTokenAccount     → ATA(config.treasury, USDC_MINT)     (derived from config)
 //   subscriber               → subscription.subscriber              (CHECK / read-only)
-//   token_program / system_program  → resolved by Anchor
+//   guard_account / guard_program / token_program / clock → resolved explicitly
 
 async function executePayment(subPubkey, subAccount, config) {
   // Fetch plan
@@ -292,6 +304,13 @@ async function executePayment(subPubkey, subAccount, config) {
     USDC_MINT,
     config.treasury,
   );
+  const keeperTokenAccount = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    USDC_MINT,
+    keeperKeypair.publicKey,
+  );
+  const guardAccount = deriveGuardPDA(subPubkey);
 
   const amountUsdc =
     subAccount.amountUsdc?.toNumber?.() ?? subAccount.amountUsdc;
@@ -322,7 +341,13 @@ async function executePayment(subPubkey, subAccount, config) {
               subscriberTokenAccount,
               merchantTokenAccount,
               treasuryTokenAccount,
+              keeperTokenAccount,
+              usdcMint: USDC_MINT,
               subscriber: subAccount.subscriber,
+              guardAccount,
+              guardProgram: GUARD_PROGRAM_ID,
+              clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+              systemProgram: anchor.web3.SystemProgram.programId,
             })
             .preInstructions([
               ComputeBudgetProgram.setComputeUnitPrice({

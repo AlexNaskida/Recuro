@@ -7,6 +7,7 @@ import {
 } from "@solana/spl-token";
 import BN from "bn.js";
 import { getPlanPDA, usdcToMicro } from "@/lib/pda";
+import { randomPlanId } from "@/lib/random";
 import { USDC_MINT } from "@/lib/config";
 import { useMerchantWallet } from "./useMerchantWallet";
 
@@ -53,7 +54,7 @@ export function useCreatePlan() {
 
     setLoading(true);
     try {
-      const planId = new BN(Date.now());
+      const planId = randomPlanId();
       const planPubkey = getPlanPDA(publicKey, planId);
       const usdcMint = new PublicKey(USDC_MINT);
       const merchantTokenAccount = getAssociatedTokenAddress(
