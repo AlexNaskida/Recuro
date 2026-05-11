@@ -42,6 +42,7 @@ pub struct RenewSubscription<'info> {
         mut,
         seeds = [b"guard", subscription.key().as_ref()],
         bump = guard_account.bump,
+        seeds::program = guard_program.key(),
         constraint = guard_account.subscription == subscription.key(),
     )]
     pub guard_account: Account<'info, GuardAccount>,

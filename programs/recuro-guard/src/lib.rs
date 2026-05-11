@@ -230,15 +230,10 @@ pub fn handler_authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
         GuardError::UnauthorizedCaller
     );
 
-    let subscription = guard.subscription;
-    let bump = guard.bump;
-    let guard_seeds: &[&[u8]] = &[b"guard", subscription.as_ref(), &[bump]];
-    let signer_seeds = &[guard_seeds];
-
     // ── Transfer the exact amount specified in the guard ──────────────────────
     // NEVER trust a caller-supplied amount
     token::transfer_checked(
-        CpiContext::new_with_signer(
+        CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             TransferChecked {
                 from: ctx.accounts.subscriber_token_account.to_account_info(),
@@ -246,10 +241,9 @@ pub fn handler_authorize_payment(ctx: Context<AuthorizePayment>) -> Result<()> {
                     .accounts
                     .merchant_receive_token_account
                     .to_account_info(),
-                authority: guard.to_account_info(), // Guard PDA signs
+                authority: ctx.accounts.caller.to_account_info(), // Subscription PDA signs
                 mint: ctx.accounts.usdc_mint.to_account_info(),
             },
-            signer_seeds,
         ),
         guard.amount_per_period,
         ctx.accounts.usdc_mint.decimals,

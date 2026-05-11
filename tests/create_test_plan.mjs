@@ -13,6 +13,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
+import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
 import { homedir } from "os";
 
@@ -62,7 +63,7 @@ const program = new anchor.Program(idl, provider);
 
 // ── Derive PDAs ───────────────────────────────────────────────────────────────
 
-const planId = new BN(Date.now());
+const planId = new BN(randomBytes(8).toString("hex"), 16);
 
 const [planPubkey] = PublicKey.findProgramAddressSync(
   [

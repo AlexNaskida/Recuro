@@ -82,7 +82,9 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
         sig: res.signature,
         subPubkey: res.subscriptionPubkey.toBase58(),
       });
-    } catch {}
+    } catch (error) {
+      // Error is handled by React Query UI; no debug logging in production UI
+    }
   }
 
   function handleClose() {
@@ -216,6 +218,17 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                   </p>
                 </div>
               )}
+              {subscribe.isPending && (
+                <div className="mt-3 flex gap-2 rounded-xl border border-blue-500/20 bg-blue-500/5 p-3">
+                  <RefreshCw className="h-4 w-4 text-blue-400 shrink-0 mt-0.5 animate-spin" />
+                  <div className="text-xs text-blue-400">
+                    <p className="font-medium">Processing subscription…</p>
+                    <p className="text-muted-foreground mt-1">
+                      Waiting for Phantom approval. Check your wallet extension.
+                    </p>
+                  </div>
+                </div>
+              )}
               <div className="mt-5 flex gap-3">
                 <AlertDialog.Cancel asChild>
                   <Button
@@ -231,7 +244,7 @@ function SubscribeDialog({ plan, open, onClose }: SubscribeDialogProps) {
                   loading={subscribe.isPending}
                   onClick={handleSubscribe}
                 >
-                  {subscribe.isPending ? "Confirming…" : "Subscribe"}
+                  {subscribe.isPending ? "Check Phantom…" : "Subscribe"}
                   {!subscribe.isPending && <ArrowRight className="h-4 w-4" />}
                 </Button>
               </div>

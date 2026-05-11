@@ -11,29 +11,15 @@
       "name": "archive_plan",
       "discriminator": [77, 134, 147, 53, 137, 113, 23, 160],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         }
@@ -74,9 +60,127 @@
             ]
           }
         },
+        { "name": "plan", "writable": true },
+        { "name": "subscriber_token_account", "writable": true },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_orphan_subscription",
+      "discriminator": [94, 184, 232, 144, 151, 147, 238, 13],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Any signer may trigger orphan cleanup. Rent is always returned to subscriber."
+          ],
+          "signer": true
+        },
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.plan",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        },
         {
           "name": "plan",
+          "docs": [
+            "Must be the expected plan address and must be missing/empty on chain."
+          ]
+        },
+        {
+          "name": "guard_program",
+          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+        },
+        {
+          "name": "guard_account",
+          "docs": [
+            "Guard account may be orphaned (uninitialized). Manual address validation in handler."
+          ]
+        },
+        {
+          "name": "subscriber",
+          "docs": [
+            "Subscriber receives rent refund for both guard and subscription closes."
+          ],
           "writable": true
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_subscription",
+      "discriminator": [33, 214, 169, 135, 35, 127, 78, 7],
+      "accounts": [
+        { "name": "subscriber", "writable": true, "signer": true },
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.plan",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        },
+        {
+          "name": "guard_program",
+          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+        },
+        {
+          "name": "guard_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [103, 117, 97, 114, 100] },
+              { "kind": "account", "path": "subscription" }
+            ],
+            "program": { "kind": "account", "path": "guard_program" }
+          }
         },
         {
           "name": "system_program",
@@ -106,10 +210,7 @@
           ],
           "pda": {
             "seeds": [
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
+              { "kind": "account", "path": "merchant" },
               {
                 "kind": "const",
                 "value": [
@@ -118,10 +219,7 @@
                   245, 133, 126, 255, 0, 169
                 ]
               },
-              {
-                "kind": "account",
-                "path": "usdc_mint"
-              }
+              { "kind": "account", "path": "usdc_mint" }
             ],
             "program": {
               "kind": "const",
@@ -139,18 +237,9 @@
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "arg",
-                "path": "params.plan_id"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "arg", "path": "params.plan_id" }
             ]
           }
         },
@@ -174,11 +263,7 @@
       "args": [
         {
           "name": "params",
-          "type": {
-            "defined": {
-              "name": "CreatePlanParams"
-            }
-          }
+          "type": { "defined": { "name": "CreatePlanParams" } }
         }
       ]
     },
@@ -198,20 +283,18 @@
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "plan.merchant",
-                "account": "Plan"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "plan.merchant", "account": "Plan" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "docs": ["Protocol config - provides the live fee basis points"],
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
             ]
           }
         },
@@ -229,14 +312,8 @@
                   115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
                 ]
               },
-              {
-                "kind": "account",
-                "path": "plan"
-              },
-              {
-                "kind": "account",
-                "path": "subscriber"
-              }
+              { "kind": "account", "path": "plan" },
+              { "kind": "account", "path": "subscriber" }
             ]
           }
         },
@@ -248,10 +325,7 @@
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "account",
-                "path": "subscriber"
-              },
+              { "kind": "account", "path": "subscriber" },
               {
                 "kind": "const",
                 "value": [
@@ -260,10 +334,7 @@
                   245, 133, 126, 255, 0, 169
                 ]
               },
-              {
-                "kind": "account",
-                "path": "usdc_mint"
-              }
+              { "kind": "account", "path": "usdc_mint" }
             ],
             "program": {
               "kind": "const",
@@ -278,6 +349,32 @@
         {
           "name": "usdc_mint",
           "docs": ["USDC mint - must match the plan's registered mint"]
+        },
+        {
+          "name": "merchant_token_account",
+          "docs": [
+            "Merchant receive ATA (from plan) - passed through to guard init"
+          ],
+          "writable": true
+        },
+        {
+          "name": "guard_program",
+          "docs": ["Guard program"],
+          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+        },
+        {
+          "name": "guard_account",
+          "docs": [
+            "Guard PDA - created for this subscription, authorizes payments"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [103, 117, 97, 114, 100] },
+              { "kind": "account", "path": "subscription" }
+            ],
+            "program": { "kind": "account", "path": "guard_program" }
+          }
         },
         {
           "name": "token_program",
@@ -302,29 +399,15 @@
       "name": "delete_plan",
       "discriminator": [41, 111, 169, 210, 93, 141, 108, 53],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         },
@@ -351,10 +434,7 @@
           "docs": ["Protocol config - reads fee_bps and treasury"],
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
-              }
+              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
             ]
           }
         },
@@ -382,10 +462,7 @@
             ]
           }
         },
-        {
-          "name": "plan",
-          "writable": true
-        },
+        { "name": "plan", "writable": true },
         {
           "name": "subscriber_token_account",
           "docs": [
@@ -399,16 +476,49 @@
           "writable": true
         },
         {
+          "name": "guard_account",
+          "docs": [
+            "Guard account - validates payment authorization and timing"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [103, 117, 97, 114, 100] },
+              { "kind": "account", "path": "subscription" }
+            ],
+            "program": { "kind": "account", "path": "guard_program" }
+          }
+        },
+        {
+          "name": "usdc_mint",
+          "docs": ["USDC mint for guarded transfer_checked"]
+        },
+        {
           "name": "treasury_token_account",
-          "docs": ["Protocol treasury ATA - receives the fee"],
+          "docs": ["Protocol treasury ATA - receives 40% of the fee"],
           "writable": true
         },
         {
-          "name": "subscriber"
+          "name": "keeper_token_account",
+          "docs": [
+            "Keeper's USDC ATA - receives 60% of the fee as reward",
+            "Must be owned by the keeper signer to ensure rewards go to the correct address"
+          ],
+          "writable": true
+        },
+        { "name": "subscriber" },
+        {
+          "name": "guard_program",
+          "docs": ["Guard program"],
+          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "clock",
+          "address": "SysvarC1ock11111111111111111111111111111111"
         },
         {
           "name": "system_program",
@@ -421,20 +531,13 @@
       "name": "initialize_config",
       "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
       "accounts": [
-        {
-          "name": "admin",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "admin", "writable": true, "signer": true },
         {
           "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
-              }
+              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
             ]
           }
         },
@@ -446,11 +549,7 @@
       "args": [
         {
           "name": "args",
-          "type": {
-            "defined": {
-              "name": "InitializeConfigArgs"
-            }
-          }
+          "type": { "defined": { "name": "InitializeConfigArgs" } }
         }
       ]
     },
@@ -458,29 +557,15 @@
       "name": "pause_plan",
       "discriminator": [208, 200, 160, 171, 212, 94, 249, 233],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         }
@@ -491,11 +576,7 @@
       "name": "pause_subscription",
       "discriminator": [18, 180, 147, 157, 114, 60, 213, 241],
       "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "authority", "writable": true, "signer": true },
         {
           "name": "subscription",
           "writable": true,
@@ -520,9 +601,7 @@
             ]
           }
         },
-        {
-          "name": "plan"
-        },
+        { "name": "plan" },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
@@ -534,30 +613,23 @@
       "name": "renew_subscription",
       "discriminator": [45, 75, 154, 194, 160, 10, 111, 183],
       "accounts": [
-        {
-          "name": "subscriber",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "subscriber", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "plan.merchant",
-                "account": "Plan"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "plan.merchant", "account": "Plan" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
             ]
           }
         },
@@ -572,15 +644,20 @@
                   115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
                 ]
               },
-              {
-                "kind": "account",
-                "path": "plan"
-              },
-              {
-                "kind": "account",
-                "path": "subscriber"
-              }
+              { "kind": "account", "path": "plan" },
+              { "kind": "account", "path": "subscriber" }
             ]
+          }
+        },
+        {
+          "name": "guard_account",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              { "kind": "const", "value": [103, 117, 97, 114, 100] },
+              { "kind": "account", "path": "subscription" }
+            ],
+            "program": { "kind": "account", "path": "guard_program" }
           }
         },
         {
@@ -588,10 +665,7 @@
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "account",
-                "path": "subscriber"
-              },
+              { "kind": "account", "path": "subscriber" },
               {
                 "kind": "const",
                 "value": [
@@ -600,10 +674,7 @@
                   245, 133, 126, 255, 0, 169
                 ]
               },
-              {
-                "kind": "account",
-                "path": "usdc_mint"
-              }
+              { "kind": "account", "path": "usdc_mint" }
             ],
             "program": {
               "kind": "const",
@@ -615,8 +686,10 @@
             }
           }
         },
+        { "name": "usdc_mint" },
         {
-          "name": "usdc_mint"
+          "name": "guard_program",
+          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
         },
         {
           "name": "token_program",
@@ -628,7 +701,7 @@
         },
         {
           "name": "system_program",
-          "address": "11111111111111111111111111111111"
+          "address": "11111111111111111111111111111111111"
         }
       ],
       "args": []
@@ -637,29 +710,15 @@
       "name": "resume_plan",
       "discriminator": [67, 173, 251, 42, 169, 34, 132, 161],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         }
@@ -670,11 +729,7 @@
       "name": "resume_subscription",
       "discriminator": [122, 92, 183, 0, 139, 188, 185, 71],
       "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "authority", "writable": true, "signer": true },
         {
           "name": "subscription",
           "writable": true,
@@ -699,9 +754,7 @@
             ]
           }
         },
-        {
-          "name": "plan"
-        },
+        { "name": "plan" },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
@@ -713,29 +766,15 @@
       "name": "unarchive_plan",
       "discriminator": [206, 11, 20, 6, 132, 43, 142, 94],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         }
@@ -746,82 +785,50 @@
       "name": "update_config",
       "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
       "accounts": [
-        {
-          "name": "admin",
-          "signer": true
-        },
+        { "name": "admin", "signer": true },
         {
           "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
-              }
+              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
             ]
           }
         }
       ],
       "args": [
-        {
-          "name": "new_treasury",
-          "type": "pubkey"
-        },
-        {
-          "name": "new_fee_bps",
-          "type": "u16"
-        }
+        { "name": "new_treasury", "type": "pubkey" },
+        { "name": "new_fee_bps", "type": "u16" }
       ]
     },
     {
       "name": "update_plan",
       "discriminator": [119, 112, 58, 60, 76, 205, 1, 100],
       "accounts": [
-        {
-          "name": "merchant",
-          "writable": true,
-          "signer": true
-        },
+        { "name": "merchant", "writable": true, "signer": true },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              {
-                "kind": "const",
-                "value": [112, 108, 97, 110]
-              },
-              {
-                "kind": "account",
-                "path": "merchant"
-              },
-              {
-                "kind": "account",
-                "path": "plan.plan_id",
-                "account": "Plan"
-              }
+              { "kind": "const", "value": [112, 108, 97, 110] },
+              { "kind": "account", "path": "merchant" },
+              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
             ]
           }
         }
       ],
       "args": [
-        {
-          "name": "args",
-          "type": {
-            "defined": {
-              "name": "UpdatePlanArgs"
-            }
-          }
-        }
+        { "name": "args", "type": { "defined": { "name": "UpdatePlanArgs" } } }
       ]
     }
   ],
   "accounts": [
     {
-      "name": "Plan",
-      "discriminator": [161, 231, 251, 119, 2, 12, 162, 2]
+      "name": "GuardAccount",
+      "discriminator": [38, 201, 126, 93, 149, 77, 3, 112]
     },
+    { "name": "Plan", "discriminator": [161, 231, 251, 119, 2, 12, 162, 2] },
     {
       "name": "ProtocolConfig",
       "discriminator": [207, 91, 250, 28, 152, 179, 215, 209]
@@ -945,73 +952,83 @@
     },
     {
       "code": 6013,
+      "name": "SubscriptionNotTerminal",
+      "msg": "Subscription must be Cancelled or Expired to be closed"
+    },
+    {
+      "code": 6014,
       "name": "InTrialPeriod",
       "msg": "Subscription is still within its trial period; no payment due yet"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "PaymentNotDue",
       "msg": "Next payment date has not been reached yet"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "UnauthorizedMerchant",
       "msg": "Only the merchant authority may perform this action on the plan"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "UnauthorizedActor",
       "msg": "Only the subscriber or merchant may perform this action"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "InsufficientBalance",
       "msg": "Subscriber token account has insufficient USDC balance"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "InvalidSubscriberTokenAccount",
       "msg": "Subscriber token account does not belong to the expected subscriber"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "InvalidMerchantTokenAccount",
       "msg": "Merchant token account does not belong to the plan's merchant"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "InvalidTreasuryTokenAccount",
       "msg": "Treasury token account does not belong to the protocol treasury"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidMint",
       "msg": "Token mint does not match the expected USDC mint"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "FeeTooHigh",
       "msg": "Fee basis points exceed the maximum allowed (500 bps = 5%)"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow - value exceeds safe bounds"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "ArithmeticUnderflow",
       "msg": "Arithmetic underflow - value would go below zero"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "PlanNotArchived",
       "msg": "Plan must be archived before it can be deleted"
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "PlanHasActiveSubscribers",
       "msg": "Plan still has active subscribers and cannot be deleted"
+    },
+    {
+      "code": 6028,
+      "name": "SubscriptionNotOrphaned",
+      "msg": "Subscription plan account still exists; subscription is not orphaned"
     }
   ],
   "types": [
@@ -1020,40 +1037,30 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan_id",
-            "type": "u64"
-          },
-          {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "interval_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "trial_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "max_subscribers",
-            "type": "u64"
-          },
-          {
-            "name": "merchant_receive_address",
-            "type": {
-              "option": "pubkey"
-            }
-          }
+          { "name": "plan_id", "type": "u64" },
+          { "name": "name", "type": "string" },
+          { "name": "description", "type": "string" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "interval_seconds", "type": "i64" },
+          { "name": "trial_seconds", "type": "i64" },
+          { "name": "max_subscribers", "type": "u64" },
+          { "name": "merchant_receive_address", "type": { "option": "pubkey" } }
+        ]
+      }
+    },
+    {
+      "name": "GuardAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "merchant_receive", "type": "pubkey" },
+          { "name": "recuro_program", "type": "pubkey" },
+          { "name": "amount_per_period", "type": "u64" },
+          { "name": "period_seconds", "type": "i64" },
+          { "name": "last_executed_at", "type": "i64" },
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -1062,14 +1069,8 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "fee_bps",
-            "type": "u16"
-          },
-          {
-            "name": "treasury",
-            "type": "pubkey"
-          }
+          { "name": "fee_bps", "type": "u16" },
+          { "name": "treasury", "type": "pubkey" }
         ]
       }
     },
@@ -1078,42 +1079,15 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "fee_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "total_charged",
-            "type": "u64"
-          },
-          {
-            "name": "payment_count",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "fee_usdc", "type": "u64" },
+          { "name": "total_charged", "type": "u64" },
+          { "name": "payment_count", "type": "u64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1122,34 +1096,13 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "reason",
-            "type": "string"
-          },
-          {
-            "name": "failed_count",
-            "type": "u8"
-          },
-          {
-            "name": "will_expire",
-            "type": "bool"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "reason", "type": "string" },
+          { "name": "failed_count", "type": "u8" },
+          { "name": "will_expire", "type": "bool" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1158,90 +1111,26 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "usdc_mint",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant_receive_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan_id",
-            "type": "u64"
-          },
-          {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "description",
-            "type": "string"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "interval_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "trial_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "max_subscribers",
-            "type": "u64"
-          },
-          {
-            "name": "active_subscribers",
-            "type": "u64"
-          },
-          {
-            "name": "total_subscribers_ever",
-            "type": "u64"
-          },
-          {
-            "name": "total_revenue",
-            "type": "u64"
-          },
-          {
-            "name": "fees_paid",
-            "type": "u64"
-          },
-          {
-            "name": "successful_payments",
-            "type": "u64"
-          },
-          {
-            "name": "created_at",
-            "type": "i64"
-          },
-          {
-            "name": "updated_at",
-            "type": "i64"
-          },
-          {
-            "name": "status",
-            "type": {
-              "defined": {
-                "name": "PlanStatus"
-              }
-            }
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "merchant_token_account", "type": "pubkey" },
+          { "name": "usdc_mint", "type": "pubkey" },
+          { "name": "merchant_receive_address", "type": "pubkey" },
+          { "name": "plan_id", "type": "u64" },
+          { "name": "name", "type": "string" },
+          { "name": "description", "type": "string" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "interval_seconds", "type": "i64" },
+          { "name": "trial_seconds", "type": "i64" },
+          { "name": "max_subscribers", "type": "u64" },
+          { "name": "active_subscribers", "type": "u64" },
+          { "name": "total_subscribers_ever", "type": "u64" },
+          { "name": "total_revenue", "type": "u64" },
+          { "name": "fees_paid", "type": "u64" },
+          { "name": "successful_payments", "type": "u64" },
+          { "name": "created_at", "type": "i64" },
+          { "name": "updated_at", "type": "i64" },
+          { "name": "status", "type": { "defined": { "name": "PlanStatus" } } },
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -1250,18 +1139,9 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "plan", "type": "pubkey" },
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1270,42 +1150,15 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant_receive_address",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan_id",
-            "type": "u64"
-          },
-          {
-            "name": "name",
-            "type": "string"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "interval_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "trial_seconds",
-            "type": "i64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "plan", "type": "pubkey" },
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "merchant_receive_address", "type": "pubkey" },
+          { "name": "plan_id", "type": "u64" },
+          { "name": "name", "type": "string" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "interval_seconds", "type": "i64" },
+          { "name": "trial_seconds", "type": "i64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1314,22 +1167,10 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan_id",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "plan", "type": "pubkey" },
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "plan_id", "type": "u64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1338,15 +1179,9 @@
       "type": {
         "kind": "enum",
         "variants": [
-          {
-            "name": "Active"
-          },
-          {
-            "name": "Paused"
-          },
-          {
-            "name": "Archived"
-          }
+          { "name": "Active" },
+          { "name": "Paused" },
+          { "name": "Archived" }
         ]
       }
     },
@@ -1355,18 +1190,9 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "merchant",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "plan", "type": "pubkey" },
+          { "name": "merchant", "type": "pubkey" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1375,26 +1201,11 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "admin",
-            "type": "pubkey"
-          },
-          {
-            "name": "treasury",
-            "type": "pubkey"
-          },
-          {
-            "name": "fee_bps",
-            "type": "u16"
-          },
-          {
-            "name": "creation_paused",
-            "type": "bool"
-          },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
+          { "name": "admin", "type": "pubkey" },
+          { "name": "treasury", "type": "pubkey" },
+          { "name": "fee_bps", "type": "u16" },
+          { "name": "creation_paused", "type": "bool" },
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -1403,74 +1214,25 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber_token_account",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "next_payment_at",
-            "type": "i64"
-          },
-          {
-            "name": "started_at",
-            "type": "i64"
-          },
-          {
-            "name": "trial_ends_at",
-            "type": "i64"
-          },
-          {
-            "name": "last_paid_at",
-            "type": "i64"
-          },
-          {
-            "name": "ended_at",
-            "type": "i64"
-          },
-          {
-            "name": "total_paid",
-            "type": "u64"
-          },
-          {
-            "name": "payment_count",
-            "type": "u64"
-          },
-          {
-            "name": "failed_payment_count",
-            "type": "u8"
-          },
-          {
-            "name": "billing_cycles",
-            "type": "u8"
-          },
-          {
-            "name": "cycles_remaining",
-            "type": "u8"
-          },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "subscriber_token_account", "type": "pubkey" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "next_payment_at", "type": "i64" },
+          { "name": "started_at", "type": "i64" },
+          { "name": "trial_ends_at", "type": "i64" },
+          { "name": "last_paid_at", "type": "i64" },
+          { "name": "ended_at", "type": "i64" },
+          { "name": "total_paid", "type": "u64" },
+          { "name": "payment_count", "type": "u64" },
+          { "name": "failed_payment_count", "type": "u8" },
+          { "name": "billing_cycles", "type": "u8" },
+          { "name": "cycles_remaining", "type": "u8" },
           {
             "name": "status",
-            "type": {
-              "defined": {
-                "name": "SubscriptionStatus"
-              }
-            }
+            "type": { "defined": { "name": "SubscriptionStatus" } }
           },
-          {
-            "name": "bump",
-            "type": "u8"
-          }
+          { "name": "bump", "type": "u8" }
         ]
       }
     },
@@ -1479,34 +1241,13 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "cancelled_by",
-            "type": "pubkey"
-          },
-          {
-            "name": "total_paid",
-            "type": "u64"
-          },
-          {
-            "name": "payment_count",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "cancelled_by", "type": "pubkey" },
+          { "name": "total_paid", "type": "u64" },
+          { "name": "payment_count", "type": "u64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1515,34 +1256,13 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "amount_usdc",
-            "type": "u64"
-          },
-          {
-            "name": "trial_ends_at",
-            "type": "i64"
-          },
-          {
-            "name": "next_payment_at",
-            "type": "i64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "amount_usdc", "type": "u64" },
+          { "name": "trial_ends_at", "type": "i64" },
+          { "name": "next_payment_at", "type": "i64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1551,30 +1271,12 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "total_paid",
-            "type": "u64"
-          },
-          {
-            "name": "payment_count",
-            "type": "u64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "total_paid", "type": "u64" },
+          { "name": "payment_count", "type": "u64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1583,26 +1285,11 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "paused_by",
-            "type": "pubkey"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "paused_by", "type": "pubkey" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1611,26 +1298,11 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "subscription",
-            "type": "pubkey"
-          },
-          {
-            "name": "plan",
-            "type": "pubkey"
-          },
-          {
-            "name": "subscriber",
-            "type": "pubkey"
-          },
-          {
-            "name": "next_payment_at",
-            "type": "i64"
-          },
-          {
-            "name": "timestamp",
-            "type": "i64"
-          }
+          { "name": "subscription", "type": "pubkey" },
+          { "name": "plan", "type": "pubkey" },
+          { "name": "subscriber", "type": "pubkey" },
+          { "name": "next_payment_at", "type": "i64" },
+          { "name": "timestamp", "type": "i64" }
         ]
       }
     },
@@ -1639,18 +1311,10 @@
       "type": {
         "kind": "enum",
         "variants": [
-          {
-            "name": "Active"
-          },
-          {
-            "name": "Paused"
-          },
-          {
-            "name": "Cancelled"
-          },
-          {
-            "name": "Expired"
-          }
+          { "name": "Active" },
+          { "name": "Paused" },
+          { "name": "Cancelled" },
+          { "name": "Expired" }
         ]
       }
     },
@@ -1659,30 +1323,10 @@
       "type": {
         "kind": "struct",
         "fields": [
-          {
-            "name": "name",
-            "type": {
-              "option": "string"
-            }
-          },
-          {
-            "name": "description",
-            "type": {
-              "option": "string"
-            }
-          },
-          {
-            "name": "max_subscribers",
-            "type": {
-              "option": "u64"
-            }
-          },
-          {
-            "name": "merchant_receive_address",
-            "type": {
-              "option": "pubkey"
-            }
-          }
+          { "name": "name", "type": { "option": "string" } },
+          { "name": "description", "type": { "option": "string" } },
+          { "name": "max_subscribers", "type": { "option": "u64" } },
+          { "name": "merchant_receive_address", "type": { "option": "pubkey" } }
         ]
       }
     }

@@ -24,6 +24,7 @@ import {
 import IDL from "./idl.json";
 import { LIMITS, PROGRAM_ID, STABLECOIN_MINTS } from "./constants";
 import { getPlanPDA, getSubscriptionPDA } from "./utils/pda";
+import { randomPlanId } from "./utils/random";
 import { buildAnalytics } from "./utils/analytics";
 import { usdcToMicro } from "./utils/format";
 import type {
@@ -144,7 +145,9 @@ export class SubscriptionSdk {
     const merchant = this.provider.wallet.publicKey;
     const planId = BN.isBN(params.planId)
       ? params.planId
-      : new BN(params.planId);
+      : params.planId !== undefined
+        ? new BN(params.planId)
+        : randomPlanId();
 
     const [planPubkey] = getPlanPDA(merchant, planId, this.programId);
     const merchantTokenAccount = deriveAssociatedTokenAddress(
@@ -381,6 +384,7 @@ export class SubscriptionSdk {
         plan: params.planPubkey,
         subscription: subscriptionPubkey,
         subscriberTokenAccount,
+        merchantTokenAccount: plan.merchantTokenAccount,
       })
       .rpc({ commitment: this.provider.opts.commitment });
 
@@ -573,6 +577,18 @@ export class SubscriptionSdk {
    * console.log(`Delegate revoked. No future payments.`);
    * ```
    */
+  async closeSubscription(
+    subscriptionPubkey: PublicKey,
+  ): Promise<TransactionSignature> {
+    return this.program.methods
+      .closeSubscription()
+      .accounts({
+        subscriber: this.provider.wallet.publicKey,
+        subscription: subscriptionPubkey,
+      })
+      .rpc({ commitment: this.provider.opts.commitment });
+  }
+
   async cancelSubscription(
     subscriptionPubkey: PublicKey,
   ): Promise<TransactionSignature> {
@@ -583,6 +599,7 @@ export class SubscriptionSdk {
         authority: this.provider.wallet.publicKey,
         subscription: subscriptionPubkey,
         plan: sub.plan,
+        subscriberTokenAccount: sub.subscriberTokenAccount,
         systemProgram: SystemProgram.programId,
       })
       .rpc({ commitment: this.provider.opts.commitment });

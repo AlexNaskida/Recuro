@@ -8,6 +8,7 @@ import {
 import { useAnchorProgram } from "./useAnchorProgram";
 import { useMerchantWallet } from "./useMerchantWallet";
 import { getPlanPDA, usdcToMicro } from "@/lib/pda";
+import { randomPlanId } from "@/lib/random";
 import { USDC_MINT } from "@/lib/config";
 
 function getAssociatedTokenAddress(
@@ -68,7 +69,7 @@ export function usePlanActions(options: UsePlanActionsOptions = {}) {
 
     setCreatingPlan(true);
     try {
-      const planId = new BN(Date.now());
+      const planId = randomPlanId();
       const planPubkey = getPlanPDA(publicKey, planId);
       const usdcMint = new PublicKey(USDC_MINT);
       const merchantTokenAccount = getAssociatedTokenAddress(
