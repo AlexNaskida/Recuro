@@ -130,7 +130,9 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
     let fee_per_cycle = (ctx.accounts.plan.amount_usdc as u128)
         .saturating_mul(config.fee_bps as u128)
         .saturating_div(10_000) as u64;
-    let total_per_cycle = ctx.accounts.plan
+    let total_per_cycle = ctx
+        .accounts
+        .plan
         .amount_usdc
         .checked_add(fee_per_cycle)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
