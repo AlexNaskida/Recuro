@@ -22,11 +22,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import QvacOnboardingModal from "@/components/QvacOnboardingModal";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -504,6 +504,7 @@ async function parseSseStream(
 export default function MerchantAssistant() {
   const { walletAddress } = useMerchantWallet();
   const [open, setOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const { plans, loading: plansLoading, refetch: refetchPlans } = usePlans();
   const {
     subscribers,
@@ -570,11 +571,7 @@ export default function MerchantAssistant() {
   );
 
   const statusLabel =
-    online === null
-      ? "Connecting"
-      : online
-        ? "Online"
-        : "Coming soon";
+    online === null ? "Connecting" : online ? "Online" : "Coming soon";
 
   const checkConnectivity = async () => {
     setCheckingConnectivity(true);
@@ -1196,18 +1193,32 @@ export default function MerchantAssistant() {
   const totalRevenue = context.totals.revenueTotal;
   const contextLoading = plansLoading || subscribersLoading || activityLoading;
 
+  const handleChatToggle = () => {
+    const savedKey = localStorage.getItem("recuro_qvac_holepunch_key");
+    if (!savedKey) {
+      setOnboardingOpen(true);
+      return;
+    }
+
+    setOpen(true);
+  };
+
   return (
     <>
+      <QvacOnboardingModal
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        onComplete={() => setOpen(true)}
+      />
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button
-            className="fixed bottom-6 right-6 z-30 gap-2 rounded-full shadow-lg shadow-black/10"
-            size="lg"
-          >
-            <Sparkles className="h-4 w-4" />
-            AI Chat
-          </Button>
-        </DialogTrigger>
+        <Button
+          className="fixed bottom-6 right-6 z-30 gap-2 rounded-full shadow-lg shadow-black/10"
+          size="lg"
+          onClick={handleChatToggle}
+        >
+          <Sparkles className="h-4 w-4" />
+          AI Chat
+        </Button>
         <DialogContent
           className={cn(
             "fixed bottom-6 right-6 left-auto top-auto z-50 flex h-[min(720px,calc(100vh-3rem))] w-[min(440px,calc(100vw-1.5rem))] translate-x-0 translate-y-0 gap-0 overflow-hidden rounded-[28px] border bg-background p-0 shadow-[0_24px_80px_rgba(0,0,0,0.24)] duration-300",
@@ -1324,12 +1335,15 @@ export default function MerchantAssistant() {
                     AI Assistant — coming soon
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    We&apos;re putting the finishing touches on the merchant
-                    AI assistant. It will live right here as soon as it&apos;s
+                    We&apos;re putting the finishing touches on the merchant AI
+                    assistant. It will live right here as soon as it&apos;s
                     ready.
                   </p>
                 </div>
-                <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs">
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-3 py-0.5 text-xs"
+                >
                   In development
                 </Badge>
               </div>
