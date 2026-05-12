@@ -1,7 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import { Connection } from "@solana/web3.js";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import IDL from "@/lib/idl.json";
+import IDL from "../../../../../sdk/src/idl.json";
 import { RPC_URL } from "@/lib/config";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
 
