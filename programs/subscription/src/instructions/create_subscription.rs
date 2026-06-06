@@ -39,11 +39,11 @@ pub struct CreateSubscription<'info> {
         constraint = plan.status == PlanStatus::Active @ SubscriptionError::PlanNotActive,
         constraint = plan.has_capacity()              @ SubscriptionError::PlanAtCapacity,
     )]
-    pub plan: Account<'info, Plan>,
+    pub plan: Box<Account<'info, Plan>>,
 
     /// Protocol config — retained for ABI/IDL compatibility; fee calc moved to execute_payment
     #[account(seeds = [b"config"], bump = config.bump)]
-    pub config: Account<'info, ProtocolConfig>,
+    pub config: Box<Account<'info, ProtocolConfig>>,
 
     /// Subscription PDA - created on first subscribe, reused on re-subscribe after cancel/expiry
     #[account(
@@ -53,7 +53,7 @@ pub struct CreateSubscription<'info> {
         seeds = [SEED_SUBSCRIPTION, plan.key().as_ref(), subscriber.key().as_ref()],
         bump,
     )]
-    pub subscription: Account<'info, Subscription>,
+    pub subscription: Box<Account<'info, Subscription>>,
 
     /// Subscriber's USDC ATA - Foundation init_subscription_authority sets this as delegated
     #[account(
@@ -63,18 +63,18 @@ pub struct CreateSubscription<'info> {
         constraint = subscriber_token_account.mint == plan.usdc_mint
             @ SubscriptionError::InvalidMint,
     )]
-    pub subscriber_token_account: Account<'info, TokenAccount>,
+    pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
 
     /// USDC mint - must match the plan's registered mint
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
-    pub usdc_mint: Account<'info, Mint>,
+    pub usdc_mint: Box<Account<'info, Mint>>,
 
     /// Merchant receive ATA (from plan) - passed through to Foundation subscribe
     #[account(
         mut,
         address = plan.merchant_token_account @ SubscriptionError::InvalidMerchantTokenAccount,
     )]
-    pub merchant_token_account: Account<'info, TokenAccount>,
+    pub merchant_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Merchant wallet — required by Foundation subscribe CPI
     /// CHECK: Address verified to match plan.merchant
