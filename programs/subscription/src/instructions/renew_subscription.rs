@@ -98,7 +98,7 @@ pub fn handler(ctx: Context<RenewSubscription>) -> Result<()> {
             ctx.accounts.token_program.to_account_info(),
             Approve {
                 to: ctx.accounts.subscriber_token_account.to_account_info(),
-                delegate: subscription.to_account_info(),
+                delegate: ctx.accounts.guard_account.to_account_info(),
                 authority: ctx.accounts.subscriber.to_account_info(),
             },
         ),
