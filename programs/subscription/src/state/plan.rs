@@ -23,6 +23,7 @@ pub struct Plan {
     pub updated_at: i64,                  // 8
     pub status: PlanStatus,               // 1
     pub bump: u8,                         // 1
+    pub foundation_plan_pubkey: Pubkey,   // 32 — Foundation cross-program reference
 }
 
 impl Plan {
@@ -45,7 +46,8 @@ impl Plan {
         + 8
         + 8
         + 1
-        + 1;
+        + 1
+        + 32; // foundation_plan_pubkey
 
     #[inline]
     pub fn is_active(&self) -> bool {

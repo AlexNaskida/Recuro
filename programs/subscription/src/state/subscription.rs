@@ -19,10 +19,11 @@ pub struct Subscription {
     pub cycles_remaining: u8, // decrements each payment - when 0, subscription expires
     pub status: SubscriptionStatus,
     pub bump: u8,
+    pub foundation_subscription_pubkey: Pubkey, // 32 — Foundation cross-program reference
 }
 
 impl Subscription {
-    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1;
+    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1 + 32; // +32 foundation_subscription_pubkey
 
     #[inline]
     pub fn is_active(&self) -> bool {
