@@ -70,4 +70,8 @@ pub enum SubscriptionError {
     PlanNotArchived,
     #[msg("Plan still has active subscribers and cannot be deleted")]
     PlanHasActiveSubscribers,
+
+    // ── Foundation integration ─────────────────────────────────────────────────
+    #[msg("The supplied Foundation Subscriptions program ID is incorrect")]
+    InvalidFoundationProgram,
 }
