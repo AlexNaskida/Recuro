@@ -1,8 +1,10 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{
+    instruction::{AccountMeta, Instruction},
+    program::invoke_signed,
+};
 use anchor_spl::token::{self, Mint, Token, TokenAccount, TransferChecked};
-use recuro_guard::cpi::accounts::AuthorizePayment as GuardAuthorizePayment;
-use recuro_guard::program::RecuroGuard;
-use recuro_guard::GuardAccount;
+use std::str::FromStr;
 
 use crate::{
     constants::*,
@@ -26,13 +28,23 @@ use crate::{
 //   - Keeper must provide their own USDC ATA which receives their 60% reward
 //   - All keeper accounts are verified via Anchor constraints
 //
+// Transfer flow:
+//   1. Foundation transfer_subscription: subscriber → merchant (plan_amount)
+//      Foundation's SubscriptionAuthority PDA acts as the SPL delegate.
+//   2. token::transfer_checked: subscriber → keeper ATA (60% of fee)
+//   3. token::transfer_checked: subscriber → treasury ATA (40% of fee)
+//      Both fee transfers are signed by the Subscription PDA as delegate.
+//      NOTE: keeper/treasury fee transfers use the Subscription PDA as authority
+//      because the Subscription PDA retains its own u64::MAX delegate slot
+//      TODO session 2 — re-route fee transfers through Foundation SA
+//
 // Caller: any keeper (off-chain bot that watches next_payment_at).
-// The program validates timing - early calls are silently skipped.
+// The program validates timing — early calls are silently skipped.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Accounts)]
 pub struct ExecutePayment<'info> {
-    /// Anyone may call this - timing is enforced by the program, not the signer.
+    /// Anyone may call this — timing is enforced by the program, not the signer.
     pub keeper: Signer<'info>,
 
     /// Protocol config - reads fee_bps and treasury
@@ -50,7 +62,7 @@ pub struct ExecutePayment<'info> {
     #[account(mut, address = subscription.plan)]
     pub plan: Box<Account<'info, Plan>>,
 
-    /// Subscriber's USDC ATA - source of ALL funds (plan amount + fee)
+    /// Subscriber's USDC ATA — source of ALL funds (plan amount + fee)
     #[account(
         mut,
         address = subscription.subscriber_token_account
@@ -58,7 +70,7 @@ pub struct ExecutePayment<'info> {
     )]
     pub subscriber_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// Merchant's USDC ATA - receives the full plan amount
+    /// Merchant's USDC ATA — receives the full plan amount via Foundation CPI
     #[account(
         mut,
         address = plan.merchant_token_account
@@ -66,20 +78,11 @@ pub struct ExecutePayment<'info> {
     )]
     pub merchant_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// Guard account - validates payment authorization and timing
-    #[account(
-        mut,
-        seeds = [b"guard", subscription.key().as_ref()],
-        bump = guard_account.bump,
-        constraint = guard_account.subscription == subscription.key(),
-    )]
-    pub guard_account: Box<Account<'info, GuardAccount>>,
-
-    /// USDC mint for guarded transfer_checked
+    /// USDC mint for transfer_checked fee splits
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Box<Account<'info, Mint>>,
 
-    /// Protocol treasury ATA - receives 40% of the fee
+    /// Protocol treasury ATA — receives 40% of the fee
     #[account(
         mut,
         constraint = treasury_token_account.owner == config.treasury
@@ -89,8 +92,7 @@ pub struct ExecutePayment<'info> {
     )]
     pub treasury_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// Keeper's USDC ATA - receives 60% of the fee as reward
-    /// Must be owned by the keeper signer to ensure rewards go to the correct address
+    /// Keeper's USDC ATA — receives 60% of the fee as reward
     #[account(
         mut,
         constraint = keeper_token_account.owner == keeper.key()
@@ -100,15 +102,54 @@ pub struct ExecutePayment<'info> {
     )]
     pub keeper_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// CHECK: read-only reference to the subscriber wallet
-    #[account(address = subscription.subscriber)]
-    pub subscriber: UncheckedAccount<'info>,
+    // ── Foundation Subscriptions accounts ────────────────────────────────────
 
-    /// Guard program
-    pub guard_program: Program<'info, RecuroGuard>,
+    /// Foundation Subscriptions program
+    /// CHECK: Program ID verified by constraint
+    #[account(
+        constraint = foundation_program.key() == Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID).unwrap()
+            @ SubscriptionError::InvalidFoundationProgram
+    )]
+    pub foundation_program: AccountInfo<'info>,
+
+    /// Foundation Plan PDA — must match the one stored on our Plan account
+    /// CHECK: Address verified against plan.foundation_plan_pubkey
+    #[account(
+        constraint = foundation_plan.key() == plan.foundation_plan_pubkey
+            @ SubscriptionError::InvalidFoundationProgram
+    )]
+    pub foundation_plan: AccountInfo<'info>,
+
+    /// Foundation SubscriptionDelegation PDA — must match the one stored on our Subscription
+    /// CHECK: Address verified against subscription.foundation_subscription_pubkey
+    #[account(
+        mut,
+        constraint = foundation_subscription.key() == subscription.foundation_subscription_pubkey
+            @ SubscriptionError::InvalidFoundationProgram
+    )]
+    pub foundation_subscription: AccountInfo<'info>,
+
+    /// Foundation SubscriptionAuthority PDA — the SPL delegate (u64::MAX approval)
+    /// Seeds on Foundation program: [b"SubscriptionAuthority", subscriber, mint]
+    /// CHECK: PDA seeds verified by Anchor against Foundation program
+    #[account(
+        seeds = [b"SubscriptionAuthority", subscription.subscriber.as_ref(), plan.usdc_mint.as_ref()],
+        bump,
+        seeds::program = foundation_program.key(),
+    )]
+    pub foundation_subscription_authority: UncheckedAccount<'info>,
+
+    /// Foundation event authority PDA — used by Foundation for on-chain event emission
+    /// Seeds on Foundation program: [b"event_authority"]
+    /// CHECK: PDA seeds verified by Anchor against Foundation program
+    #[account(
+        seeds = [b"event_authority"],
+        bump,
+        seeds::program = foundation_program.key(),
+    )]
+    pub foundation_event_authority: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token>,
-    pub clock: Sysvar<'info, Clock>,
     pub system_program: Program<'info, System>,
 }
 
@@ -139,7 +180,6 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     }
 
     // ── Calculate amounts ──────────────────────────────────────────────────────
-    //   plan_amount → merchant   |   fee → treasury   |   subscriber pays both
     let plan_amount: u64 = subscription.amount_usdc;
     let fee: u64 = (plan_amount as u128)
         .saturating_mul(config.fee_bps as u128)
@@ -191,8 +231,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         return Ok(());
     }
 
-    // ── PDA signer seeds ──────────────────────────────────────────────────────
-    // Save account_info references BEFORE taking mutable borrow of subscription
+    // ── PDA signer seeds for Subscription PDA ─────────────────────────────────
     let plan_key = subscription.plan;
     let sub_key = subscription.subscriber;
     let sub_bump = subscription.bump;
@@ -205,35 +244,77 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     ];
     let signer_seeds = &[seeds];
 
-    // ── Guard: Call authorize_payment via CPI ─────────────────────────────────
-    // The Guard account validates timing, authorization, and executes the merchant transfer
-    let cpi_accounts = GuardAuthorizePayment {
-        caller: subscription_account_info.clone(),
-        guard_account: ctx.accounts.guard_account.to_account_info(),
-        subscriber_token_account: ctx.accounts.subscriber_token_account.to_account_info(),
-        merchant_receive_token_account: ctx.accounts.merchant_token_account.to_account_info(),
-        usdc_mint: ctx.accounts.usdc_mint.to_account_info(),
-        token_program: ctx.accounts.token_program.to_account_info(),
-        clock: ctx.accounts.clock.to_account_info(),
-    };
+    // ── Transfer 1: Foundation transfer_subscription — subscriber → merchant ──
+    // TransferData layout (repr(C, packed), 72 bytes):
+    //   amount:    u64  (8) — plan_amount to pull
+    //   delegator: [u8;32] — subscriber's pubkey (token account owner)
+    //   mint:      [u8;32] — USDC mint
+    // Foundation validates: puller authorization, period limits, destination whitelist
+    {
+        let foundation_pid = Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID)
+            .map_err(|_| error!(SubscriptionError::InvalidFoundationProgram))?;
 
-    let cpi_context = CpiContext::new_with_signer(
-        ctx.accounts.guard_program.to_account_info(),
-        cpi_accounts,
-        signer_seeds,
-    );
+        let mut transfer_data: Vec<u8> = Vec::with_capacity(73);
+        transfer_data.push(10u8); // transfer_subscription discriminator
+        transfer_data.extend_from_slice(&plan_amount.to_le_bytes()); // amount
+        transfer_data.extend_from_slice(subscription.subscriber.as_ref()); // delegator
+        transfer_data.extend_from_slice(plan.usdc_mint.as_ref()); // mint
 
-    recuro_guard::cpi::authorize_payment(cpi_context)?;
+        // Account order for TransferSubscription (10 accounts, fixed):
+        // [0] subscription_pda  mut
+        // [1] plan_pda
+        // [2] subscription_authority
+        // [3] delegator_ata    mut  (subscriber's token account)
+        // [4] receiver_ata     mut  (merchant's token account)
+        // [5] caller           signer (keeper)
+        // [6] token_mint
+        // [7] token_program
+        // [8] event_authority
+        // [9] self_program
+        let transfer_ix = Instruction {
+            program_id: foundation_pid,
+            accounts: vec![
+                AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
+                AccountMeta::new(ctx.accounts.merchant_token_account.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.foundation_program.key(), false),
+            ],
+            data: transfer_data,
+        };
 
-    // ── Transfer 2: Split fee between keeper (60%) and treasury (40%) ─────────
+        invoke_signed(
+            &transfer_ix,
+            &[
+                ctx.accounts.foundation_subscription.to_account_info(),
+                ctx.accounts.foundation_plan.to_account_info(),
+                ctx.accounts.foundation_subscription_authority.to_account_info(),
+                ctx.accounts.subscriber_token_account.to_account_info(),
+                ctx.accounts.merchant_token_account.to_account_info(),
+                ctx.accounts.keeper.to_account_info(),
+                ctx.accounts.usdc_mint.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+                ctx.accounts.foundation_event_authority.to_account_info(),
+                ctx.accounts.foundation_program.to_account_info(),
+            ],
+            signer_seeds,
+        )?;
+    }
+
+    // ── Transfers 2 & 3: Split fee between keeper (60%) and treasury (40%) ────
+    // These use the Subscription PDA as authority (it holds a separate delegation).
+    // TODO session 2: re-route fee transfers through Foundation SA once Guard retired
     if fee > 0 {
-        // Calculate keeper reward (60% of fee) and treasury portion (40%)
         let keeper_reward: u64 = (fee as u128).saturating_mul(60).saturating_div(100) as u64;
         let treasury_portion: u64 = fee
             .checked_sub(keeper_reward)
             .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
-        // Transfer keeper reward (keeper identity verified via keeper_token_account.owner constraint)
         token::transfer_checked(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -249,7 +330,6 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             ctx.accounts.usdc_mint.decimals,
         )?;
 
-        // Transfer treasury portion
         token::transfer_checked(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
