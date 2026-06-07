@@ -63,14 +63,6 @@ pub mod subscription {
         instructions::create_subscription::handler(ctx)
     }
 
-    pub fn pause_subscription(ctx: Context<PauseSubscription>) -> Result<()> {
-        instructions::pause_subscription::handler(ctx)
-    }
-
-    pub fn resume_subscription(ctx: Context<ResumeSubscription>) -> Result<()> {
-        instructions::resume_subscription::handler(ctx)
-    }
-
     pub fn cancel_subscription(ctx: Context<CancelSubscription>) -> Result<()> {
         instructions::cancel_subscription::handler(ctx)
     }
