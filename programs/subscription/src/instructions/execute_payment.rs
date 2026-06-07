@@ -141,6 +141,11 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     let subscription = &mut ctx.accounts.subscription;
     let plan = &mut ctx.accounts.plan;
 
+    require!(
+        subscription.status == SubscriptionStatus::Active,
+        SubscriptionError::SubscriptionNotActive
+    );
+
     // Guard: still in trial period
     if subscription.is_in_trial(now) {
         msg!(
