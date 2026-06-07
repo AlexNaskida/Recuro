@@ -23,7 +23,8 @@ pub struct Subscription {
 }
 
 impl Subscription {
-    pub const INIT_SPACE: usize = 32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1 + 32; // +32 foundation_subscription_pubkey
+    pub const INIT_SPACE: usize =
+        32 + 32 + 32 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 8 + 1 + 1 + 1 + 1 + 1 + 32; // +32 foundation_subscription_pubkey
 
     #[inline]
     pub fn is_active(&self) -> bool {

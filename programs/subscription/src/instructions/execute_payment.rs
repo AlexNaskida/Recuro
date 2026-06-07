@@ -98,7 +98,6 @@ pub struct ExecutePayment<'info> {
     pub keeper_token_account: Box<Account<'info, TokenAccount>>,
 
     // ── Foundation Subscriptions accounts ────────────────────────────────────
-
     /// Foundation Subscriptions program
     /// CHECK: Program ID verified by constraint
     #[account(
@@ -253,7 +252,10 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             accounts: vec![
                 AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                AccountMeta::new_readonly(
+                    ctx.accounts.foundation_subscription_authority.key(),
+                    false,
+                ),
                 AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
                 AccountMeta::new(ctx.accounts.merchant_token_account.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
@@ -270,7 +272,9 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             &[
                 ctx.accounts.foundation_subscription.to_account_info(),
                 ctx.accounts.foundation_plan.to_account_info(),
-                ctx.accounts.foundation_subscription_authority.to_account_info(),
+                ctx.accounts
+                    .foundation_subscription_authority
+                    .to_account_info(),
                 ctx.accounts.subscriber_token_account.to_account_info(),
                 ctx.accounts.merchant_token_account.to_account_info(),
                 ctx.accounts.keeper.to_account_info(),
@@ -303,7 +307,10 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 accounts: vec![
                     AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
-                    AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                    AccountMeta::new_readonly(
+                        ctx.accounts.foundation_subscription_authority.key(),
+                        false,
+                    ),
                     AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
                     AccountMeta::new(ctx.accounts.treasury_token_account.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
@@ -319,7 +326,9 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 &[
                     ctx.accounts.foundation_subscription.to_account_info(),
                     ctx.accounts.foundation_plan.to_account_info(),
-                    ctx.accounts.foundation_subscription_authority.to_account_info(),
+                    ctx.accounts
+                        .foundation_subscription_authority
+                        .to_account_info(),
                     ctx.accounts.subscriber_token_account.to_account_info(),
                     ctx.accounts.treasury_token_account.to_account_info(),
                     ctx.accounts.keeper.to_account_info(),
@@ -344,7 +353,10 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 accounts: vec![
                     AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
-                    AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                    AccountMeta::new_readonly(
+                        ctx.accounts.foundation_subscription_authority.key(),
+                        false,
+                    ),
                     AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
                     AccountMeta::new(ctx.accounts.keeper_token_account.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
@@ -360,7 +372,9 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 &[
                     ctx.accounts.foundation_subscription.to_account_info(),
                     ctx.accounts.foundation_plan.to_account_info(),
-                    ctx.accounts.foundation_subscription_authority.to_account_info(),
+                    ctx.accounts
+                        .foundation_subscription_authority
+                        .to_account_info(),
                     ctx.accounts.subscriber_token_account.to_account_info(),
                     ctx.accounts.keeper_token_account.to_account_info(),
                     ctx.accounts.keeper.to_account_info(),

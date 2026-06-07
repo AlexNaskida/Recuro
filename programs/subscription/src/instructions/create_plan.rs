@@ -172,7 +172,8 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         // Foundation terms.amount must cover plan_amount + max possible fee (5% = 500 bps).
         // This ensures the execute_payment fee transfer never exceeds the period limit,
         // regardless of where fee_bps sits within the allowed 0–500 range at payment time.
-        let foundation_amount = params.amount_usdc
+        let foundation_amount = params
+            .amount_usdc
             .checked_add(
                 (params.amount_usdc as u128)
                     .saturating_mul(ProtocolConfig::MAX_FEE_BPS as u128)
@@ -188,13 +189,13 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         ix_data.extend_from_slice(&period_hours.to_le_bytes());
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
-        // destinations: [merchant, treasury, keeper_wallet, zero]
-        // Foundation validates receiver_ata.owner against this whitelist on each pull.
+                                                        // destinations: [merchant, treasury, keeper_wallet, zero]
+                                                        // Foundation validates receiver_ata.owner against this whitelist on each pull.
         ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0] merchant
         ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40% fee)
         ix_data.extend_from_slice(keeper_key.as_ref()); // [2] keeper wallet (60% fee)
         ix_data.extend_from_slice(&[0u8; 32]); // [3] zero
-        // pullers[0] = Recuro keeper; [1..3] = zero
+                                               // pullers[0] = Recuro keeper; [1..3] = zero
         ix_data.extend_from_slice(keeper_key.as_ref());
         ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]
         ix_data.extend_from_slice(&[0u8; 128]); // metadata_uri

@@ -82,7 +82,6 @@ pub struct CreateSubscription<'info> {
     pub merchant: AccountInfo<'info>,
 
     // ── Foundation Subscriptions accounts ────────────────────────────────────
-
     /// Foundation Subscriptions program
     /// CHECK: Program ID verified by constraint
     #[account(
@@ -220,7 +219,9 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
             &init_sa_ix,
             &[
                 ctx.accounts.subscriber.to_account_info(),
-                ctx.accounts.foundation_subscription_authority.to_account_info(),
+                ctx.accounts
+                    .foundation_subscription_authority
+                    .to_account_info(),
                 ctx.accounts.usdc_mint.to_account_info(),
                 ctx.accounts.subscriber_token_account.to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
@@ -267,7 +268,10 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
         // SA layout (repr(C, packed), 106 bytes):
         //   [97]      bump (u8)
         //   [98..106] init_id (i64)
-        let sa_data = ctx.accounts.foundation_subscription_authority.try_borrow_data()?;
+        let sa_data = ctx
+            .accounts
+            .foundation_subscription_authority
+            .try_borrow_data()?;
         require!(
             sa_data.len() >= 106,
             SubscriptionError::InvalidFoundationProgram
@@ -296,7 +300,10 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
                 AccountMeta::new_readonly(plan.merchant, false),
                 AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
                 AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                AccountMeta::new_readonly(
+                    ctx.accounts.foundation_subscription_authority.key(),
+                    false,
+                ),
                 AccountMeta::new_readonly(ctx.accounts.system_program.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.foundation_program.key(), false),
@@ -311,7 +318,9 @@ pub fn handler(ctx: Context<CreateSubscription>) -> Result<()> {
                 ctx.accounts.merchant.to_account_info(),
                 ctx.accounts.foundation_plan.to_account_info(),
                 ctx.accounts.foundation_subscription.to_account_info(),
-                ctx.accounts.foundation_subscription_authority.to_account_info(),
+                ctx.accounts
+                    .foundation_subscription_authority
+                    .to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
                 ctx.accounts.foundation_event_authority.to_account_info(),
                 ctx.accounts.foundation_program.to_account_info(),

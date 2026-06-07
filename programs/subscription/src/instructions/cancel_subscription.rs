@@ -32,7 +32,6 @@ pub struct CancelSubscription<'info> {
     pub plan: Account<'info, Plan>,
 
     // ── Foundation Subscriptions accounts ────────────────────────────────────
-
     /// Foundation Subscriptions program
     /// CHECK: Program ID verified by constraint
     #[account(
