@@ -1,4 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
 import { PROGRAM_ID, CLOCKWORK_THREAD_PROGRAM_ID, SEEDS, FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID } from "../constants";
 
@@ -48,6 +49,33 @@ export function getGuardPDA(
     [Buffer.from("guard"), subscription.toBuffer()],
     guardProgramId,
   );
+}
+
+// ── FeeRouter PDA helpers ─────────────────────────────────────────────────────
+
+/** FeeRouter PDA — seeds: ["fee_router"] on Recuro program */
+export function getFeeRouterPDA(
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("fee_router")],
+    programId,
+  );
+}
+
+/**
+ * FeeRouter USDC ATA — the token account that receives keeper fees from Foundation,
+ * then forwards them to the calling keeper.
+ * Uses the standard ATA derivation; owner is a PDA (off-curve) which is valid.
+ */
+export function getFeeRouterATA(
+  feeRouterPDA: PublicKey,
+  usdcMint: PublicKey,
+): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [feeRouterPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), usdcMint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
 }
 
 // ── Foundation Subscriptions PDA helpers ─────────────────────────────────────
