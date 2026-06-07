@@ -12,7 +12,7 @@ use std::str::FromStr;
 use crate::{
     constants::*,
     errors::SubscriptionError,
-    state::{Plan, PlanCreated, PlanStatus},
+    state::{Plan, PlanCreated, PlanStatus, ProtocolConfig},
 };
 
 // ────────────────────────────────────────────────────────────
@@ -60,6 +60,10 @@ pub struct CreatePlan<'info> {
         bump,
     )]
     pub plan: Account<'info, Plan>,
+
+    /// Protocol config — read for treasury address (destinations[1]) and max fee bps
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Box<Account<'info, ProtocolConfig>>,
 
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
@@ -145,11 +149,14 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     // PlanData layout is repr(C, packed), 456 bytes:
     //   plan_id        u64  ( 8)  — merchant-scoped unique ID
     //   mint           [u8;32]    — SPL token mint
-    //   terms.amount   u64  ( 8)  — max pull per period (= plan amount)
+    //   terms.amount   u64  ( 8)  — max pull per period (plan_amount + max 5% fee)
     //   terms.period_hours u64(8) — billing period in hours (interval_seconds/3600)
     //   terms.created_at   i64(8) — zero; Foundation sets this at plan creation
     //   end_ts         i64  ( 8)  — zero = no expiry
-    //   destinations   [Address;4] (128) — whitelisted receiver owners
+    //   destinations   [Address;4] (128) — whitelisted receiver wallet owners
+    //     [0] merchant_receive_address
+    //     [1] protocol treasury  ← fee (up to 5%) routed here via second transfer call
+    //     [2..3] zero
     //   pullers        [Address;4] (128) — addresses authorized to pull
     //   metadata_uri   [u8;128]         — zero-padded UTF-8 URI
     {
@@ -161,17 +168,29 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         // interval_seconds → period_hours; Foundation minimum is 1 hour
         let period_hours = (params.interval_seconds / 3600).max(1) as u64;
 
+        // Foundation terms.amount must cover plan_amount + max possible fee (5% = 500 bps).
+        // This ensures the execute_payment fee transfer never exceeds the period limit,
+        // regardless of where fee_bps sits within the allowed 0–500 range at payment time.
+        let foundation_amount = params.amount_usdc
+            .checked_add(
+                (params.amount_usdc as u128)
+                    .saturating_mul(ProtocolConfig::MAX_FEE_BPS as u128)
+                    .saturating_div(10_000) as u64,
+            )
+            .ok_or(SubscriptionError::ArithmeticOverflow)?;
+
         let mut ix_data: Vec<u8> = Vec::with_capacity(457);
         ix_data.push(7u8); // create_plan discriminator
         ix_data.extend_from_slice(&params.plan_id.to_le_bytes());
         ix_data.extend_from_slice(ctx.accounts.usdc_mint.key().as_ref());
-        ix_data.extend_from_slice(&params.amount_usdc.to_le_bytes());
+        ix_data.extend_from_slice(&foundation_amount.to_le_bytes()); // terms.amount = plan + max fee
         ix_data.extend_from_slice(&period_hours.to_le_bytes());
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
-        // destinations[0] = merchant_receive_address; [1..3] = zero
-        ix_data.extend_from_slice(plan.merchant_receive_address.as_ref());
-        ix_data.extend_from_slice(&[0u8; 96]); // destinations[1..3]
+        // destinations: [merchant_receive_address, treasury, zero, zero]
+        ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0]
+        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury
+        ix_data.extend_from_slice(&[0u8; 64]); // [2..3] zero
         // pullers[0] = Recuro keeper; [1..3] = zero
         ix_data.extend_from_slice(keeper_key.as_ref());
         ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]
