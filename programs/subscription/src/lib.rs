@@ -29,6 +29,10 @@ pub mod subscription {
         instructions::initialize_config::handler(ctx, args)
     }
 
+    pub fn initialize_fee_router(ctx: Context<InitializeFeeRouter>) -> Result<()> {
+        instructions::initialize_fee_router::handler(ctx)
+    }
+
     // ── Plan lifecycle (merchant) ──────────────────────────────────────────
     pub fn create_plan(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()> {
         instructions::create_plan::handler(ctx, params)
