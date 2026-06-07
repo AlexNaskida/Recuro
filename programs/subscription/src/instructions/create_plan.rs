@@ -155,8 +155,9 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     //   end_ts         i64  ( 8)  — zero = no expiry
     //   destinations   [Address;4] (128) — whitelisted receiver wallet owners
     //     [0] merchant_receive_address
-    //     [1] protocol treasury  ← fee (up to 5%) routed here via second transfer call
-    //     [2..3] zero
+    //     [1] protocol treasury     ← 40% of fee
+    //     [2] RECURO_KEEPER_PUBKEY  ← 60% of fee (keeper reward)
+    //     [3] zero
     //   pullers        [Address;4] (128) — addresses authorized to pull
     //   metadata_uri   [u8;128]         — zero-padded UTF-8 URI
     {
@@ -187,10 +188,12 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         ix_data.extend_from_slice(&period_hours.to_le_bytes());
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
-        // destinations: [merchant_receive_address, treasury, zero, zero]
-        ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0]
-        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury
-        ix_data.extend_from_slice(&[0u8; 64]); // [2..3] zero
+        // destinations: [merchant, treasury, keeper_wallet, zero]
+        // Foundation validates receiver_ata.owner against this whitelist on each pull.
+        ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0] merchant
+        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40% fee)
+        ix_data.extend_from_slice(keeper_key.as_ref()); // [2] keeper wallet (60% fee)
+        ix_data.extend_from_slice(&[0u8; 32]); // [3] zero
         // pullers[0] = Recuro keeper; [1..3] = zero
         ix_data.extend_from_slice(keeper_key.as_ref());
         ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]

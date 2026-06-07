@@ -19,15 +19,17 @@ use crate::{
 // Fee model: "fee on top"
 //   Subscriber pays:  plan_amount + fee
 //   Merchant gets:    plan_amount  (full advertised price, always)
-//   Treasury gets:    fee (100% of fee — keeper reward dropped for now)
+//   Keeper gets:      60% of fee  (destinations[2] on Foundation plan)
+//   Treasury gets:    40% of fee  (destinations[1] on Foundation plan)
 //   fee = plan_amount * fee_bps / 10_000
 //
-// Transfer flow (both via Foundation transfer_subscription):
-//   1. Foundation transfer: plan_amount → merchant ATA   (destinations[0])
-//   2. Foundation transfer: fee         → treasury ATA   (destinations[1])
+// Transfer flow (all via Foundation transfer_subscription):
+//   1. Foundation transfer: plan_amount    → merchant ATA     (destinations[0])
+//   2. Foundation transfer: treasury_40    → treasury ATA     (destinations[1])
+//   3. Foundation transfer: keeper_60      → keeper ATA       (destinations[2])
 //      Foundation's SubscriptionAuthority PDA is the SPL delegate (u64::MAX).
 //      Foundation plan terms.amount was set to plan_amount + 5% max at creation,
-//      so the two pulls always fit within the period limit.
+//      so all three pulls always fit within the period limit.
 //
 // Caller: any address in the Foundation plan's pullers[] array (RECURO_KEEPER_PUBKEY).
 // The program validates timing — early calls are silently skipped.
@@ -74,7 +76,7 @@ pub struct ExecutePayment<'info> {
     #[account(address = plan.usdc_mint @ SubscriptionError::InvalidMint)]
     pub usdc_mint: Box<Account<'info, Mint>>,
 
-    /// Protocol treasury ATA — receives fee via Foundation transfer_subscription
+    /// Protocol treasury ATA — receives 40% of fee via Foundation transfer_subscription
     #[account(
         mut,
         constraint = treasury_token_account.owner == config.treasury
@@ -83,6 +85,17 @@ pub struct ExecutePayment<'info> {
             @ SubscriptionError::InvalidTreasuryTokenAccount,
     )]
     pub treasury_token_account: Box<Account<'info, TokenAccount>>,
+
+    /// Keeper's USDC ATA — receives 60% of fee via Foundation transfer_subscription
+    /// Must be owned by the keeper signer (Foundation validates destinations[2] match)
+    #[account(
+        mut,
+        constraint = keeper_token_account.owner == keeper.key()
+            @ SubscriptionError::InvalidMint,
+        constraint = keeper_token_account.mint == plan.usdc_mint
+            @ SubscriptionError::InvalidMint,
+    )]
+    pub keeper_token_account: Box<Account<'info, TokenAccount>>,
 
     // ── Foundation Subscriptions accounts ────────────────────────────────────
 
@@ -269,49 +282,95 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
         )?;
     }
 
-    // ── Transfer 2: Foundation transfer_subscription — subscriber → treasury ──
-    // Pulls fee from subscriber ATA to treasury ATA.
-    // Foundation validates treasury is in destinations[1] of the Foundation plan.
-    // Skipped when fee_bps = 0.
+    // ── Transfers 2 & 3: Fee splits — 40% treasury, 60% keeper ──────────────
+    // Skipped entirely when fee_bps = 0.
     if fee > 0 {
-        let mut fee_data: Vec<u8> = Vec::with_capacity(73);
-        fee_data.push(10u8); // transfer_subscription discriminator
-        fee_data.extend_from_slice(&fee.to_le_bytes());
-        fee_data.extend_from_slice(subscription.subscriber.as_ref());
-        fee_data.extend_from_slice(plan.usdc_mint.as_ref());
+        let treasury_portion: u64 = (fee as u128).saturating_mul(40).saturating_div(100) as u64;
+        let keeper_reward: u64 = fee
+            .checked_sub(treasury_portion)
+            .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
-        let treasury_ix = Instruction {
-            program_id: foundation_pid,
-            accounts: vec![
-                AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
-                AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
-                AccountMeta::new(ctx.accounts.treasury_token_account.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
-                AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.foundation_program.key(), false),
-            ],
-            data: fee_data,
-        };
+        // Transfer 2: fee → treasury ATA (destinations[1])
+        if treasury_portion > 0 {
+            let mut treasury_data: Vec<u8> = Vec::with_capacity(73);
+            treasury_data.push(10u8);
+            treasury_data.extend_from_slice(&treasury_portion.to_le_bytes());
+            treasury_data.extend_from_slice(subscription.subscriber.as_ref());
+            treasury_data.extend_from_slice(plan.usdc_mint.as_ref());
 
-        invoke(
-            &treasury_ix,
-            &[
-                ctx.accounts.foundation_subscription.to_account_info(),
-                ctx.accounts.foundation_plan.to_account_info(),
-                ctx.accounts.foundation_subscription_authority.to_account_info(),
-                ctx.accounts.subscriber_token_account.to_account_info(),
-                ctx.accounts.treasury_token_account.to_account_info(),
-                ctx.accounts.keeper.to_account_info(),
-                ctx.accounts.usdc_mint.to_account_info(),
-                ctx.accounts.token_program.to_account_info(),
-                ctx.accounts.foundation_event_authority.to_account_info(),
-                ctx.accounts.foundation_program.to_account_info(),
-            ],
-        )?;
+            let treasury_ix = Instruction {
+                program_id: foundation_pid,
+                accounts: vec![
+                    AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                    AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
+                    AccountMeta::new(ctx.accounts.treasury_token_account.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                    AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_program.key(), false),
+                ],
+                data: treasury_data,
+            };
+            invoke(
+                &treasury_ix,
+                &[
+                    ctx.accounts.foundation_subscription.to_account_info(),
+                    ctx.accounts.foundation_plan.to_account_info(),
+                    ctx.accounts.foundation_subscription_authority.to_account_info(),
+                    ctx.accounts.subscriber_token_account.to_account_info(),
+                    ctx.accounts.treasury_token_account.to_account_info(),
+                    ctx.accounts.keeper.to_account_info(),
+                    ctx.accounts.usdc_mint.to_account_info(),
+                    ctx.accounts.token_program.to_account_info(),
+                    ctx.accounts.foundation_event_authority.to_account_info(),
+                    ctx.accounts.foundation_program.to_account_info(),
+                ],
+            )?;
+        }
+
+        // Transfer 3: fee → keeper ATA (destinations[2])
+        if keeper_reward > 0 {
+            let mut keeper_data: Vec<u8> = Vec::with_capacity(73);
+            keeper_data.push(10u8);
+            keeper_data.extend_from_slice(&keeper_reward.to_le_bytes());
+            keeper_data.extend_from_slice(subscription.subscriber.as_ref());
+            keeper_data.extend_from_slice(plan.usdc_mint.as_ref());
+
+            let keeper_ix = Instruction {
+                program_id: foundation_pid,
+                accounts: vec![
+                    AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_plan.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_subscription_authority.key(), false),
+                    AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
+                    AccountMeta::new(ctx.accounts.keeper_token_account.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                    AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.foundation_program.key(), false),
+                ],
+                data: keeper_data,
+            };
+            invoke(
+                &keeper_ix,
+                &[
+                    ctx.accounts.foundation_subscription.to_account_info(),
+                    ctx.accounts.foundation_plan.to_account_info(),
+                    ctx.accounts.foundation_subscription_authority.to_account_info(),
+                    ctx.accounts.subscriber_token_account.to_account_info(),
+                    ctx.accounts.keeper_token_account.to_account_info(),
+                    ctx.accounts.keeper.to_account_info(),
+                    ctx.accounts.usdc_mint.to_account_info(),
+                    ctx.accounts.token_program.to_account_info(),
+                    ctx.accounts.foundation_event_authority.to_account_info(),
+                    ctx.accounts.foundation_program.to_account_info(),
+                ],
+            )?;
+        }
     }
 
     // ── Update state ──────────────────────────────────────────────────────────
@@ -378,7 +437,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     });
 
     msg!(
-        "[execute_payment] SUCCESS: {} to merchant + {} fee to treasury (total {}). payment #{}",
+        "[execute_payment] SUCCESS: {} to merchant + {} fee (60/40 keeper/treasury, total {}). payment #{}",
         plan_amount,
         fee,
         total_charge,
