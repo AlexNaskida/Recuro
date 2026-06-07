@@ -13,11 +13,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { PublicKey, Keypair, SystemProgram } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  TOKEN_PROGRAM_ID,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import pkg from "@solana/spl-token";
+const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = pkg;
 import { readFileSync } from "fs";
 import { homedir } from "os";
 

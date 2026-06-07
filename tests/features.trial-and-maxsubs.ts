@@ -21,12 +21,8 @@ import * as anchor from "@coral-xyz/anchor";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import BN from "bn.js";
 import { Keypair, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
-import {
-  createMint,
-  createAssociatedTokenAccount,
-  mintTo,
-  getAccount,
-} from "@solana/spl-token";
+import pkg from "@solana/spl-token";
+const { createMint, createAssociatedTokenAccount, mintTo, getAccount } = pkg;
 import { assert } from "chai";
 import type { Subscription } from "../target/types/subscription";
 
