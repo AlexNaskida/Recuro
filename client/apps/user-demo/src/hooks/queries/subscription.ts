@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAnchorWallet } from "@solana/wallet-adapter-react";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, Transaction } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import BN from "bn.js";
 import { useSdk } from "@/hooks/useSdk";
@@ -191,6 +191,23 @@ export function useSubscribe() {
         );
       }
 
+      const [configPda] = PublicKey.findProgramAddressSync(
+        [Buffer.from("config")],
+        sdk.programId,
+      );
+
+      const configAccount = await withTimeout(
+        sdk.provider.connection.getAccountInfo(configPda, "confirmed"),
+        12_000,
+        "Timed out reading protocol config from RPC.",
+      );
+
+      if (!configAccount || configAccount.data.length === 0) {
+        throw new Error(
+          `Protocol config is not initialized on ${sdk.cluster}. Run initialize_config for program ${sdk.programId.toBase58()} and refresh the demo.`,
+        );
+      }
+
       const plan = new PublicKey(planPubkey);
       const decodedPlan = await withTimeout(
         sdk.fetchPlan(plan),
@@ -212,6 +229,57 @@ export function useSubscribe() {
         sdk.programId,
       );
 
+      // If a cancelled/expired subscription exists, close it first so the
+      // guard PDA is wiped — otherwise create_subscription fails trying to
+      // re-init an already-allocated guard account.
+      const existingSub = await sdk.fetchSubscription(subscriptionPubkey);
+      if (existingSub?.status === "Expired") {
+        const renewSig = await withTimeout(
+          sdk.renewSubscription(subscriptionPubkey, plan),
+          30_000,
+          "Timed out renewing subscription. Try again.",
+        );
+        return renewSig;
+      }
+
+      if (existingSub?.status === "Cancelled") {
+        const closeIx = await sdk.program.methods
+          .closeSubscription()
+          .accounts({
+            subscriber,
+            subscription: subscriptionPubkey,
+          })
+          .instruction();
+
+        const subscriberTokenAccount = deriveAssociatedTokenAddress(
+          sdk.usdcMint,
+          subscriber,
+        );
+
+        const createIx = await sdk.program.methods
+          .createSubscription()
+          .accountsPartial({
+            subscriber,
+            usdcMint: sdk.usdcMint,
+            plan,
+            subscription: subscriptionPubkey,
+            subscriberTokenAccount,
+            merchantTokenAccount: decodedPlan.merchantTokenAccount,
+          })
+          .instruction();
+
+        const transaction = new Transaction().add(closeIx, createIx);
+        transaction.feePayer = subscriber;
+
+        const signature = await withTimeout(
+          sdk.provider.sendAndConfirm(transaction),
+          30_000,
+          "Timed out recreating subscription. Try again.",
+        );
+
+        return { signature: String(signature), subscriptionPubkey };
+      }
+
       const subscriberTokenAccount = deriveAssociatedTokenAddress(
         sdk.usdcMint,
         subscriber,
@@ -226,6 +294,7 @@ export function useSubscribe() {
             plan,
             subscription: subscriptionPubkey,
             subscriberTokenAccount,
+            merchantTokenAccount: decodedPlan.merchantTokenAccount,
           })
           .rpc({ commitment: "confirmed" }),
         30_000,

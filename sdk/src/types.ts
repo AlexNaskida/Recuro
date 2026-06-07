@@ -68,7 +68,7 @@ export interface ProtocolConfigAccount {
 
 // ── SDK input params ──────────────────────────────────────────────────────────
 export interface CreatePlanParams {
-  planId: number;
+  planId?: number;
   name: string;
   description?: string;
   imageUrl?: string;
