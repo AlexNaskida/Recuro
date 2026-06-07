@@ -156,7 +156,7 @@ export class SubscriptionSdk {
     const merchant = this.provider.wallet.publicKey;
     const planId = BN.isBN(params.planId)
       ? params.planId
-      : new BN(params.planId);
+      : new BN(params.planId ?? Date.now());
 
     const [planPubkey] = getPlanPDA(merchant, planId, this.programId);
     const merchantTokenAccount = deriveAssociatedTokenAddress(
