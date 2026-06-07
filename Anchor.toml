@@ -1,7 +1,9 @@
+[toolchain]
+anchor_version = "0.32.0"
+
 [features]
 seeds = false
 skip-lint = false
-anchor_version = "0.32.0"
 
 [programs.localnet]
 subscription = "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr"
