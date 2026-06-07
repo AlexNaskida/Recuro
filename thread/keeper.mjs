@@ -21,15 +21,20 @@ import {
   PublicKey,
   ComputeBudgetProgram,
 } from "@solana/web3.js";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import pkg from "@solana/spl-token";
 import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
+
+const { getAssociatedTokenAddress } = pkg;
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const PROGRAM_ID = new PublicKey(
   "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
+);
+const FOUNDATION_PROGRAM_ID = new PublicKey(
+  "De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44",
 );
 const USDC_MINT = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
 
@@ -45,7 +50,7 @@ const BAR_WIDTH = 24;
 const BAR_TICK_MS = 120;
 
 // Tracks subscriptions that permanently fail so the keeper stops retrying them
-// each poll (e.g. stale delegate, wrong accounts). Cleared on keeper restart.
+// each poll (e.g. stale accounts, wrong Foundation state). Cleared on restart.
 const permanentFailures = new Set();
 
 // ── IDL ───────────────────────────────────────────────────────────────────────
@@ -67,7 +72,7 @@ for (const p of IDL_PATHS) {
 if (!IDL) {
   log(
     "error",
-    "IDL not found. Run: cp target/idl/subscription.json sdk/src/idl.json",
+    "IDL not found. Run: anchor build && cp target/idl/subscription.json sdk/src/idl.json",
   );
   process.exit(1);
 }
@@ -101,6 +106,22 @@ const [configPDA] = PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
   PROGRAM_ID,
 );
+
+// ── Foundation PDA helpers ────────────────────────────────────────────────────
+
+function deriveFoundationSubscriptionAuthorityPDA(subscriber, tokenMint) {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("SubscriptionAuthority"), subscriber.toBuffer(), tokenMint.toBuffer()],
+    FOUNDATION_PROGRAM_ID,
+  )[0];
+}
+
+function deriveFoundationEventAuthorityPDA() {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event_authority")],
+    FOUNDATION_PROGRAM_ID,
+  )[0];
+}
 
 // ── Logging ───────────────────────────────────────────────────────────────────
 
@@ -211,13 +232,15 @@ function printStats() {
 
 // ── Fetch due subscriptions ───────────────────────────────────────────────────
 //
-// Uses raw getProgramAccounts and deserializes each account individually
-// so a single stale/old-layout account can't crash the whole fetch.
+// Uses raw getProgramAccounts and deserializes each account individually.
+// dataSize 205 = 8 discriminator + 197 data (current layout with foundation_subscription_pubkey).
+// Subscriptions from before the Foundation integration (173 bytes) are skipped
+// — they cannot be processed as they have no Foundation counterpart.
 
 async function fetchDueSubscriptions(now) {
   const rawAccounts = await connection.getProgramAccounts(PROGRAM_ID, {
     commitment: "confirmed",
-    filters: [{ dataSize: 173 }], // 8 discriminator + 165 data (current layout)
+    filters: [{ dataSize: 205 }],
   });
 
   const results = [];
@@ -241,6 +264,12 @@ async function fetchDueSubscriptions(now) {
         decoded.nextPaymentAt?.toNumber?.() ?? decoded.nextPaymentAt;
       if (now < nextPayment) continue;
 
+      // Must have a Foundation subscription PDA recorded
+      if (!decoded.foundationSubscriptionPubkey) {
+        log("warn", `Skipping sub without Foundation counterpart: ${pubkey.toBase58().slice(0, 8)}...`);
+        continue;
+      }
+
       results.push({ publicKey: pubkey, account: decoded });
     } catch {
       log(
@@ -254,17 +283,23 @@ async function fetchDueSubscriptions(now) {
 
 // ── Execute one payment ───────────────────────────────────────────────────────
 //
-// Mirrors execute_payment.rs ExecutePayment accounts exactly:
+// Mirrors execute_payment.rs ExecutePayment accounts exactly.
 //
-//   keeper                   → this wallet (any signer is allowed by program)
-//   config                   → PDA [b"config"]
-//   subscription             → PDA [b"subscription", plan, subscriber]
-//   plan                     → subscription.plan
-//   subscriberTokenAccount   → subscription.subscriberTokenAccount  (stored on-chain, NOT recomputed)
-//   merchantTokenAccount     → plan.merchantTokenAccount            (stored on-chain)
-//   treasuryTokenAccount     → ATA(config.treasury, USDC_MINT)     (derived from config)
-//   subscriber               → subscription.subscriber              (CHECK / read-only)
-//   token_program / system_program  → resolved by Anchor
+// Account sources (all from on-chain state — keeper cannot manipulate):
+//   keeper                          → this wallet
+//   config                          → PDA [b"config"]
+//   subscription                    → PDA [b"subscription", plan, subscriber]
+//   plan                            → subscription.plan
+//   subscriberTokenAccount          → subscription.subscriberTokenAccount
+//   merchantTokenAccount            → plan.merchantTokenAccount
+//   usdcMint                        → plan.usdcMint
+//   treasuryTokenAccount            → ATA(config.treasury, USDC_MINT)
+//   keeperTokenAccount              → ATA(keeper, USDC_MINT)
+//   foundationProgram               → FOUNDATION_PROGRAM_ID (constant)
+//   foundationPlan                  → plan.foundationPlanPubkey (stored on Plan PDA)
+//   foundationSubscription          → subscription.foundationSubscriptionPubkey
+//   foundationSubscriptionAuthority → PDA ["SubscriptionAuthority", subscriber, mint]
+//   foundationEventAuthority        → PDA ["event_authority"] on Foundation program
 
 async function executePayment(subPubkey, subAccount, config) {
   // Fetch plan
@@ -278,17 +313,38 @@ async function executePayment(subPubkey, subAccount, config) {
       subscription: subPubkey.toBase58(),
       error: err?.message,
     });
+    stats.errors++;
     return "error";
   }
 
-  // All account addresses sourced from on-chain state - keeper cannot manipulate them
-  const subscriberTokenAccount = subAccount.subscriberTokenAccount; // from Subscription PDA
-  const merchantTokenAccount = plan.merchantTokenAccount; // from Plan PDA
+  // Validate Foundation accounts are present on-chain state
+  if (!plan.foundationPlanPubkey) {
+    log("warn", "Plan has no Foundation counterpart — skipping", {
+      subscription: subPubkey.toBase58(),
+    });
+    permanentFailures.add(subPubkey.toBase58());
+    return "skip";
+  }
+
+  // Derive all account addresses from on-chain state — keeper cannot spoof them
+  const subscriberTokenAccount = subAccount.subscriberTokenAccount;
+  const merchantTokenAccount = plan.merchantTokenAccount;
+  const usdcMint = plan.usdcMint ?? USDC_MINT;
+
   const treasuryTokenAccount = await getAssociatedTokenAddress(
-    // from config.treasury
-    USDC_MINT,
+    usdcMint,
     config.treasury,
   );
+  const keeperTokenAccount = await getAssociatedTokenAddress(
+    usdcMint,
+    keeperKeypair.publicKey,
+  );
+
+  const foundationSubscriptionAuthority = deriveFoundationSubscriptionAuthorityPDA(
+    subAccount.subscriber,
+    usdcMint,
+  );
+  const foundationEventAuthority = deriveFoundationEventAuthorityPDA();
 
   const amountUsdc =
     subAccount.amountUsdc?.toNumber?.() ?? subAccount.amountUsdc;
@@ -300,6 +356,7 @@ async function executePayment(subPubkey, subAccount, config) {
       subscriber: subAccount.subscriber.toBase58(),
       amount: `${amountUsdc / 1_000_000} USDC`,
       cyclesLeft,
+      foundationPlan: plan.foundationPlanPubkey.toBase58(),
     });
     return "dry_run";
   }
@@ -318,14 +375,20 @@ async function executePayment(subPubkey, subAccount, config) {
               plan: subAccount.plan,
               subscriberTokenAccount,
               merchantTokenAccount,
+              usdcMint,
               treasuryTokenAccount,
-              subscriber: subAccount.subscriber,
+              keeperTokenAccount,
+              foundationProgram: FOUNDATION_PROGRAM_ID,
+              foundationPlan: plan.foundationPlanPubkey,
+              foundationSubscription: subAccount.foundationSubscriptionPubkey,
+              foundationSubscriptionAuthority,
+              foundationEventAuthority,
             })
             .preInstructions([
               ComputeBudgetProgram.setComputeUnitPrice({
                 microLamports: 1_000,
               }),
-              ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
             ])
             .rpc({ commitment: "confirmed" }),
       );
@@ -343,7 +406,7 @@ async function executePayment(subPubkey, subAccount, config) {
     } catch (err) {
       const msg = err?.message ?? String(err);
 
-      // Program silently returned Ok() - not due yet or already cancelled
+      // Program explicitly rejected — not due, not active, etc.
       if (msg.includes("SubscriptionNotActive") || msg.includes("skipped")) {
         log("skip", "Program skipped payment (not active or not due)", {
           subscription: subPubkey.toBase58(),
@@ -364,13 +427,14 @@ async function executePayment(subPubkey, subAccount, config) {
       } else {
         log(
           "error",
-          `Failed after ${MAX_RETRIES} attempts - marking as permanent failure for this session`,
+          `Failed after ${MAX_RETRIES} attempts — marking permanent failure for this session`,
           {
             subscription: subPubkey.toBase58(),
             error: msg.slice(0, 200),
           },
         );
         permanentFailures.add(subPubkey.toBase58());
+        stats.errors++;
         return "error";
       }
     }
@@ -395,7 +459,6 @@ async function poll(config) {
   log("info", `Poll #${stats.polls} - ${due.length} payment(s) due`);
 
   for (const { publicKey, account } of due) {
-    // Skip subscriptions that have permanently failed this session
     if (permanentFailures.has(publicKey.toBase58())) {
       log("skip", "Skipping permanently failed subscription", {
         sub: publicKey.toBase58().slice(0, 8) + "...",
@@ -418,7 +481,7 @@ async function poll(config) {
     else if (result === "error") stats.errors++;
     else if (result === "skip") stats.skipped++;
 
-    await sleep(500); // pace RPC calls
+    await sleep(500);
   }
 }
 
@@ -434,29 +497,29 @@ async function main() {
   log("info", "Recuro Keeper starting", {
     keeper: keeperKeypair.publicKey.toBase58(),
     programId: PROGRAM_ID.toBase58(),
+    foundationProgramId: FOUNDATION_PROGRAM_ID.toBase58(),
     rpc: RPC_URL.replace(/[?&]api-key=[^&]+/, "&api-key=***"),
     pollInterval: `${POLL_INTERVAL / 1000}s`,
     dryRun: DRY_RUN,
   });
 
-  // Check SOL balance
   const balance = await connection.getBalance(keeperKeypair.publicKey);
   log("info", `Keeper balance: ${(balance / 1e9).toFixed(4)} SOL`);
 
   if (balance < 10_000_000) {
-    log("warn", "Low SOL - fund keeper before production use");
+    log("warn", "Low SOL — fund keeper before production use");
     if (RPC_URL.includes("devnet")) {
       try {
         await connection.requestAirdrop(keeperKeypair.publicKey, 1_000_000_000);
         await sleep(2_000);
         log("success", "Devnet airdrop received (1 SOL)");
       } catch {
-        log("warn", "Airdrop failed - run: solana airdrop 1");
+        log("warn", "Airdrop failed — run: solana airdrop 1");
       }
     }
   }
 
-  // Load protocol config - required for treasury ATA derivation
+  // Load protocol config — required for treasury ATA derivation
   let config;
   try {
     config = await withLoadingBar("Fetch protocol config", () =>
@@ -467,14 +530,12 @@ async function main() {
       treasury: config.treasury.toBase58(),
     });
   } catch {
-    log("error", "Protocol config not found at PDA - run initialize first");
+    log("error", "Protocol config not found at PDA — run initialize first");
     process.exit(1);
   }
 
-  // Stats every 10 min
   const statsTimer = setInterval(printStats, 10 * 60 * 1000);
 
-  // Graceful shutdown
   process.on("SIGINT", () => {
     clearInterval(statsTimer);
     printStats();
@@ -486,11 +547,9 @@ async function main() {
     process.exit(0);
   });
 
-  // Immediate first poll, then loop
   await poll(config);
   while (true) {
     await waitWithBar(POLL_INTERVAL, "Waiting for next poll");
-    // Refresh config each cycle in case treasury address ever changes
     try {
       config = await withLoadingBar("Refresh protocol config", () =>
         program.account.protocolConfig.fetch(configPDA),
