@@ -17,6 +17,16 @@ export const PROGRAM_ID = new PublicKey(
   "45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr",
 );
 
+/** Solana Foundation Subscriptions & Allowances program — single deployment for all clusters */
+export const FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID = new PublicKey(
+  "De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44",
+);
+
+/** Recuro keeper wallet — registered as pullers[0] and destinations[2] on Foundation plans */
+export const RECURO_KEEPER_PUBKEY = new PublicKey(
+  "HxtrL4M8PK3GUFqeVNhhHNDTV1o6Fsaga7zARfHZZknP",
+);
+
 export const CLOCKWORK_THREAD_PROGRAM_ID = SystemProgram.programId; // unused placeholder
 
 export const SUPPORTED_STABLECOINS = ["USDC", "USDT", "PYUSD"] as const;

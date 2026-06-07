@@ -9,7 +9,16 @@
   "instructions": [
     {
       "name": "archive_plan",
-      "discriminator": [77, 134, 147, 53, 137, 113, 23, 160],
+      "discriminator": [
+        77,
+        134,
+        147,
+        53,
+        137,
+        113,
+        23,
+        160
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -23,7 +32,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -42,11 +56,22 @@
     },
     {
       "name": "cancel_subscription",
-      "discriminator": [60, 139, 189, 242, 191, 208, 143, 18],
+      "discriminator": [
+        60,
+        139,
+        189,
+        242,
+        191,
+        208,
+        143,
+        18
+      ],
       "accounts": [
         {
           "name": "authority",
-          "docs": ["Must be subscriber or merchant - validated in handler"],
+          "docs": [
+            "Must be subscriber or merchant — validated in handler"
+          ],
           "writable": true,
           "signer": true
         },
@@ -58,7 +83,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -79,6 +115,124 @@
           "writable": true
         },
         {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — must match the one stored on our Plan account"
+          ]
+        },
+        {
+          "name": "foundation_subscription",
+          "docs": [
+            "Foundation SubscriptionDelegation PDA — must match the one stored on our Subscription"
+          ],
+          "writable": true
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_subscription",
+      "discriminator": [
+        33,
+        214,
+        169,
+        135,
+        35,
+        127,
+        78,
+        7
+      ],
+      "accounts": [
+        {
+          "name": "subscriber",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "subscription",
+          "docs": [
+            "Closes the Subscription PDA and returns rent to the subscriber.",
+            "Requires terminal status (Cancelled or Expired)."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.plan",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        },
+        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -87,17 +241,30 @@
     },
     {
       "name": "create_plan",
-      "discriminator": [77, 43, 141, 254, 212, 118, 41, 186],
+      "discriminator": [
+        77,
+        43,
+        141,
+        254,
+        212,
+        118,
+        41,
+        186
+      ],
       "accounts": [
         {
           "name": "merchant",
-          "docs": ["Merchant wallet - pays rent, becomes plan authority"],
+          "docs": [
+            "Merchant wallet - pays rent, becomes plan authority"
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "usdc_mint",
-          "docs": ["USDC SPL mint that this plan is denominated in"]
+          "docs": [
+            "USDC SPL mint that this plan is denominated in"
+          ]
         },
         {
           "name": "merchant_token_account",
@@ -113,9 +280,38 @@
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
               {
@@ -126,22 +322,58 @@
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
         },
         {
           "name": "plan",
-          "docs": ["New Plan PDA - created here, owned by this program"],
+          "docs": [
+            "New Plan PDA - created here, owned by this program"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -150,6 +382,27 @@
               {
                 "kind": "arg",
                 "path": "params.plan_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Protocol config — read for treasury address (destinations[1]) and max fee bps"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -169,6 +422,45 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — created here via CPI to Foundation program",
+            "Seeds on Foundation program: [b\"plan\", merchant, plan_id_le_bytes]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "arg",
+                "path": "params.plan_id"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
         }
       ],
       "args": [
@@ -184,23 +476,41 @@
     },
     {
       "name": "create_subscription",
-      "discriminator": [65, 71, 10, 60, 249, 82, 197, 12],
+      "discriminator": [
+        65,
+        71,
+        10,
+        60,
+        249,
+        82,
+        197,
+        12
+      ],
       "accounts": [
         {
           "name": "subscriber",
-          "docs": ["Subscriber wallet - pays rent, signs once, keeps funds"],
+          "docs": [
+            "Subscriber wallet - pays rent, signs once, keeps funds"
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "plan",
-          "docs": ["Plan PDA - verified active and has capacity"],
+          "docs": [
+            "Plan PDA - verified active and has capacity"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -216,6 +526,27 @@
           }
         },
         {
+          "name": "config",
+          "docs": [
+            "Protocol config — retained for ABI/IDL compatibility; fee calc moved to execute_payment"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "subscription",
           "docs": [
             "Subscription PDA - created on first subscribe, reused on re-subscribe after cancel/expiry"
@@ -226,7 +557,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -243,7 +585,7 @@
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA - must exist; funds stay here until billing"
+            "Subscriber's USDC ATA - Foundation init_subscription_authority sets this as delegated"
           ],
           "writable": true,
           "pda": {
@@ -255,9 +597,38 @@
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
               {
@@ -268,16 +639,199 @@
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
         },
         {
           "name": "usdc_mint",
-          "docs": ["USDC mint - must match the plan's registered mint"]
+          "docs": [
+            "USDC mint - must match the plan's registered mint"
+          ]
+        },
+        {
+          "name": "merchant_token_account",
+          "docs": [
+            "Merchant receive ATA (from plan) - passed through to Foundation subscribe"
+          ],
+          "writable": true
+        },
+        {
+          "name": "merchant",
+          "docs": [
+            "Merchant wallet — required by Foundation subscribe CPI"
+          ]
+        },
+        {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — must match the one stored on our Plan account"
+          ]
+        },
+        {
+          "name": "foundation_subscription_authority",
+          "docs": [
+            "Foundation SubscriptionAuthority PDA — one per (subscriber, mint) pair",
+            "Seeds on Foundation program: [b\"SubscriptionAuthority\", subscriber, mint]",
+            "Created (or refreshed) by Foundation init_subscription_authority CPI"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  83,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110,
+                  65,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_subscription",
+          "docs": [
+            "Foundation SubscriptionDelegation PDA — created by Foundation subscribe CPI",
+            "Seeds on Foundation program: [b\"subscription\", foundation_plan, subscriber]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "foundation_plan"
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
         },
         {
           "name": "token_program",
@@ -300,7 +854,16 @@
     },
     {
       "name": "delete_plan",
-      "discriminator": [41, 111, 169, 210, 93, 141, 108, 53],
+      "discriminator": [
+        41,
+        111,
+        169,
+        210,
+        93,
+        141,
+        108,
+        53
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -314,7 +877,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -337,23 +905,42 @@
     },
     {
       "name": "execute_payment",
-      "discriminator": [86, 4, 7, 7, 120, 139, 232, 139],
+      "discriminator": [
+        86,
+        4,
+        7,
+        7,
+        120,
+        139,
+        232,
+        139
+      ],
       "accounts": [
         {
           "name": "keeper",
           "docs": [
-            "Anyone may call this - timing is enforced by the program, not the signer."
+            "Anyone may call this — timing is enforced by the program, not the signer.",
+            "Must be registered as a puller in the Foundation plan (RECURO_KEEPER_PUBKEY)."
           ],
           "signer": true
         },
         {
           "name": "config",
-          "docs": ["Protocol config - reads fee_bps and treasury"],
+          "docs": [
+            "Protocol config — reads fee_bps and treasury"
+          ],
           "pda": {
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -366,7 +953,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -389,22 +987,142 @@
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA - source of ALL funds (plan amount + fee)"
+            "Subscriber's USDC ATA — source of ALL funds (plan amount + fee)"
           ],
           "writable": true
         },
         {
           "name": "merchant_token_account",
-          "docs": ["Merchant's USDC ATA - receives the full plan amount"],
+          "docs": [
+            "Merchant's USDC ATA — receives plan_amount via Foundation transfer_subscription"
+          ],
           "writable": true
+        },
+        {
+          "name": "usdc_mint",
+          "docs": [
+            "USDC mint"
+          ]
         },
         {
           "name": "treasury_token_account",
-          "docs": ["Protocol treasury ATA - receives the fee"],
+          "docs": [
+            "Protocol treasury ATA — receives 40% of fee via Foundation transfer_subscription"
+          ],
           "writable": true
         },
         {
-          "name": "subscriber"
+          "name": "keeper_token_account",
+          "docs": [
+            "Keeper's USDC ATA — receives 60% of fee via Foundation transfer_subscription",
+            "Must be owned by the keeper signer (Foundation validates destinations[2] match)"
+          ],
+          "writable": true
+        },
+        {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — must match the one stored on our Plan account"
+          ]
+        },
+        {
+          "name": "foundation_subscription",
+          "docs": [
+            "Foundation SubscriptionDelegation PDA — must match the one stored on our Subscription"
+          ],
+          "writable": true
+        },
+        {
+          "name": "foundation_subscription_authority",
+          "docs": [
+            "Foundation SubscriptionAuthority PDA — the SPL delegate (u64::MAX approval)",
+            "Seeds on Foundation program: [b\"SubscriptionAuthority\", subscriber, mint]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  83,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110,
+                  65,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "plan.usdc_mint",
+                "account": "Plan"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
         },
         {
           "name": "token_program",
@@ -419,7 +1137,16 @@
     },
     {
       "name": "initialize_config",
-      "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
       "accounts": [
         {
           "name": "admin",
@@ -433,7 +1160,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -456,7 +1190,16 @@
     },
     {
       "name": "pause_plan",
-      "discriminator": [208, 200, 160, 171, 212, 94, 249, 233],
+      "discriminator": [
+        208,
+        200,
+        160,
+        171,
+        212,
+        94,
+        249,
+        233
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -470,7 +1213,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -488,51 +1236,17 @@
       "args": []
     },
     {
-      "name": "pause_subscription",
-      "discriminator": [18, 180, 147, 157, 114, 60, 213, 241],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "subscription",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "subscription.plan",
-                "account": "Subscription"
-              },
-              {
-                "kind": "account",
-                "path": "subscription.subscriber",
-                "account": "Subscription"
-              }
-            ]
-          }
-        },
-        {
-          "name": "plan"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "renew_subscription",
-      "discriminator": [45, 75, 154, 194, 160, 10, 111, 183],
+      "discriminator": [
+        45,
+        75,
+        154,
+        194,
+        160,
+        10,
+        111,
+        183
+      ],
       "accounts": [
         {
           "name": "subscriber",
@@ -546,7 +1260,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -562,6 +1281,24 @@
           }
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
           "name": "subscription",
           "writable": true,
           "pda": {
@@ -569,7 +1306,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -584,49 +1332,6 @@
           }
         },
         {
-          "name": "subscriber_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "account",
-                "path": "subscriber"
-              },
-              {
-                "kind": "const",
-                "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "usdc_mint"
-              }
-            ],
-            "program": {
-              "kind": "const",
-              "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
-              ]
-            }
-          }
-        },
-        {
-          "name": "usdc_mint"
-        },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "associated_token_program",
-          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
-        },
-        {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
         }
@@ -635,7 +1340,16 @@
     },
     {
       "name": "resume_plan",
-      "discriminator": [67, 173, 251, 42, 169, 34, 132, 161],
+      "discriminator": [
+        67,
+        173,
+        251,
+        42,
+        169,
+        34,
+        132,
+        161
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -649,7 +1363,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -667,51 +1386,17 @@
       "args": []
     },
     {
-      "name": "resume_subscription",
-      "discriminator": [122, 92, 183, 0, 139, 188, 185, 71],
-      "accounts": [
-        {
-          "name": "authority",
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "subscription",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "subscription.plan",
-                "account": "Subscription"
-              },
-              {
-                "kind": "account",
-                "path": "subscription.subscriber",
-                "account": "Subscription"
-              }
-            ]
-          }
-        },
-        {
-          "name": "plan"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
       "name": "unarchive_plan",
-      "discriminator": [206, 11, 20, 6, 132, 43, 142, 94],
+      "discriminator": [
+        206,
+        11,
+        20,
+        6,
+        132,
+        43,
+        142,
+        94
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -725,7 +1410,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -744,7 +1434,16 @@
     },
     {
       "name": "update_config",
-      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
       "accounts": [
         {
           "name": "admin",
@@ -757,7 +1456,14 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [99, 111, 110, 102, 105, 103]
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
               }
             ]
           }
@@ -776,7 +1482,16 @@
     },
     {
       "name": "update_plan",
-      "discriminator": [119, 112, 58, 60, 76, 205, 1, 100],
+      "discriminator": [
+        119,
+        112,
+        58,
+        60,
+        76,
+        205,
+        1,
+        100
+      ],
       "accounts": [
         {
           "name": "merchant",
@@ -790,7 +1505,12 @@
             "seeds": [
               {
                 "kind": "const",
-                "value": [112, 108, 97, 110]
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
               },
               {
                 "kind": "account",
@@ -820,61 +1540,187 @@
   "accounts": [
     {
       "name": "Plan",
-      "discriminator": [161, 231, 251, 119, 2, 12, 162, 2]
+      "discriminator": [
+        161,
+        231,
+        251,
+        119,
+        2,
+        12,
+        162,
+        2
+      ]
     },
     {
       "name": "ProtocolConfig",
-      "discriminator": [207, 91, 250, 28, 152, 179, 215, 209]
+      "discriminator": [
+        207,
+        91,
+        250,
+        28,
+        152,
+        179,
+        215,
+        209
+      ]
     },
     {
       "name": "Subscription",
-      "discriminator": [64, 7, 26, 135, 102, 132, 98, 33]
+      "discriminator": [
+        64,
+        7,
+        26,
+        135,
+        102,
+        132,
+        98,
+        33
+      ]
     }
   ],
   "events": [
     {
       "name": "PaymentExecuted",
-      "discriminator": [153, 165, 141, 18, 246, 20, 204, 227]
+      "discriminator": [
+        153,
+        165,
+        141,
+        18,
+        246,
+        20,
+        204,
+        227
+      ]
     },
     {
       "name": "PaymentFailed",
-      "discriminator": [169, 93, 117, 164, 245, 205, 208, 112]
+      "discriminator": [
+        169,
+        93,
+        117,
+        164,
+        245,
+        205,
+        208,
+        112
+      ]
     },
     {
       "name": "PlanArchived",
-      "discriminator": [112, 108, 90, 151, 22, 144, 65, 46]
+      "discriminator": [
+        112,
+        108,
+        90,
+        151,
+        22,
+        144,
+        65,
+        46
+      ]
     },
     {
       "name": "PlanCreated",
-      "discriminator": [215, 11, 135, 121, 208, 119, 149, 149]
+      "discriminator": [
+        215,
+        11,
+        135,
+        121,
+        208,
+        119,
+        149,
+        149
+      ]
     },
     {
       "name": "PlanDeleted",
-      "discriminator": [1, 61, 176, 29, 106, 184, 43, 164]
+      "discriminator": [
+        1,
+        61,
+        176,
+        29,
+        106,
+        184,
+        43,
+        164
+      ]
     },
     {
       "name": "PlanUpdated",
-      "discriminator": [49, 51, 198, 31, 170, 70, 253, 195]
+      "discriminator": [
+        49,
+        51,
+        198,
+        31,
+        170,
+        70,
+        253,
+        195
+      ]
     },
     {
       "name": "SubscriptionCancelled",
-      "discriminator": [158, 216, 233, 205, 138, 62, 176, 239]
+      "discriminator": [
+        158,
+        216,
+        233,
+        205,
+        138,
+        62,
+        176,
+        239
+      ]
     },
     {
       "name": "SubscriptionCreated",
-      "discriminator": [215, 63, 169, 25, 179, 200, 180, 105]
+      "discriminator": [
+        215,
+        63,
+        169,
+        25,
+        179,
+        200,
+        180,
+        105
+      ]
     },
     {
       "name": "SubscriptionExpired",
-      "discriminator": [22, 7, 157, 5, 79, 164, 150, 39]
+      "discriminator": [
+        22,
+        7,
+        157,
+        5,
+        79,
+        164,
+        150,
+        39
+      ]
     },
     {
       "name": "SubscriptionPaused",
-      "discriminator": [102, 112, 218, 248, 248, 234, 67, 152]
+      "discriminator": [
+        102,
+        112,
+        218,
+        248,
+        248,
+        234,
+        67,
+        152
+      ]
     },
     {
       "name": "SubscriptionResumed",
-      "discriminator": [181, 238, 107, 157, 132, 237, 178, 98]
+      "discriminator": [
+        181,
+        238,
+        107,
+        157,
+        132,
+        237,
+        178,
+        98
+      ]
     }
   ],
   "errors": [
@@ -945,73 +1791,83 @@
     },
     {
       "code": 6013,
+      "name": "SubscriptionNotTerminal",
+      "msg": "Subscription must be Cancelled or Expired to be closed"
+    },
+    {
+      "code": 6014,
       "name": "InTrialPeriod",
       "msg": "Subscription is still within its trial period; no payment due yet"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "PaymentNotDue",
       "msg": "Next payment date has not been reached yet"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "UnauthorizedMerchant",
       "msg": "Only the merchant authority may perform this action on the plan"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "UnauthorizedActor",
       "msg": "Only the subscriber or merchant may perform this action"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "InsufficientBalance",
       "msg": "Subscriber token account has insufficient USDC balance"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "InvalidSubscriberTokenAccount",
       "msg": "Subscriber token account does not belong to the expected subscriber"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "InvalidMerchantTokenAccount",
       "msg": "Merchant token account does not belong to the plan's merchant"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "InvalidTreasuryTokenAccount",
       "msg": "Treasury token account does not belong to the protocol treasury"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "InvalidMint",
       "msg": "Token mint does not match the expected USDC mint"
     },
     {
-      "code": 6022,
+      "code": 6023,
       "name": "FeeTooHigh",
       "msg": "Fee basis points exceed the maximum allowed (500 bps = 5%)"
     },
     {
-      "code": 6023,
+      "code": 6024,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow - value exceeds safe bounds"
     },
     {
-      "code": 6024,
+      "code": 6025,
       "name": "ArithmeticUnderflow",
       "msg": "Arithmetic underflow - value would go below zero"
     },
     {
-      "code": 6025,
+      "code": 6026,
       "name": "PlanNotArchived",
       "msg": "Plan must be archived before it can be deleted"
     },
     {
-      "code": 6026,
+      "code": 6027,
       "name": "PlanHasActiveSubscribers",
       "msg": "Plan still has active subscribers and cannot be deleted"
+    },
+    {
+      "code": 6028,
+      "name": "InvalidFoundationProgram",
+      "msg": "The supplied Foundation Subscriptions program ID is incorrect"
     }
   ],
   "types": [
@@ -1241,6 +2097,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "foundation_plan_pubkey",
+            "type": "pubkey"
           }
         ]
       }
@@ -1470,6 +2330,10 @@
           {
             "name": "bump",
             "type": "u8"
+          },
+          {
+            "name": "foundation_subscription_pubkey",
+            "type": "pubkey"
           }
         ]
       }
