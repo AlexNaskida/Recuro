@@ -1,17 +1,17 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{
     instruction::{AccountMeta, Instruction},
-    program::invoke,
+    program::{invoke_signed},
 };
-use anchor_spl::token::{Mint, Token, TokenAccount};
+use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 use std::str::FromStr;
 
 use crate::{
     constants::*,
     errors::SubscriptionError,
     state::{
-        PaymentExecuted, PaymentFailed, Plan, ProtocolConfig, Subscription, SubscriptionExpired,
-        SubscriptionStatus,
+        FeeRouter, PaymentExecuted, PaymentFailed, Plan, ProtocolConfig, Subscription,
+        SubscriptionExpired, SubscriptionStatus,
     },
 };
 
@@ -19,20 +19,21 @@ use crate::{
 // Fee model: "fee on top"
 //   Subscriber pays:  plan_amount + fee
 //   Merchant gets:    plan_amount  (full advertised price, always)
-//   Keeper gets:      60% of fee  (destinations[2] on Foundation plan)
+//   Keeper gets:      60% of fee  (forwarded from FeeRouter ATA)
 //   Treasury gets:    40% of fee  (destinations[1] on Foundation plan)
 //   fee = plan_amount * fee_bps / 10_000
 //
-// Transfer flow (all via Foundation transfer_subscription):
-//   1. Foundation transfer: plan_amount    → merchant ATA     (destinations[0])
-//   2. Foundation transfer: treasury_40    → treasury ATA     (destinations[1])
-//   3. Foundation transfer: keeper_60      → keeper ATA       (destinations[2])
+// Transfer flow:
+//   1. Foundation transfer (invoke_signed, FeeRouter PDA signer): plan_amount → merchant ATA     (destinations[0])
+//   2. Foundation transfer (invoke_signed, FeeRouter PDA signer): treasury_40 → treasury ATA     (destinations[1])
+//   3. Foundation transfer (invoke_signed, FeeRouter PDA signer): keeper_60   → FeeRouter ATA    (destinations[2])
+//   4. SPL transfer       (PDA-signed,    FeeRouter authority):   keeper_60   → calling keeper ATA
 //      Foundation's SubscriptionAuthority PDA is the SPL delegate (u64::MAX).
+//      Foundation plan pullers[0] = FeeRouter PDA — keeper identity is irrelevant to Foundation.
 //      Foundation plan terms.amount was set to plan_amount + 5% max at creation,
 //      so all three pulls always fit within the period limit.
 //
-// Caller: any address in the Foundation plan's pullers[] array (RECURO_KEEPER_PUBKEY).
-// The program validates timing — early calls are silently skipped.
+// Caller: any keeper — timing enforced by this program, puller authorization via FeeRouter PDA.
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[derive(Accounts)]
@@ -86,8 +87,7 @@ pub struct ExecutePayment<'info> {
     )]
     pub treasury_token_account: Box<Account<'info, TokenAccount>>,
 
-    /// Keeper's USDC ATA — receives 60% of fee via Foundation transfer_subscription
-    /// Must be owned by the keeper signer (Foundation validates destinations[2] match)
+    /// Keeper's USDC ATA — receives 60% of fee forwarded from FeeRouter ATA
     #[account(
         mut,
         constraint = keeper_token_account.owner == keeper.key()
@@ -96,6 +96,20 @@ pub struct ExecutePayment<'info> {
             @ SubscriptionError::InvalidMint,
     )]
     pub keeper_token_account: Box<Account<'info, TokenAccount>>,
+
+    /// FeeRouter PDA — pullers[0] on Foundation plan; signs Foundation calls and forwards keeper reward
+    #[account(seeds = [b"fee_router"], bump = fee_router.bump)]
+    pub fee_router: Box<Account<'info, FeeRouter>>,
+
+    /// FeeRouter USDC ATA — destinations[2] on Foundation plan; receives 60% of fee, then forwarded to keeper
+    #[account(
+        mut,
+        constraint = fee_router_token_account.owner == fee_router.key()
+            @ SubscriptionError::InvalidMint,
+        constraint = fee_router_token_account.mint == plan.usdc_mint
+            @ SubscriptionError::InvalidMint,
+    )]
+    pub fee_router_token_account: Box<Account<'info, TokenAccount>>,
 
     // ── Foundation Subscriptions accounts ────────────────────────────────────
     /// Foundation Subscriptions program
@@ -232,10 +246,10 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
     let foundation_pid = Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID)
         .map_err(|_| error!(SubscriptionError::InvalidFoundationProgram))?;
 
+    let fee_router_seeds: &[&[u8]] = &[b"fee_router", &[ctx.accounts.fee_router.bump]];
+
     // ── Transfer 1: Foundation transfer_subscription — subscriber → merchant ──
-    // Pulls plan_amount from subscriber ATA to merchant ATA.
-    // Foundation validates: puller authorization (keeper in pullers[0]),
-    //   period limits, and destination whitelist (merchant in destinations[0]).
+    // FeeRouter PDA signs as pullers[0]; Foundation validates destination against destinations[0].
     {
         // TransferData layout (repr(C, packed), 72 bytes):
         //   amount:    u64  (8) — plan_amount
@@ -258,7 +272,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 ),
                 AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
                 AccountMeta::new(ctx.accounts.merchant_token_account.key(), false),
-                AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                AccountMeta::new_readonly(ctx.accounts.fee_router.key(), true),
                 AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
                 AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
@@ -267,7 +281,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             data: transfer_data,
         };
 
-        invoke(
+        invoke_signed(
             &merchant_ix,
             &[
                 ctx.accounts.foundation_subscription.to_account_info(),
@@ -277,12 +291,13 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                     .to_account_info(),
                 ctx.accounts.subscriber_token_account.to_account_info(),
                 ctx.accounts.merchant_token_account.to_account_info(),
-                ctx.accounts.keeper.to_account_info(),
+                ctx.accounts.fee_router.to_account_info(),
                 ctx.accounts.usdc_mint.to_account_info(),
                 ctx.accounts.token_program.to_account_info(),
                 ctx.accounts.foundation_event_authority.to_account_info(),
                 ctx.accounts.foundation_program.to_account_info(),
             ],
+            &[fee_router_seeds],
         )?;
     }
 
@@ -313,7 +328,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                     ),
                     AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
                     AccountMeta::new(ctx.accounts.treasury_token_account.key(), false),
-                    AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                    AccountMeta::new_readonly(ctx.accounts.fee_router.key(), true),
                     AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
@@ -321,7 +336,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 ],
                 data: treasury_data,
             };
-            invoke(
+            invoke_signed(
                 &treasury_ix,
                 &[
                     ctx.accounts.foundation_subscription.to_account_info(),
@@ -331,16 +346,18 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                         .to_account_info(),
                     ctx.accounts.subscriber_token_account.to_account_info(),
                     ctx.accounts.treasury_token_account.to_account_info(),
-                    ctx.accounts.keeper.to_account_info(),
+                    ctx.accounts.fee_router.to_account_info(),
                     ctx.accounts.usdc_mint.to_account_info(),
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.foundation_event_authority.to_account_info(),
                     ctx.accounts.foundation_program.to_account_info(),
                 ],
+                &[fee_router_seeds],
             )?;
         }
 
-        // Transfer 3: fee → keeper ATA (destinations[2])
+        // Transfer 3: subscriber → FeeRouter ATA (destinations[2]) via Foundation
+        // Transfer 4: FeeRouter ATA → calling keeper ATA (PDA-signed SPL transfer)
         if keeper_reward > 0 {
             let mut keeper_data: Vec<u8> = Vec::with_capacity(73);
             keeper_data.push(10u8);
@@ -348,7 +365,7 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
             keeper_data.extend_from_slice(subscription.subscriber.as_ref());
             keeper_data.extend_from_slice(plan.usdc_mint.as_ref());
 
-            let keeper_ix = Instruction {
+            let fee_router_ix = Instruction {
                 program_id: foundation_pid,
                 accounts: vec![
                     AccountMeta::new(ctx.accounts.foundation_subscription.key(), false),
@@ -358,8 +375,8 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                         false,
                     ),
                     AccountMeta::new(ctx.accounts.subscriber_token_account.key(), false),
-                    AccountMeta::new(ctx.accounts.keeper_token_account.key(), false),
-                    AccountMeta::new_readonly(ctx.accounts.keeper.key(), true),
+                    AccountMeta::new(ctx.accounts.fee_router_token_account.key(), false),
+                    AccountMeta::new_readonly(ctx.accounts.fee_router.key(), true),
                     AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
                     AccountMeta::new_readonly(ctx.accounts.foundation_event_authority.key(), false),
@@ -367,8 +384,8 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                 ],
                 data: keeper_data,
             };
-            invoke(
-                &keeper_ix,
+            invoke_signed(
+                &fee_router_ix,
                 &[
                     ctx.accounts.foundation_subscription.to_account_info(),
                     ctx.accounts.foundation_plan.to_account_info(),
@@ -376,14 +393,28 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
                         .foundation_subscription_authority
                         .to_account_info(),
                     ctx.accounts.subscriber_token_account.to_account_info(),
-                    ctx.accounts.keeper_token_account.to_account_info(),
-                    ctx.accounts.keeper.to_account_info(),
+                    ctx.accounts.fee_router_token_account.to_account_info(),
+                    ctx.accounts.fee_router.to_account_info(),
                     ctx.accounts.usdc_mint.to_account_info(),
                     ctx.accounts.token_program.to_account_info(),
                     ctx.accounts.foundation_event_authority.to_account_info(),
                     ctx.accounts.foundation_program.to_account_info(),
                 ],
+                &[fee_router_seeds],
             )?;
+
+            // Forward keeper reward from FeeRouter ATA to the calling keeper's ATA
+            let forward_signer_seeds: &[&[&[u8]]] = &[fee_router_seeds];
+            let forward_ctx = CpiContext::new_with_signer(
+                ctx.accounts.token_program.to_account_info(),
+                Transfer {
+                    from: ctx.accounts.fee_router_token_account.to_account_info(),
+                    to: ctx.accounts.keeper_token_account.to_account_info(),
+                    authority: ctx.accounts.fee_router.to_account_info(),
+                },
+                forward_signer_seeds,
+            );
+            transfer(forward_ctx, keeper_reward)?;
         }
     }
 
