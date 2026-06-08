@@ -12,7 +12,7 @@ use std::str::FromStr;
 use crate::{
     constants::*,
     errors::SubscriptionError,
-    state::{Plan, PlanCreated, PlanStatus, ProtocolConfig},
+    state::{FeeRouter, Plan, PlanCreated, PlanStatus, ProtocolConfig},
 };
 
 // ────────────────────────────────────────────────────────────
@@ -88,6 +88,20 @@ pub struct CreatePlan<'info> {
         seeds::program = foundation_program.key(),
     )]
     pub foundation_plan: UncheckedAccount<'info>,
+
+    /// FeeRouter PDA — must already be initialized
+    #[account(seeds = [b"fee_router"], bump = fee_router.bump)]
+    pub fee_router: Account<'info, FeeRouter>,
+
+    /// FeeRouter USDC ATA — becomes destinations[2] on the Foundation plan so the
+    /// FeeRouter PDA receives 60% of the protocol fee and can forward it to any keeper
+    #[account(
+        constraint = fee_router_token_account.owner == fee_router.key()
+            @ SubscriptionError::InvalidTreasuryTokenAccount,
+        constraint = fee_router_token_account.mint == usdc_mint.key()
+            @ SubscriptionError::InvalidMint,
+    )]
+    pub fee_router_token_account: Account<'info, TokenAccount>,
 }
 
 // ────────────────────────────────────────────────────────────
@@ -156,14 +170,12 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     //   destinations   [Address;4] (128) — whitelisted receiver wallet owners
     //     [0] merchant_receive_address
     //     [1] protocol treasury     ← 40% of fee
-    //     [2] RECURO_KEEPER_PUBKEY  ← 60% of fee (keeper reward)
+    //     [2] FeeRouter ATA owner   ← 60% of fee pulled to FeeRouter, then forwarded to caller
     //     [3] zero
     //   pullers        [Address;4] (128) — addresses authorized to pull
     //   metadata_uri   [u8;128]         — zero-padded UTF-8 URI
     {
         let foundation_pid = Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID)
-            .map_err(|_| error!(SubscriptionError::InvalidFoundationProgram))?;
-        let keeper_key = Pubkey::from_str(RECURO_KEEPER_PUBKEY)
             .map_err(|_| error!(SubscriptionError::InvalidFoundationProgram))?;
 
         // interval_seconds → period_hours; Foundation minimum is 1 hour
@@ -189,14 +201,16 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         ix_data.extend_from_slice(&period_hours.to_le_bytes());
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
-                                                        // destinations: [merchant, treasury, keeper_wallet, zero]
-                                                        // Foundation validates receiver_ata.owner against this whitelist on each pull.
+        // destinations: [merchant, treasury, FeeRouter PDA, zero]
+        // FeeRouter PDA is the owner of fee_router_token_account; Foundation validates
+        // receiver_ata.owner against this list on each transfer_subscription call.
         ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0] merchant
-        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40% fee)
-        ix_data.extend_from_slice(keeper_key.as_ref()); // [2] keeper wallet (60% fee)
+        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40%)
+        ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // [2] FeeRouter PDA
         ix_data.extend_from_slice(&[0u8; 32]); // [3] zero
-                                               // pullers[0] = Recuro keeper; [1..3] = zero
-        ix_data.extend_from_slice(keeper_key.as_ref());
+        // pullers[0] = FeeRouter PDA — Recuro signs Foundation calls as FeeRouter via
+        // invoke_signed, making execute_payment callable by any keeper (permissionless).
+        ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // pullers[0]
         ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]
         ix_data.extend_from_slice(&[0u8; 128]); // metadata_uri
 
