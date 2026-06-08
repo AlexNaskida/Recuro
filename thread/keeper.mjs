@@ -26,7 +26,7 @@ import { readFileSync, existsSync } from "fs";
 import { homedir } from "os";
 import { resolve } from "path";
 
-const { getAssociatedTokenAddress } = pkg;
+const { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } = pkg;
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -106,6 +106,21 @@ const [configPDA] = PublicKey.findProgramAddressSync(
   [Buffer.from("config")],
   PROGRAM_ID,
 );
+
+// ── FeeRouter PDA helpers ─────────────────────────────────────────────────────
+
+const [feeRouterPDA] = PublicKey.findProgramAddressSync(
+  [Buffer.from("fee_router")],
+  PROGRAM_ID,
+);
+
+// Derived once — FeeRouter ATA holds keeper fees in transit from Foundation
+function deriveFeeRouterATA(usdcMint) {
+  return PublicKey.findProgramAddressSync(
+    [feeRouterPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), usdcMint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
+}
 
 // ── Foundation PDA helpers ────────────────────────────────────────────────────
 
@@ -294,7 +309,9 @@ async function fetchDueSubscriptions(now) {
 //   merchantTokenAccount            → plan.merchantTokenAccount
 //   usdcMint                        → plan.usdcMint
 //   treasuryTokenAccount            → ATA(config.treasury, USDC_MINT)
-//   keeperTokenAccount              → ATA(keeper, USDC_MINT)
+//   keeperTokenAccount              → ATA(keeper, USDC_MINT) — receives forwarded keeper reward
+//   feeRouter                       → PDA [b"fee_router"] — signs Foundation calls, pullers[0]
+//   feeRouterTokenAccount           → ATA(feeRouter, usdcMint) — destinations[2], transit account
 //   foundationProgram               → FOUNDATION_PROGRAM_ID (constant)
 //   foundationPlan                  → plan.foundationPlanPubkey (stored on Plan PDA)
 //   foundationSubscription          → subscription.foundationSubscriptionPubkey
@@ -345,6 +362,7 @@ async function executePayment(subPubkey, subAccount, config) {
     usdcMint,
   );
   const foundationEventAuthority = deriveFoundationEventAuthorityPDA();
+  const feeRouterTokenAccount = deriveFeeRouterATA(usdcMint);
 
   const amountUsdc =
     subAccount.amountUsdc?.toNumber?.() ?? subAccount.amountUsdc;
@@ -378,6 +396,8 @@ async function executePayment(subPubkey, subAccount, config) {
               usdcMint,
               treasuryTokenAccount,
               keeperTokenAccount,
+              feeRouter: feeRouterPDA,
+              feeRouterTokenAccount,
               foundationProgram: FOUNDATION_PROGRAM_ID,
               foundationPlan: plan.foundationPlanPubkey,
               foundationSubscription: subAccount.foundationSubscriptionPubkey,
