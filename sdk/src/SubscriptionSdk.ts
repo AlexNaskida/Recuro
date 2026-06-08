@@ -29,6 +29,8 @@ import {
   STABLECOIN_MINTS,
 } from "./constants";
 import {
+  getFeeRouterATA,
+  getFeeRouterPDA,
   getFoundationEventAuthorityPDA,
   getFoundationPlanPDA,
   getFoundationSubscriptionAuthorityPDA,
@@ -550,6 +552,78 @@ export class SubscriptionSdk {
         foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
         foundationPlan: foundationPlanPDA,
         foundationSubscription: foundationSubscriptionPDA,
+        foundationEventAuthority: foundationEventAuthorityPDA,
+      })
+      .rpc({ commitment: this.provider.opts.commitment });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // BILLING (keeper)
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Execute a due payment for a subscription. (Keeper only)
+   *
+   * Triggers the three-leg Foundation transfer + SPL forward flow:
+   *   1. Foundation: subscriber → merchant (plan amount)
+   *   2. Foundation: subscriber → treasury (40% of fee)
+   *   3. Foundation: subscriber → FeeRouter ATA (60% of fee)
+   *   4. SPL: FeeRouter ATA → calling keeper (forward)
+   *
+   * The program silently no-ops if the subscription is in trial or not yet due.
+   * Any wallet can call this — keeper identity is irrelevant to authorization.
+   *
+   * @param subscriptionPubkey - Subscription to bill
+   * @returns Transaction signature
+   * @throws "Subscription not found" if address is invalid
+   * @throws "Plan not found" if subscription references a missing plan
+   */
+  async executePayment(
+    subscriptionPubkey: PublicKey,
+  ): Promise<TransactionSignature> {
+    const keeper = this.provider.wallet.publicKey;
+    const sub = await this._requireSubscription(subscriptionPubkey);
+    const plan = await this.fetchPlan(sub.plan);
+    if (!plan) throw new Error(`Plan not found: ${sub.plan.toBase58()}`);
+
+    const [configPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("config")],
+      this.programId,
+    );
+    const configRaw = await this.program.account.protocolConfig.fetch(configPDA);
+
+    const usdcMint = this.usdcMint;
+    const keeperTokenAccount = deriveAssociatedTokenAddress(usdcMint, keeper);
+    const treasuryTokenAccount = deriveAssociatedTokenAddress(
+      usdcMint,
+      configRaw.treasury,
+    );
+
+    const [feeRouterPDA] = getFeeRouterPDA(this.programId);
+    const feeRouterTokenAccount = getFeeRouterATA(feeRouterPDA, usdcMint);
+
+    const [foundationSubscriptionAuthorityPDA] =
+      getFoundationSubscriptionAuthorityPDA(sub.subscriber, usdcMint);
+    const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
+
+    return this.program.methods
+      .executePayment()
+      .accounts({
+        keeper,
+        config: configPDA,
+        subscription: subscriptionPubkey,
+        plan: sub.plan,
+        subscriberTokenAccount: sub.subscriberTokenAccount,
+        merchantTokenAccount: plan.merchantTokenAccount,
+        usdcMint,
+        treasuryTokenAccount,
+        keeperTokenAccount,
+        feeRouter: feeRouterPDA,
+        feeRouterTokenAccount,
+        foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+        foundationPlan: plan.foundationPlanPubkey!,
+        foundationSubscription: sub.foundationSubscriptionPubkey!,
+        foundationSubscriptionAuthority: foundationSubscriptionAuthorityPDA,
         foundationEventAuthority: foundationEventAuthorityPDA,
       })
       .rpc({ commitment: this.provider.opts.commitment });
