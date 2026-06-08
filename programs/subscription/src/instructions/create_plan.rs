@@ -201,15 +201,15 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
         ix_data.extend_from_slice(&period_hours.to_le_bytes());
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
         ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
-        // destinations: [merchant, treasury, FeeRouter PDA, zero]
-        // FeeRouter PDA is the owner of fee_router_token_account; Foundation validates
-        // receiver_ata.owner against this list on each transfer_subscription call.
+                                                        // destinations: [merchant, treasury, FeeRouter PDA, zero]
+                                                        // FeeRouter PDA is the owner of fee_router_token_account; Foundation validates
+                                                        // receiver_ata.owner against this list on each transfer_subscription call.
         ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0] merchant
         ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40%)
         ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // [2] FeeRouter PDA
         ix_data.extend_from_slice(&[0u8; 32]); // [3] zero
-        // pullers[0] = FeeRouter PDA — Recuro signs Foundation calls as FeeRouter via
-        // invoke_signed, making execute_payment callable by any keeper (permissionless).
+                                               // pullers[0] = FeeRouter PDA — Recuro signs Foundation calls as FeeRouter via
+                                               // invoke_signed, making execute_payment callable by any keeper (permissionless).
         ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // pullers[0]
         ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]
         ix_data.extend_from_slice(&[0u8; 128]); // metadata_uri

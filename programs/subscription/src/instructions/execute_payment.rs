@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::solana_program::{
     instruction::{AccountMeta, Instruction},
-    program::{invoke_signed},
+    program::invoke_signed,
 };
 use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 use std::str::FromStr;

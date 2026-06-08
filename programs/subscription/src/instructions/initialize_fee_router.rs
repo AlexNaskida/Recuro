@@ -4,7 +4,10 @@ use anchor_spl::{
     token::{Mint, Token, TokenAccount},
 };
 
-use crate::{errors::SubscriptionError, state::{FeeRouter, ProtocolConfig}};
+use crate::{
+    errors::SubscriptionError,
+    state::{FeeRouter, ProtocolConfig},
+};
 
 #[derive(Accounts)]
 pub struct InitializeFeeRouter<'info> {
