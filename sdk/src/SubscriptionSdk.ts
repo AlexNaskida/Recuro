@@ -580,6 +580,7 @@ export class SubscriptionSdk {
    */
   async executePayment(
     subscriptionPubkey: PublicKey,
+    keeperTokenAccount: PublicKey,
   ): Promise<TransactionSignature> {
     const keeper = this.provider.wallet.publicKey;
     const sub = await this._requireSubscription(subscriptionPubkey);
@@ -593,7 +594,6 @@ export class SubscriptionSdk {
     const configRaw = await this.program.account.protocolConfig.fetch(configPDA);
 
     const usdcMint = this.usdcMint;
-    const keeperTokenAccount = deriveAssociatedTokenAddress(usdcMint, keeper);
     const treasuryTokenAccount = deriveAssociatedTokenAddress(
       usdcMint,
       configRaw.treasury,
