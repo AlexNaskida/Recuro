@@ -39,7 +39,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct ExecutePayment<'info> {
     /// Anyone may call this — timing is enforced by the program, not the signer.
-    /// Must be registered as a puller in the Foundation plan (RECURO_KEEPER_PUBKEY).
+    /// Any valid USDC token account — caller receives the keeper fee via FeeRouter.
     pub keeper: Signer<'info>,
 
     /// Protocol config — reads fee_bps and treasury

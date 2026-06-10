@@ -33,7 +33,3 @@ pub const SEED_THREAD: &[u8] = b"payment";
 /// Solana Foundation Subscriptions & Allowances program — single deployment across all clusters
 pub const FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID: &str =
     "De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44";
-
-/// Recuro keeper — must be registered in Foundation plan's pullers[] array at plan creation
-// TODO: update before mainnet deployment if keeper key rotates
-pub const RECURO_KEEPER_PUBKEY: &str = "HxtrL4M8PK3GUFqeVNhhHNDTV1o6Fsaga7zARfHZZknP";

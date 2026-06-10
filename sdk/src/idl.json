@@ -461,6 +461,38 @@
               "path": "foundation_program"
             }
           }
+        },
+        {
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — must already be initialized"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — becomes destinations[2] on the Foundation plan so the",
+            "FeeRouter PDA receives 60% of the protocol fee and can forward it to any keeper"
+          ]
         }
       ],
       "args": [
@@ -920,7 +952,7 @@
           "name": "keeper",
           "docs": [
             "Anyone may call this — timing is enforced by the program, not the signer.",
-            "Must be registered as a puller in the Foundation plan (RECURO_KEEPER_PUBKEY)."
+            "Any valid USDC token account — caller receives the keeper fee via FeeRouter."
           ],
           "signer": true
         },
@@ -1014,8 +1046,39 @@
         {
           "name": "keeper_token_account",
           "docs": [
-            "Keeper's USDC ATA — receives 60% of fee via Foundation transfer_subscription",
-            "Must be owned by the keeper signer (Foundation validates destinations[2] match)"
+            "Keeper's USDC ATA — receives 60% of fee forwarded from FeeRouter ATA"
+          ],
+          "writable": true
+        },
+        {
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — pullers[0] on Foundation plan; signs Foundation calls and forwards keeper reward"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — destinations[2] on Foundation plan; receives 60% of fee, then forwarded to keeper"
           ],
           "writable": true
         },
@@ -1187,6 +1250,188 @@
           }
         }
       ]
+    },
+    {
+      "name": "initialize_fee_router",
+      "discriminator": [
+        198,
+        11,
+        103,
+        84,
+        180,
+        59,
+        91,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "docs": [
+            "Admin wallet — must equal config.admin"
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Protocol config — read for admin verification"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — created here"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — created if it doesn't already exist"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "account",
+                "path": "fee_router"
+              },
+              {
+                "kind": "const",
+                "value": [
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
+            ],
+            "program": {
+              "kind": "const",
+              "value": [
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
+              ]
+            }
+          }
+        },
+        {
+          "name": "usdc_mint",
+          "docs": [
+            "USDC mint"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
     },
     {
       "name": "pause_plan",
@@ -1538,6 +1783,19 @@
     }
   ],
   "accounts": [
+    {
+      "name": "FeeRouter",
+      "discriminator": [
+        180,
+        161,
+        131,
+        96,
+        121,
+        91,
+        71,
+        183
+      ]
+    },
     {
       "name": "Plan",
       "discriminator": [
@@ -1909,6 +2167,26 @@
             "type": {
               "option": "pubkey"
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeRouter",
+      "docs": [
+        "Protocol-owned PDA that acts as the intermediate recipient for keeper fees.",
+        "The FeeRouter ATA receives 60% of the protocol fee from Foundation's",
+        "transfer_subscription, then immediately forwards it to whichever keeper",
+        "called execute_payment — making the keeper network fully permissionless.",
+        "",
+        "PDA seeds: [\"fee_router\"]"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
           }
         ]
       }
