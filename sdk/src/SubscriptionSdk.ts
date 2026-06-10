@@ -542,6 +542,25 @@ export class SubscriptionSdk {
     );
     const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
 
+    // If Foundation is already cancelled and the caller is the subscriber, the
+    // on-chain Foundation CPI (disc 12) may reject the double-cancel. Warn so
+    // integrators can handle this — the on-chain instruction still skips the
+    // Foundation CPI for merchant signers, so merchant-path cancels are always safe.
+    if (sub.foundationSubscriptionPubkey) {
+      const foundationStatus = await this._getFoundationSubscriptionStatus(
+        sub.foundationSubscriptionPubkey,
+      );
+      if (
+        foundationStatus.cancelled &&
+        this.provider.wallet.publicKey.equals(sub.subscriber)
+      ) {
+        console.warn(
+          `[SubscriptionSdk] cancelSubscription: Foundation already cancelled for ${subscriptionPubkey.toBase58()}. ` +
+            `Use reconcileSubscriptionState() to inspect. Proceeding — on-chain handler will attempt Foundation CPI.`,
+        );
+      }
+    }
+
     return this.program.methods
       .cancelSubscription()
       .accounts({
@@ -605,6 +624,20 @@ export class SubscriptionSdk {
     const [foundationSubscriptionAuthorityPDA] =
       getFoundationSubscriptionAuthorityPDA(sub.subscriber, usdcMint);
     const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
+
+    // Guard: if Foundation is already cancelled, the transfer_subscription CPI will
+    // fail on-chain. Abort here with a clear error to avoid wasting a transaction.
+    if (sub.foundationSubscriptionPubkey) {
+      const foundationStatus = await this._getFoundationSubscriptionStatus(
+        sub.foundationSubscriptionPubkey,
+      );
+      if (foundationStatus.cancelled) {
+        throw new Error(
+          `[SubscriptionSdk] executePayment: Foundation subscription is already cancelled for ${subscriptionPubkey.toBase58()}. ` +
+            `Use reconcileSubscriptionState() to inspect drift between Recuro and Foundation state.`,
+        );
+      }
+    }
 
     return this.program.methods
       .executePayment()
@@ -970,8 +1003,75 @@ export class SubscriptionSdk {
   }
 
   // ──────────────────────────────────────────────────────────
+  // STATE RECONCILIATION
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Check whether a Recuro subscription and its Foundation SubscriptionDelegation
+   * are in sync with each other.
+   *
+   * Use this to detect drift caused by merchant-side cancellations (which update
+   * Recuro state but cannot fire the Foundation CPI) or any other scenario where
+   * the two systems diverge.
+   *
+   * @param subscriptionPubkey - Recuro Subscription PDA to inspect
+   * @returns Recuro status, Foundation status, and whether they agree
+   */
+  async reconcileSubscriptionState(subscriptionPubkey: PublicKey): Promise<{
+    recuroStatus: SubscriptionAccount["status"];
+    foundationCancelled: boolean;
+    foundationExpiresAt: number | null;
+    inSync: boolean;
+  }> {
+    const sub = await this._requireSubscription(subscriptionPubkey);
+    const foundationStatus = sub.foundationSubscriptionPubkey
+      ? await this._getFoundationSubscriptionStatus(sub.foundationSubscriptionPubkey)
+      : { cancelled: false, expiresAt: null };
+
+    const recuroTerminal =
+      sub.status === "Cancelled" || sub.status === "Expired";
+    const inSync = recuroTerminal === foundationStatus.cancelled;
+
+    return {
+      recuroStatus: sub.status,
+      foundationCancelled: foundationStatus.cancelled,
+      foundationExpiresAt: foundationStatus.expiresAt,
+      inSync,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // Private helpers
   // ──────────────────────────────────────────────────────────
+
+  /**
+   * Fetch and parse the Foundation SubscriptionDelegation account to determine
+   * whether Foundation has already cancelled this subscription.
+   *
+   * Foundation SubscriptionDelegation layout (repr(C, packed)):
+   *   [0]     discriminator (u8)
+   *   [1..33] plan (Address)
+   *   [33..65] subscriber (Address)
+   *   [65..73] expires_at_ts (i64, little-endian)
+   *
+   * When expires_at_ts > 0 and < now the Foundation delegation has expired/cancelled.
+   * Account missing (null) means it was closed — also treated as cancelled.
+   */
+  private async _getFoundationSubscriptionStatus(
+    foundationSubscriptionPubkey: PublicKey,
+  ): Promise<{ cancelled: boolean; expiresAt: number | null }> {
+    const info = await this.provider.connection.getAccountInfo(
+      foundationSubscriptionPubkey,
+    );
+    if (!info) return { cancelled: true, expiresAt: null };
+    if (info.data.length < 73) return { cancelled: false, expiresAt: null };
+
+    const expiresAt = Number(info.data.readBigInt64LE(65));
+    if (expiresAt === 0) return { cancelled: false, expiresAt: null };
+
+    const now = Math.floor(Date.now() / 1000);
+    return { cancelled: expiresAt < now, expiresAt };
+  }
 
   private validateCreatePlanParams(p: CreatePlanParams): void {
     if (!p.name || p.name.trim().length === 0) {
