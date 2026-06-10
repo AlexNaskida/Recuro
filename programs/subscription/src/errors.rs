@@ -74,4 +74,6 @@ pub enum SubscriptionError {
     // ── Foundation integration ─────────────────────────────────────────────────
     #[msg("The supplied Foundation Subscriptions program ID is incorrect")]
     InvalidFoundationProgram,
+    #[msg("FeeRouter PDA has already been initialized; call initialize_fee_router only once")]
+    FeeRouterAlreadyInitialized,
 }

@@ -50,6 +50,13 @@ pub struct InitializeFeeRouter<'info> {
 }
 
 pub fn handler(ctx: Context<InitializeFeeRouter>) -> Result<()> {
+    // Anchor's `init` constraint rejects this transaction before the handler runs
+    // if the fee_router PDA already exists. This guard is defense-in-depth and
+    // surfaces a readable error code on any non-Anchor path (e.g. raw CPI callers).
+    require!(
+        ctx.accounts.fee_router.bump == 0,
+        SubscriptionError::FeeRouterAlreadyInitialized
+    );
     ctx.accounts.fee_router.bump = ctx.bumps.fee_router;
     msg!(
         "[initialize_fee_router] fee_router={} ata={}",
