@@ -2126,6 +2126,11 @@
       "code": 6028,
       "name": "InvalidFoundationProgram",
       "msg": "The supplied Foundation Subscriptions program ID is incorrect"
+    },
+    {
+      "code": 6029,
+      "name": "FeeRouterAlreadyInitialized",
+      "msg": "FeeRouter PDA has already been initialized; call initialize_fee_router only once"
     }
   ],
   "types": [
