@@ -33,3 +33,8 @@ pub const SEED_THREAD: &[u8] = b"payment";
 /// Solana Foundation Subscriptions & Allowances program — single deployment across all clusters
 pub const FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID: &str =
     "De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44";
+
+/// Minimum protocol fee in USDC micro-units (0.01 USDC). Ensures keepers earn a
+/// meaningful reward even when fee_bps is set very low. Always capped at 10% of
+/// plan_amount to prevent disproportionate fees on micro-payment plans.
+pub const MIN_FEE_USDC: u64 = 10_000;

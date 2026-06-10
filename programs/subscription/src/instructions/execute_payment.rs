@@ -193,9 +193,12 @@ pub fn handler(ctx: Context<ExecutePayment>) -> Result<()> {
 
     // ── Calculate amounts ──────────────────────────────────────────────────────
     let plan_amount: u64 = subscription.amount_usdc;
-    let fee: u64 = (plan_amount as u128)
+    let raw_fee: u64 = (plan_amount as u128)
         .saturating_mul(config.fee_bps as u128)
         .saturating_div(10_000) as u64;
+    // Apply floor so keepers always earn at least MIN_FEE_USDC, then cap at 10%
+    // of plan_amount to protect subscribers on micro-payment plans.
+    let fee: u64 = raw_fee.max(MIN_FEE_USDC).min(plan_amount / 10);
     let total_charge: u64 = plan_amount
         .checked_add(fee)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
