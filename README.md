@@ -1,333 +1,347 @@
-# Solana Subscription Protocol
+# Recuro Protocol — v2.0
 
-> **Non-custodial, on-chain recurring USDC subscriptions powered by Solana + open keepers.**
+**On-chain recurring payments for Solana.**
 
-Funds stay in the subscriber's wallet until payment time. Billing is automated by permissionless keepers that call `execute_payment()` on-chain.
+Recuro is an Anchor program that lets merchants define subscription plans and
+lets subscribers pay automatically — no frontend required after the initial
+sign-up. Payments are triggered by an off-chain keeper and all fund movements
+happen through the [Solana Foundation Subscriptions &
+Allowances](https://github.com/solana-labs/solana-program-library) program,
+which acts as the SPL delegate layer.
 
----
+**Program ID (devnet & mainnet-beta):**
+`45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr`
 
-## Architecture overview
-
-![Recuro architecture — on-chain and off-chain components](./docs/images/architecture.png)
-
-### Detailed flow
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                      Solana Blockchain                       │
-│                                                              │
-│  ┌─────────────┐       ┌──────────────────────────────────┐  │
-│  │  Plan PDA   │◄──────│     Subscription Program         │  │
-│  │  (merchant) │       │       (Anchor / Rust)            │  │
-│  └─────────────┘       └──────────────┬───────────────────┘  │
-│                                        │                     │
-│  ┌──────────────────────┐              │ CPI                 │
-│  │  Subscription PDA    │◄─────────────┘                     │
-│  │  (per subscriber)    │                                    │
-│  └──────────┬───────────┘                                    │
-│             │                                                │
-│             │ SPL delegate approval (exact amount only)      │
-│             ▼                                                │
-│  ┌──────────────────────┐                                    │
-│  │        Guard         │  checks:                           │
-│  │   (per subscription) │  ✓ correct merchant?               │
-│  │                      │  ✓ exact amount?                   │
-│  │                      │  ✓ interval respected?             │
-│  │                      │  ✓ status == active?               │
-│  └──────────┬───────────┘                                    │
-│             │  only releases funds if all checks pass        │
-│             ▼                                                │
-│  ┌──────────────────────┐   ┌──────────────────────────┐     │
-│  │  Subscriber USDC ATA │──►│  Merchant USDC ATA       │     │
-│  │  (funds stay here)   │   │  (receives payment)      │     │
-│  └──────────────────────┘   └──────────────────────────┘     │
-│                                                              │
-│  ┌──────────────────────┐                                    │
-│  │  On-Chain Thread     │  fires execute_payment() every     │
-│  │                      │  billing interval automatically    │
-│  └──────────────────────┘                                    │
-└──────────────────────────────────────────────────────────────┘
-```
-
-### Key design decisions
-
-| Decision             | Reasoning                                                                                                                                                                |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Non-custodial**    | Subscriber's USDC stays in their wallet. SPL delegate approval is granted to a per-subscription Guard PDA, not to a keeper wallet.                                       |
-| **Price integrity**  | The `amount_usdc` field on the Subscription PDA is **copied from the Plan PDA** at creation time by the program. No user-supplied amount is ever accepted for transfers. |
-| **Guarded transfer** | `execute_payment()` calls Guard via CPI. Guard enforces caller, destination ATA, interval, and transfer amount before moving tokens.                                     |
-| **Fully automated**  | Permissionless keepers execute `execute_payment()` on-chain. There is no centralized billing backend that can unilaterally charge users.                                 |
-| **Auto-expiry**      | Three consecutive payment failures → subscription auto-expires; subscriber rent is returned.                                                                             |
-| **Protocol fee**     | Configurable fee (hard cap: 5%) deducted from each payment and sent to the protocol treasury ATA.                                                                        |
+**Foundation Subscriptions program (all clusters):**
+`De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44`
 
 ---
 
-## Repository layout
+## What's New in v2.0
+
+| Change | Detail |
+|---|---|
+| **FeeRouter PDA** | Protocol-owned intermediary that signs Foundation CPIs, making `execute_payment` permissionless — any keeper can call it |
+| **Fee-on-top model** | Subscribers pay `plan_amount + fee`; merchant receives the full advertised price unchanged |
+| **Fee floor** | `MIN_FEE_USDC = 10_000` (0.01 USDC) ensures keeper rewards on near-zero `fee_bps` settings, capped at 10% of plan amount |
+| **SDK reconciliation** | `reconcileSubscriptionState()` surfaces drift between Recuro state and Foundation SubscriptionDelegation |
+| **Re-init guard** | `FeeRouterAlreadyInitialized` error code prevents FeeRouter from being overwritten |
+| **Multi-stablecoin** | SDK `SdkConfig.stablecoin` supports USDC, USDT, PYUSD |
+
+---
+
+## Architecture
+
+### Stack
 
 ```
-recuro-sdk/
-├── programs/subscription/           # Anchor / Rust smart contract
-│   └── src/
-│       ├── lib.rs                   # Program entrypoint; all instruction handlers
-│       ├── errors.rs                # Custom error codes
-│       ├── events.rs                # On-chain event definitions
-│       ├── utils.rs                 # Arithmetic helpers, cron builder
-│       ├── state/
-│       │   ├── config.rs            # ProtocolConfig PDA
-│       │   ├── plan.rs              # Plan PDA + PlanStatus enum
-│       │   └── subscription.rs      # Subscription PDA + events
-│       └── instructions/
-│           ├── initialize_config.rs
-│           ├── create_plan.rs
-│           ├── update_plan.rs       # (also pause_plan, archive_plan)
-│           ├── create_subscription.rs
-│           ├── execute_payment.rs
-│           ├── cancel_subscription.rs
-│           └── charge_now.rs
-├── programs/recuro-guard/           # Anchor / Rust guard program
-│   └── src/
-│       └── lib.rs                   # Guard PDA state + authorize_payment gatekeeper
-│
-├── sdk/                             # TypeScript SDK (@recuro/sdk)
-│   └── src/
-│       ├── SubscriptionSdk.ts       # Main SDK class
-│       ├── types.ts                 # Full TypeScript type definitions
-│       ├── constants.ts             # Program IDs, USDC mints, limits
-│       ├── idl.json                 # Generated by `anchor build` - copy with `yarn anchor:idl`
-│       └── utils/
-│           ├── pda.ts               # PDA derivation helpers
-│           ├── analytics.ts         # Analytics aggregation
-│           └── format.ts            # USDC formatting, interval labels
-│
-├── client/
-│   └── apps/
-│   ├── merchant-dashboard/          # React + Vite + shadcn/ui (port 3001)
-│   │   └── src/
-│   │       ├── App.tsx              # Router setup; landing page
-│   │       ├── main.tsx             # Providers: Wallet, QueryClient, Tooltip
-│   │       ├── constants/           # Addresses, formatters, chart colours
-│   │       ├── lib/                 # Anchor factory, utils
-│   │       ├── store/               # Zustand: live events, analytics state
-│   │       ├── hooks/               # React Query: plans, analytics, realtime
-│   │       ├── components/
-│   │       │   ├── layout/Shell.tsx # Sidebar + topbar layout
-│   │       │   ├── ui/              # shadcn/ui components
-│   │       │   ├── analytics/       # KpiCard, RevenueChart, SubscriberTrend, LiveEventFeed
-│   │       │   ├── plans/           # PlanCard, CreatePlanForm
-│   │       │   └── logs/            # ExecutionLogsTable
-│   │       └── pages/               # OverviewPage, PlansPage, CreatePlanPage,
-│   │                                #   AnalyticsPage, LogsPage, SettingsPage
-│   │
-│   └── user-demo/                   # React + Vite subscriber portal (port 3000)
-│       └── src/
-│           ├── App.tsx
-│           ├── components/
-│           │   ├── layout/Topbar.tsx
-│           │   ├── ui/index.tsx     # Shared primitives
-│           │   └── subscription/    # PlanCard (with SubscribeDialog),
-│           │                        #   SubscriptionCard (with CancelDialog)
-│           └── pages/
-│               ├── ExplorePage.tsx  # Load plan by PDA, subscribe
-│               └── MySubscriptionsPage.tsx
-│
-├── tests/
-│   └── subscription.ts              # 17-case integration test suite
-│
-└── .github/workflows/ci.yml         # Rust fmt + clippy + anchor test + SDK + apps
+┌──────────────────────────────────────────────────────┐
+│  Off-chain keeper (thread/keeper.mjs)                │
+│  TypeScript SDK  (sdk/src/SubscriptionSdk.ts)        │
+└──────────────────┬───────────────────────────────────┘
+                   │ RPC
+┌──────────────────▼───────────────────────────────────┐
+│  Recuro Program  (programs/subscription)             │
+│  45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr       │
+└──────────────────┬───────────────────────────────────┘
+                   │ CPI (invoke_signed)
+┌──────────────────▼───────────────────────────────────┐
+│  Foundation Subscriptions & Allowances               │
+│  De1egAFMkMWZSN5rYXRj9CAdheBamobVNubTsi9avR44       │
+└──────────────────────────────────────────────────────┘
+```
+
+### Foundation integration
+
+Foundation manages the actual SPL delegate (`SubscriptionAuthority` PDA, approved
+for `u64::MAX` tokens at subscribe-time) and a `SubscriptionDelegation` record per
+subscriber. Recuro never holds subscriber funds — they stay in the subscriber's
+wallet until the moment a payment executes via `transfer_subscription` (disc 10).
+
+Foundation enforces:
+- The destination must be in the plan's `destinations[0..3]` whitelist
+- The puller must be in the plan's `pullers[0..3]` whitelist
+- Per-period pull limits (`terms.amount`) are respected
+
+### FeeRouter
+
+The `FeeRouter` PDA (`seeds = [b"fee_router"]`) solves the keeper authorization
+problem. At plan creation, `destinations[2]` and `pullers[0]` on the Foundation
+plan are both set to the FeeRouter PDA. When a keeper calls `execute_payment`,
+Recuro uses `invoke_signed` with FeeRouter seeds so the PDA signs the three
+Foundation `transfer_subscription` calls. The keeper's identity is irrelevant to
+Foundation — any valid caller can run a keeper.
+
+After the third Foundation transfer lands tokens in the FeeRouter's ATA, a
+standard SPL `transfer` (also PDA-signed) forwards the keeper reward directly to
+`keeper_token_account`.
+
+```
+execute_payment legs:
+  1. Foundation CPI → subscriber ATA → merchant ATA        (plan_amount)
+  2. Foundation CPI → subscriber ATA → treasury ATA        (fee × 40%)
+  3. Foundation CPI → subscriber ATA → FeeRouter ATA       (fee × 60%)
+  4. SPL transfer   → FeeRouter ATA  → keeper ATA          (fee × 60%)
 ```
 
 ---
 
-## Quick start
+## Security Model
 
-### Prerequisites
+**What Recuro guarantees:**
+- Plan price is immutable after creation — subscribers can never be surprised by a rate increase
+- `execute_payment` checks timing on-chain (`next_payment_at`), status (`Active`), and balance before any token movement
+- After 3 consecutive failed payments the subscription auto-expires — no funds can be pulled from a subscriber who has had 3 failures
+- After 12 billing cycles the SPL delegate expires and the subscription moves to `Expired`; the subscriber must opt in again via `renew_subscription`
 
-| Tool         | Version |
-| ------------ | ------- |
-| Rust + Cargo | 1.75+   |
-| Solana CLI   | 1.18+   |
-| Anchor CLI   | 0.29+   |
-| Node.js      | 20+     |
-| Yarn         | 1.22+   |
+**What Recuro does NOT guarantee:**
+- Atomicity between Recuro state and Foundation state on merchant-cancel: when a merchant cancels, the Foundation CPI is intentionally skipped (only the subscriber can sign Foundation's `cancel_subscription`). Foundation-side the delegation expires at the next period end. Use `reconcileSubscriptionState()` to detect and surface this lag
+- Keeper liveness: the off-chain keeper is not part of the program and has no on-chain enforcement. A keeper that goes offline stops payments. This is an acceptable tradeoff for permissionless keeper incentives
 
-### 1 - Install dependencies
+**Admin keys:**
+- `initialize_config` is a one-time setup instruction — admin address stored in `ProtocolConfig`
+- `update_config` allows admin to change `fee_bps` (0–500) and treasury address
+- `initialize_fee_router` is admin-only; the FeeRouter PDA is stable once deployed
+
+---
+
+## Protocol Flow
+
+### 1. Plan creation (merchant)
+
+```
+merchant → createPlan(planId, name, amount, interval, ...)
+  └─ Recuro: create Plan PDA
+  └─ Foundation CPI (disc 7): create_plan
+       destinations: [merchant, treasury, feeRouter, zero]
+       pullers:      [feeRouter, zero, zero, zero]
+       terms.amount: plan_amount + 5% max fee
+```
+
+The Foundation plan `terms.amount` is set to `plan_amount × 1.05` at creation,
+covering any fee within the allowed 0–500 bps range for the lifetime of the plan.
+
+### 2. Subscription (subscriber)
+
+```
+subscriber → createSubscription(planPubkey)
+  └─ Recuro: create Subscription PDA (init_if_needed)
+  └─ Foundation CPI (disc 0): init_subscription_authority
+       → creates SubscriptionAuthority PDA, approves SPL delegate u64::MAX
+  └─ Foundation CPI (disc 11): subscribe
+       → creates SubscriptionDelegation PDA, records consent
+```
+
+### 3. Payment execution (keeper)
+
+```
+keeper → executePayment(subscriptionPubkey, keeperTokenAccount)
+  Recuro checks: status == Active, not in trial, payment is due
+  └─ Foundation CPI × 3 (disc 10, FeeRouter PDA signer)
+       leg 1: subscriber → merchant      (plan_amount)
+       leg 2: subscriber → treasury      (fee × 40%)
+       leg 3: subscriber → FeeRouter ATA (fee × 60%)
+  └─ SPL transfer (FeeRouter PDA signer)
+       FeeRouter ATA → keeper ATA        (fee × 60%)
+  Recuro state: next_payment_at += interval, cycles_remaining--
+```
+
+On insufficient balance: `failed_payment_count++`. At 3 failures: status → `Expired`.
+At 12 successful cycles: status → `Expired`; subscriber renews to continue.
+
+### 4. Cancellation
+
+```
+subscriber → cancelSubscription(subscriptionPubkey)
+  └─ Recuro: status → Cancelled
+  └─ Foundation CPI (disc 12): cancel_subscription
+       → sets expires_at_ts on SubscriptionDelegation
+
+merchant → cancelSubscription(subscriptionPubkey)
+  └─ Recuro: status → Cancelled
+  └─ NO Foundation CPI (merchant cannot sign Foundation cancel)
+     Foundation delegation expires at next period end (~1 billing cycle lag)
+```
+
+---
+
+## Instructions Reference
+
+| Instruction | Signer | Description |
+|---|---|---|
+| `initialize_config` | admin | One-time: create ProtocolConfig PDA |
+| `initialize_fee_router` | admin | One-time: create FeeRouter PDA + ATA |
+| `create_plan` | merchant | Create plan PDA + Foundation plan |
+| `update_plan` | merchant | Update name, description, capacity, receive address |
+| `archive_plan` | merchant | Stop accepting new subscribers |
+| `unarchive_plan` | merchant | Re-enable a previously archived plan |
+| `delete_plan` | merchant | Close an archived plan with 0 active subscribers |
+| `create_subscription` | subscriber | Subscribe + set up Foundation delegation |
+| `renew_subscription` | subscriber | Re-approve delegate after 12-cycle expiry |
+| `cancel_subscription` | subscriber or merchant | Cancel; Foundation CPI on subscriber path only |
+| `close_subscription` | subscriber | Close Cancelled/Expired PDA, reclaim rent |
+| `execute_payment` | any (keeper) | Trigger due payment; permissionless |
+| `update_config` | admin | Change fee_bps (0–500) or treasury address |
+
+---
+
+## Running a Keeper
+
+The reference keeper is `thread/keeper.mjs`. It polls all active subscriptions
+every 60 seconds and calls `execute_payment` for each one that is due.
 
 ```bash
-yarn install
+# Prerequisites
+export KEEPER_KEYPAIR=/path/to/keeper-keypair.json
+export RECURO_PROGRAM_ID=45WGwEH24Y9J6ZHYoKiGRET4t4xpu6ESiTeRdhRf9pfr
+export SOLANA_CLUSTER=devnet
+
+node thread/keeper.mjs
 ```
 
-### 2 - Build the smart contract
+The keeper does not require any special permissions or registration. Any wallet
+can run a keeper.
+
+### Fee economics
+
+At a 100 bps (1%) fee setting:
+
+| Plan price | Gross fee | Keeper reward (60%) |
+|---|---|---|
+| $1.00/mo | $0.010 | $0.006 |
+| $9.99/mo | $0.100 | $0.060 |
+| $49.99/mo | $0.500 | $0.300 |
+
+**Break-even estimate:** At 1% fee and 60% keeper split, a keeper earning SOL
+transaction fees of ~$0.00025/tx and server costs of ~$5/month needs roughly
+**1,400 successful executions/month** from $10/month subscriptions to cover
+costs — well within reach for a keeper serving a live merchant with a modest
+subscriber base.
+
+The `MIN_FEE_USDC` floor (0.01 USDC) ensures reward is non-trivial even when
+`fee_bps` is set near zero for promotional periods.
+
+---
+
+## SDK Reference
+
+```typescript
+import { SubscriptionSdk } from "@recuro/sdk";
+import { AnchorProvider } from "@coral-xyz/anchor";
+
+const provider = AnchorProvider.env();
+const sdk = new SubscriptionSdk(provider, { cluster: "devnet" });
+
+// Merchant: create a plan
+const { planPubkey } = await sdk.createPlan({
+  planId: 1,
+  name: "Pro",
+  amountUsdc: 9.99,
+  intervalDays: 30,
+  trialDays: 7,
+});
+
+// Subscriber: subscribe
+const { subscriptionPubkey } = await sdk.createSubscription({ planPubkey });
+
+// Keeper: execute a due payment
+await sdk.executePayment(subscriptionPubkey, keeperTokenAccount);
+
+// Subscriber/merchant: cancel
+await sdk.cancelSubscription(subscriptionPubkey);
+
+// Diagnose state drift between Recuro and Foundation
+const state = await sdk.reconcileSubscriptionState(subscriptionPubkey);
+// { recuroStatus, foundationCancelled, foundationExpiresAt, inSync }
+```
+
+**Key SDK methods:**
+
+| Method | Description |
+|---|---|
+| `createPlan(params)` | Deploy a new subscription plan |
+| `createSubscription({ planPubkey })` | Subscribe to a plan |
+| `renewSubscription(sub, plan)` | Renew after 12-cycle expiry |
+| `cancelSubscription(sub)` | Cancel; warns on Foundation state drift |
+| `executePayment(sub, keeperATA)` | Execute a due payment (keeper path) |
+| `reconcileSubscriptionState(sub)` | Compare Recuro vs Foundation state |
+| `fetchPlan(pubkey)` | Fetch plan account |
+| `fetchSubscription(pubkey)` | Fetch subscription account |
+| `fetchMerchantPlans(merchant)` | All plans for a merchant |
+| `fetchSubscriberSubscriptions(subscriber)` | All subscriptions for a wallet |
+| `getAnalytics(merchant)` | Aggregated merchant analytics |
+| `onPaymentExecuted(cb)` | Subscribe to payment events |
+
+---
+
+## Known Limitations
+
+1. **Merchant-cancel Foundation lag.** When a merchant cancels, Foundation's
+   `SubscriptionDelegation` isn't cancelled immediately — it expires naturally
+   at the next billing period. A keeper that runs between the Recuro cancel and
+   the Foundation expiry will find Recuro status `Cancelled` and abort without
+   charging. `reconcileSubscriptionState()` returns `inSync: false` to surface
+   this state.
+
+2. **Keeper liveness is off-chain.** There is no on-chain enforcement of keeper
+   uptime. If no keeper runs, payments simply don't execute. Merchants should
+   either run their own keeper or verify a third-party keeper is active before
+   launching.
+
+3. **12-cycle hard limit per SA delegation.** The SPL delegate approved at
+   subscribe-time covers exactly 12 billing cycles. After the 12th payment
+   the subscription expires and requires subscriber action (`renewSubscription`)
+   to continue. This is intentional: subscribers explicitly re-consent each year.
+
+4. **No partial refunds.** Recuro has no refund instruction. Merchants handle
+   refunds off-chain or through a separate SPL transfer.
+
+5. **Foundation `expires_at_ts` byte offset.** The SDK's
+   `_getFoundationSubscriptionStatus()` parses the Foundation
+   `SubscriptionDelegation` at a fixed byte offset (65) based on the observed
+   account layout. If the Foundation program is upgraded and the layout changes,
+   this offset must be updated.
+
+---
+
+## Deployment
+
+### Devnet
 
 ```bash
 anchor build
-```
-
-This compiles the Rust program and generates `target/idl/subscription.json`.
-
-### 3 - Sync the IDL to the SDK
-
-```bash
-yarn anchor:idl
-# equivalent to: cp target/idl/subscription.json sdk/src/idl.json
-```
-
-The SDK uses this IDL to generate type-safe instruction builders and account deserializers.
-
-### 4 - Run the test suite (localnet)
-
-```bash
-anchor test
-# or:
-yarn test
-```
-
-The test validator starts automatically. 17 test cases cover all instruction paths.
-
-### 5 - Deploy to devnet
-
-```bash
-# Fund your wallet
-solana airdrop 2 --url devnet
-
-# Deploy
 anchor deploy --provider.cluster devnet
 
-# Note the program ID from the output, then update:
-#   Anchor.toml         → [programs.devnet]
-#   programs/subscription/src/lib.rs → declare_id!(...)
-#   client/apps/*/.env.local   → VITE_PROGRAM_ID=...
+# Initialize protocol config (admin wallet)
+anchor run initialize-config
 
-# Rebuild and redeploy with correct ID
-anchor build && anchor deploy --provider.cluster devnet
+# Initialize FeeRouter (admin wallet)
+anchor run initialize-fee-router
 ```
 
-### 6 - Run the apps
+### Mainnet checklist
 
-```bash
-# All three apps in parallel
-yarn dev
-
-# Or individually
-yarn dev:merchant   # http://localhost:3001
-yarn dev:user       # http://localhost:3000
-yarn dev:landing    # http://localhost:3002
-```
-
-Copy `client/apps/merchant-dashboard/.env.example` → `.env.local` and fill in your deployed values before running.
+- [ ] Audit `ProtocolConfig.fee_bps` — set conservatively (suggest 100 bps)
+- [ ] Confirm `treasury` address is a multisig (Squads recommended)
+- [ ] Confirm `admin` address is a multisig
+- [ ] Initialize FeeRouter PDA; verify ATA is created
+- [ ] Run `anchor verify` against the deployed program binary
+- [ ] Confirm Foundation Subscriptions program is deployed on mainnet-beta
+- [ ] Test `create_plan` → `create_subscription` → `execute_payment` end-to-end on devnet with final config before mainnet deploy
+- [ ] Fund at least one keeper wallet with SOL for transaction fees
+- [ ] Monitor FeeRouter ATA — residual balance should be 0 between payment cycles (keeper reward is forwarded immediately)
 
 ---
 
-## SDK usage
+## Changelog
 
-Install the SDK:
+### v2.0.0
+- FeeRouter PDA: permissionless keeper architecture
+- Fee-on-top model replacing fee-from-merchant
+- `MIN_FEE_USDC` floor (0.01 USDC) with 10% plan-amount cap
+- SDK: `executePayment`, `reconcileSubscriptionState`, Foundation state pre-checks
+- Multi-stablecoin SDK support (USDC, USDT, PYUSD)
+- `FeeRouterAlreadyInitialized` error code
 
-```bash
-yarn add @recuro/sdk
-```
-
-```typescript
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { SubscriptionSdk } from "@recuro/sdk";
-
-// 1. Instantiate
-const provider = new AnchorProvider(connection, wallet, {
-  commitment: "confirmed",
-});
-const sdk = new SubscriptionSdk(provider, { cluster: "devnet" });
-
-// 2. Create a plan (merchant)
-const { planPubkey, signature } = await sdk.createPlan({
-  planId: Date.now(),
-  name: "Pro Monthly",
-  description: "Full access to all features",
-  amountUsdc: 9.99, // human USDC - SDK converts to micro-USDC
-  intervalDays: 30,
-  trialDays: 7, // 7-day free trial
-  maxSubscribers: 0, // unlimited
-});
-
-// 3. Subscribe (user)
-const { subscriptionPubkey } = await sdk.createSubscription({ planPubkey });
-
-// 4. Cancel (user or merchant)
-await sdk.cancelSubscription(subscriptionPubkey);
-
-// 5. Fetch accounts
-const plan = await sdk.fetchPlan(planPubkey);
-const subs = await sdk.fetchMerchantPlans(merchantPublicKey);
-const mySubs = await sdk.fetchSubscriberSubscriptions(subscriberPublicKey);
-
-// 6. Analytics
-const analytics = await sdk.getAnalytics(merchantPublicKey);
-console.log(analytics.totalRevenue); // human USDC
-console.log(analytics.activeSubscriptions);
-console.log(analytics.churnRate); // %
-
-// 7. Real-time event listeners
-const id = sdk.onPaymentExecuted((event, slot, signature) => {
-  console.log(`Payment: $${event.netAmount.toNumber() / 1e6} USDC`);
-});
-
-// Clean up
-await sdk.removeEventListener(id);
-```
-
-### PDA derivation
-
-```typescript
-import { getPlanPDA, getSubscriptionPDA } from "@recuro/sdk/utils/pda";
-
-const planPda = getPlanPDA(merchantPublicKey, planId, programId);
-const subPda = getSubscriptionPDA(planPda, subscriberPublicKey, programId);
-```
-
----
-
-## On-chain events
-
-All events are emitted via Anchor's event system and indexed by the SDK's `onXxx` listeners.
-
-| Event                   | Emitted when                                         |
-| ----------------------- | ---------------------------------------------------- |
-| `PlanCreated`           | Merchant deploys a new plan                          |
-| `PlanUpdated`           | Merchant updates plan metadata                       |
-| `SubscriptionCreated`   | User subscribes to a plan                            |
-| `PaymentExecuted`       | Guard-authorized payment succeeds                    |
-| `PaymentFailed`         | Transfer fails (low balance, revoked delegate, etc.) |
-| `SubscriptionCancelled` | Subscriber or merchant cancels                       |
-| `SubscriptionExpired`   | Auto-closed after 3 consecutive failures             |
-
----
-
-## Security model
-
-### Price spoofing is impossible
-
-The `execute_payment` path uses amount from on-chain state only. Recuro CPI-calls Guard, and Guard always transfers its stored `amount_per_period`. No user-supplied transfer amount is accepted.
-
-### Delegate scoping
-
-The SPL delegate approval is granted **to the Guard PDA** (not a keeper wallet), for a bounded recurring allowance. This means:
-
-- Guard can only transfer its configured amount to its configured destination.
-- The subscriber can revoke the approval at any time from any SPL-aware wallet.
-- If the approval is revoked, the next payment fails gracefully and the failure counter increments.
-
-### Guard caller enforcement
-
-Any keeper may call `execute_payment`, but merchant principal transfer still requires Guard authorization. Guard verifies caller identity, interval elapsed, and destination ATA before transfer.
-
----
-
-## Contributing
-
-1. Fork and create a feature branch.
-2. Run `anchor test` - all 17 tests must pass.
-3. Run `cargo clippy --all-targets -- -D warnings` - zero warnings.
-4. Open a pull request against `main`.
-
----
-
-## License
-
-MIT © 2026 Netflix
+### v1.0.0
+- Initial release: Clockwork-thread based keeper, single USDC, Guard PDA architecture
