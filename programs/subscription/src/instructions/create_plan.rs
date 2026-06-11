@@ -1,13 +1,18 @@
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::{
+    instruction::{AccountMeta, Instruction},
+    program::invoke,
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
 };
+use std::str::FromStr;
 
 use crate::{
     constants::*,
     errors::SubscriptionError,
-    state::{Plan, PlanCreated, PlanStatus},
+    state::{FeeRouter, Plan, PlanCreated, PlanStatus, ProtocolConfig},
 };
 
 // ────────────────────────────────────────────────────────────
@@ -56,10 +61,47 @@ pub struct CreatePlan<'info> {
     )]
     pub plan: Account<'info, Plan>,
 
+    /// Protocol config — read for treasury address (destinations[1]) and max fee bps
+    #[account(seeds = [b"config"], bump = config.bump)]
+    pub config: Box<Account<'info, ProtocolConfig>>,
+
     pub token_program: Program<'info, Token>,
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
+
+    /// Foundation Subscriptions program
+    /// CHECK: Program ID verified by constraint
+    #[account(
+        constraint = foundation_program.key() == Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID).unwrap()
+            @ SubscriptionError::InvalidFoundationProgram
+    )]
+    pub foundation_program: AccountInfo<'info>,
+
+    /// Foundation Plan PDA — created here via CPI to Foundation program
+    /// Seeds on Foundation program: [b"plan", merchant, plan_id_le_bytes]
+    /// CHECK: Seeds verified by Foundation program; key stored on Recuro Plan after CPI
+    #[account(
+        mut,
+        seeds = [b"plan", merchant.key().as_ref(), &params.plan_id.to_le_bytes()],
+        bump,
+        seeds::program = foundation_program.key(),
+    )]
+    pub foundation_plan: UncheckedAccount<'info>,
+
+    /// FeeRouter PDA — must already be initialized
+    #[account(seeds = [b"fee_router"], bump = fee_router.bump)]
+    pub fee_router: Account<'info, FeeRouter>,
+
+    /// FeeRouter USDC ATA — becomes destinations[2] on the Foundation plan so the
+    /// FeeRouter PDA receives 60% of the protocol fee and can forward it to any keeper
+    #[account(
+        constraint = fee_router_token_account.owner == fee_router.key()
+            @ SubscriptionError::InvalidTreasuryTokenAccount,
+        constraint = fee_router_token_account.mint == usdc_mint.key()
+            @ SubscriptionError::InvalidMint,
+    )]
+    pub fee_router_token_account: Account<'info, TokenAccount>,
 }
 
 // ────────────────────────────────────────────────────────────
@@ -115,6 +157,88 @@ pub fn handler(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()>
     plan.updated_at = now;
     plan.status = PlanStatus::Active;
     plan.bump = ctx.bumps.plan;
+
+    // ── CPI: Register plan on Foundation Subscriptions program ───────────────
+    // Foundation create_plan instruction (discriminator: 7).
+    // PlanData layout is repr(C, packed), 456 bytes:
+    //   plan_id        u64  ( 8)  — merchant-scoped unique ID
+    //   mint           [u8;32]    — SPL token mint
+    //   terms.amount   u64  ( 8)  — max pull per period (plan_amount + max 5% fee)
+    //   terms.period_hours u64(8) — billing period in hours (interval_seconds/3600)
+    //   terms.created_at   i64(8) — zero; Foundation sets this at plan creation
+    //   end_ts         i64  ( 8)  — zero = no expiry
+    //   destinations   [Address;4] (128) — whitelisted receiver wallet owners
+    //     [0] merchant_receive_address
+    //     [1] protocol treasury     ← 40% of fee
+    //     [2] FeeRouter ATA owner   ← 60% of fee pulled to FeeRouter, then forwarded to caller
+    //     [3] zero
+    //   pullers        [Address;4] (128) — addresses authorized to pull
+    //   metadata_uri   [u8;128]         — zero-padded UTF-8 URI
+    {
+        let foundation_pid = Pubkey::from_str(FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID)
+            .map_err(|_| error!(SubscriptionError::InvalidFoundationProgram))?;
+
+        // interval_seconds → period_hours; Foundation minimum is 1 hour
+        let period_hours = (params.interval_seconds / 3600).max(1) as u64;
+
+        // Foundation terms.amount must cover plan_amount + max possible fee (5% = 500 bps).
+        // This ensures the execute_payment fee transfer never exceeds the period limit,
+        // regardless of where fee_bps sits within the allowed 0–500 range at payment time.
+        let foundation_amount = params
+            .amount_usdc
+            .checked_add(
+                (params.amount_usdc as u128)
+                    .saturating_mul(ProtocolConfig::MAX_FEE_BPS as u128)
+                    .saturating_div(10_000) as u64,
+            )
+            .ok_or(SubscriptionError::ArithmeticOverflow)?;
+
+        let mut ix_data: Vec<u8> = Vec::with_capacity(457);
+        ix_data.push(7u8); // create_plan discriminator
+        ix_data.extend_from_slice(&params.plan_id.to_le_bytes());
+        ix_data.extend_from_slice(ctx.accounts.usdc_mint.key().as_ref());
+        ix_data.extend_from_slice(&foundation_amount.to_le_bytes()); // terms.amount = plan + max fee
+        ix_data.extend_from_slice(&period_hours.to_le_bytes());
+        ix_data.extend_from_slice(&0i64.to_le_bytes()); // terms.created_at set by program
+        ix_data.extend_from_slice(&0i64.to_le_bytes()); // end_ts = no expiry
+                                                        // destinations: [merchant, treasury, FeeRouter PDA, zero]
+                                                        // FeeRouter PDA is the owner of fee_router_token_account; Foundation validates
+                                                        // receiver_ata.owner against this list on each transfer_subscription call.
+        ix_data.extend_from_slice(plan.merchant_receive_address.as_ref()); // [0] merchant
+        ix_data.extend_from_slice(ctx.accounts.config.treasury.as_ref()); // [1] treasury (40%)
+        ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // [2] FeeRouter PDA
+        ix_data.extend_from_slice(&[0u8; 32]); // [3] zero
+                                               // pullers[0] = FeeRouter PDA — Recuro signs Foundation calls as FeeRouter via
+                                               // invoke_signed, making execute_payment callable by any keeper (permissionless).
+        ix_data.extend_from_slice(ctx.accounts.fee_router.key().as_ref()); // pullers[0]
+        ix_data.extend_from_slice(&[0u8; 96]); // pullers[1..3]
+        ix_data.extend_from_slice(&[0u8; 128]); // metadata_uri
+
+        let foundation_ix = Instruction {
+            program_id: foundation_pid,
+            accounts: vec![
+                AccountMeta::new(ctx.accounts.merchant.key(), true),
+                AccountMeta::new(ctx.accounts.foundation_plan.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.usdc_mint.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.system_program.key(), false),
+                AccountMeta::new_readonly(ctx.accounts.token_program.key(), false),
+            ],
+            data: ix_data,
+        };
+
+        invoke(
+            &foundation_ix,
+            &[
+                ctx.accounts.merchant.to_account_info(),
+                ctx.accounts.foundation_plan.to_account_info(),
+                ctx.accounts.usdc_mint.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+                ctx.accounts.token_program.to_account_info(),
+            ],
+        )?;
+
+        plan.foundation_plan_pubkey = ctx.accounts.foundation_plan.key();
+    }
 
     // ---- Emit structured event (indexed by SDK event listeners) ----
     emit!(PlanCreated {

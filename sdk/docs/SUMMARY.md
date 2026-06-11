@@ -13,7 +13,6 @@
 ## For Merchants
 
 - [Merchant Integration Overview](for-merchants/overview.md)
-- [QVAC AI Assistant](for-merchants/qvac-assistant.md)
 
 ## SDK Reference
 

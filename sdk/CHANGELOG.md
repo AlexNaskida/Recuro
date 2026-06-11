@@ -23,7 +23,6 @@ When upgrading across a major bump, read the migration notes in this file before
 - Types reference (`docs/types.md`) - all exported types, interfaces, and enums.
 - Troubleshooting & FAQ (`docs/troubleshooting.md`) - common integration issues.
 - Recipes folder (`docs/recipes/`) - short copy-pasteable how-tos for the most-asked integration questions.
-- QVAC AI Assistant documentation for merchant-dashboard (`docs/for-merchants/qvac-assistant.md`).
 
 ### Changed
 

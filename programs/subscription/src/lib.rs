@@ -29,6 +29,10 @@ pub mod subscription {
         instructions::initialize_config::handler(ctx, args)
     }
 
+    pub fn initialize_fee_router(ctx: Context<InitializeFeeRouter>) -> Result<()> {
+        instructions::initialize_fee_router::handler(ctx)
+    }
+
     // ── Plan lifecycle (merchant) ──────────────────────────────────────────
     pub fn create_plan(ctx: Context<CreatePlan>, params: CreatePlanParams) -> Result<()> {
         instructions::create_plan::handler(ctx, params)
@@ -63,24 +67,12 @@ pub mod subscription {
         instructions::create_subscription::handler(ctx)
     }
 
-    pub fn pause_subscription(ctx: Context<PauseSubscription>) -> Result<()> {
-        instructions::pause_subscription::handler(ctx)
-    }
-
-    pub fn resume_subscription(ctx: Context<ResumeSubscription>) -> Result<()> {
-        instructions::resume_subscription::handler(ctx)
-    }
-
     pub fn cancel_subscription(ctx: Context<CancelSubscription>) -> Result<()> {
         instructions::cancel_subscription::handler(ctx)
     }
 
     pub fn close_subscription(ctx: Context<CloseSubscription>) -> Result<()> {
         instructions::close_subscription::handler(ctx)
-    }
-
-    pub fn close_orphan_subscription(ctx: Context<CloseOrphanSubscription>) -> Result<()> {
-        instructions::close_orphan::handler(ctx)
     }
 
     // ── Billing (keeper) ───────────────────────────────────────────────────

@@ -51,7 +51,6 @@ import { CLUSTER } from "@/lib/config";
 import OnboardingModal from "@/components/OnboardingModal";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { useMerchantWallet } from "@/hooks/useMerchantWallet";
-import MerchantAssistant from "@/components/assistant/MerchantAssistant";
 
 const mainNav = [
   { title: "Dashboard", path: "/dashboard", icon: LayoutDashboard },
@@ -425,7 +424,6 @@ export default function DashboardLayout({
         </header>
 
         <main className="flex-1 p-6">{children}</main>
-        <MerchantAssistant />
       </div>
     </div>
   );

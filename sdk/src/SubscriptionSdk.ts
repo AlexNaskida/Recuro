@@ -22,9 +22,22 @@ import {
   // createApproveInstruction,
 } from "@solana/spl-token";
 import IDL from "./idl.json";
-import { LIMITS, PROGRAM_ID, STABLECOIN_MINTS } from "./constants";
-import { getPlanPDA, getSubscriptionPDA } from "./utils/pda";
-import { randomPlanId } from "./utils/random";
+import {
+  FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+  LIMITS,
+  PROGRAM_ID,
+  STABLECOIN_MINTS,
+} from "./constants";
+import {
+  getFeeRouterATA,
+  getFeeRouterPDA,
+  getFoundationEventAuthorityPDA,
+  getFoundationPlanPDA,
+  getFoundationSubscriptionAuthorityPDA,
+  getFoundationSubscriptionPDA,
+  getPlanPDA,
+  getSubscriptionPDA,
+} from "./utils/pda";
 import { buildAnalytics } from "./utils/analytics";
 import { usdcToMicro } from "./utils/format";
 import type {
@@ -145,15 +158,22 @@ export class SubscriptionSdk {
     const merchant = this.provider.wallet.publicKey;
     const planId = BN.isBN(params.planId)
       ? params.planId
-      : params.planId !== undefined
-        ? new BN(params.planId)
-        : randomPlanId();
+      : new BN(params.planId ?? Date.now());
 
     const [planPubkey] = getPlanPDA(merchant, planId, this.programId);
     const merchantTokenAccount = deriveAssociatedTokenAddress(
       this.usdcMint,
       merchant,
     );
+
+    // Protocol config PDA — seeds: ["config"] on Recuro program
+    const [configPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("config")],
+      this.programId,
+    );
+
+    // Foundation plan PDA — seeds: ["plan", merchant, planId] on Foundation program
+    const [foundationPlanPDA] = getFoundationPlanPDA(merchant, planId);
 
     const signature = await this.program.methods
       .createPlan({
@@ -173,9 +193,12 @@ export class SubscriptionSdk {
         usdcMint: this.usdcMint,
         merchantTokenAccount,
         plan: planPubkey,
+        config: configPDA,
         tokenProgram: TOKEN_PROGRAM_ID,
         associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
         systemProgram: SystemProgram.programId,
+        foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+        foundationPlan: foundationPlanPDA,
       })
       .rpc({ commitment: this.provider.opts.commitment });
 
@@ -366,14 +389,25 @@ export class SubscriptionSdk {
       subscriber,
       this.programId,
     );
-
-    // const subscriberTokenAccount = await getAssociatedTokenAddress(
-    //   this.usdcMint,
-    //   subscriber,
-    // );
     const subscriberTokenAccount = deriveAssociatedTokenAddress(
       this.usdcMint,
       subscriber,
+    );
+
+    // Foundation PDAs — all derived from first principles
+    const [foundationPlanPDA] = getFoundationPlanPDA(plan.merchant, plan.planId);
+    const [foundationSubscriptionPDA] = getFoundationSubscriptionPDA(
+      foundationPlanPDA,
+      subscriber,
+    );
+    const [foundationSubscriptionAuthorityPDA] =
+      getFoundationSubscriptionAuthorityPDA(subscriber, this.usdcMint);
+    const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
+
+    // Protocol config PDA
+    const [configPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("config")],
+      this.programId,
     );
 
     const signature = await this.program.methods
@@ -384,101 +418,17 @@ export class SubscriptionSdk {
         plan: params.planPubkey,
         subscription: subscriptionPubkey,
         subscriberTokenAccount,
-        merchantTokenAccount: plan.merchantTokenAccount,
+        config: configPDA,
+        merchant: plan.merchant,
+        foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+        foundationPlan: foundationPlanPDA,
+        foundationSubscription: foundationSubscriptionPDA,
+        foundationSubscriptionAuthority: foundationSubscriptionAuthorityPDA,
+        foundationEventAuthority: foundationEventAuthorityPDA,
       })
       .rpc({ commitment: this.provider.opts.commitment });
 
     return { signature, subscriptionPubkey };
-  }
-
-  /**
-   * Pause an active subscription temporarily.
-   *
-   * Stops scheduled payments without cancelling. The delegate approval
-   * remains active and can be resumed at any time. Useful for users
-   * who want to take a break but plan to re-enable later.
-   *
-   * **Effects:**
-   * - Subscription status becomes "Paused"
-   * - Keeper stops attempting payments
-   * - Delegate remains approved (no signature needed to resume)
-   * - Trial period pauses as well
-   *
-   * **Who can pause:**
-   * - The subscriber (original signer)
-   * - The merchant (plan creator)
-   *
-   * **To resume:** Call `resumeSubscription()` with same address
-   *
-   * @param subscriptionPubkey - Address of subscription to pause
-   * @returns Transaction signature
-   *
-   * @throws "Subscription not found" if address is invalid
-   * @throws Error if caller is unauthorized
-   *
-   * @example
-   * ```typescript
-   * const signature = await sdk.pauseSubscription(subscriptionPubkey);
-   * console.log(`Paused: ${signature}`);
-   * ```
-   */
-  async pauseSubscription(
-    subscriptionPubkey: PublicKey,
-  ): Promise<TransactionSignature> {
-    const sub = await this._requireSubscription(subscriptionPubkey);
-    return this.program.methods
-      .pauseSubscription()
-      .accounts({
-        authority: this.provider.wallet.publicKey,
-        subscription: subscriptionPubkey,
-        plan: sub.plan,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc({ commitment: this.provider.opts.commitment });
-  }
-
-  /**
-   * Resume a paused subscription.
-   *
-   * Re-activates a paused subscription where it left off. The delegate
-   * remains active, so no new approval is needed. Next payment time is
-   * recalculated.
-   *
-   * **Effects:**
-   * - Subscription status becomes "Active"
-   * - Keeper resumes attempting payments on schedule
-   * - Next payment time recalculated
-   * - Delegate approval remains valid
-   *
-   * **Who can resume:**
-   * - The subscriber (original signer)
-   * - The merchant (plan creator)
-   *
-   * @param subscriptionPubkey - Address of subscription to resume
-   * @returns Transaction signature
-   *
-   * @throws "Subscription not found" if address is invalid
-   * @throws "Subscription is not paused" if already active
-   *
-   * @example
-   * ```typescript
-   * const signature = await sdk.resumeSubscription(subscriptionPubkey);
-   * console.log(`Resumed: ${signature}`);
-   * ```
-   */
-  async resumeSubscription(
-    subscriptionPubkey: PublicKey,
-  ): Promise<TransactionSignature> {
-    const sub = await this._requireSubscription(subscriptionPubkey);
-    return this.program.methods
-      .resumeSubscription()
-      .accounts({
-        authority: this.provider.wallet.publicKey,
-        subscription: subscriptionPubkey,
-        plan: sub.plan,
-        systemProgram: SystemProgram.programId,
-      })
-      .rpc({ commitment: this.provider.opts.commitment });
   }
 
   /**
@@ -577,30 +527,137 @@ export class SubscriptionSdk {
    * console.log(`Delegate revoked. No future payments.`);
    * ```
    */
-  async closeSubscription(
-    subscriptionPubkey: PublicKey,
-  ): Promise<TransactionSignature> {
-    return this.program.methods
-      .closeSubscription()
-      .accounts({
-        subscriber: this.provider.wallet.publicKey,
-        subscription: subscriptionPubkey,
-      })
-      .rpc({ commitment: this.provider.opts.commitment });
-  }
-
   async cancelSubscription(
     subscriptionPubkey: PublicKey,
   ): Promise<TransactionSignature> {
     const sub = await this._requireSubscription(subscriptionPubkey);
+    const plan = await this.fetchPlan(sub.plan);
+    if (!plan) throw new Error(`Plan not found: ${sub.plan.toBase58()}`);
+
+    // Foundation PDAs — subscriber cancel CPIs to Foundation; merchant cancel skips it on-chain
+    const [foundationPlanPDA] = getFoundationPlanPDA(plan.merchant, plan.planId);
+    const [foundationSubscriptionPDA] = getFoundationSubscriptionPDA(
+      foundationPlanPDA,
+      sub.subscriber,
+    );
+    const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
+
+    // If Foundation is already cancelled and the caller is the subscriber, the
+    // on-chain Foundation CPI (disc 12) may reject the double-cancel. Warn so
+    // integrators can handle this — the on-chain instruction still skips the
+    // Foundation CPI for merchant signers, so merchant-path cancels are always safe.
+    if (sub.foundationSubscriptionPubkey) {
+      const foundationStatus = await this._getFoundationSubscriptionStatus(
+        sub.foundationSubscriptionPubkey,
+      );
+      if (
+        foundationStatus.cancelled &&
+        this.provider.wallet.publicKey.equals(sub.subscriber)
+      ) {
+        console.warn(
+          `[SubscriptionSdk] cancelSubscription: Foundation already cancelled for ${subscriptionPubkey.toBase58()}. ` +
+            `Use reconcileSubscriptionState() to inspect. Proceeding — on-chain handler will attempt Foundation CPI.`,
+        );
+      }
+    }
+
     return this.program.methods
       .cancelSubscription()
       .accounts({
         authority: this.provider.wallet.publicKey,
         subscription: subscriptionPubkey,
         plan: sub.plan,
-        subscriberTokenAccount: sub.subscriberTokenAccount,
         systemProgram: SystemProgram.programId,
+        foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+        foundationPlan: foundationPlanPDA,
+        foundationSubscription: foundationSubscriptionPDA,
+        foundationEventAuthority: foundationEventAuthorityPDA,
+      })
+      .rpc({ commitment: this.provider.opts.commitment });
+  }
+
+  // ──────────────────────────────────────────────────────────
+  // BILLING (keeper)
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Execute a due payment for a subscription. (Keeper only)
+   *
+   * Triggers the three-leg Foundation transfer + SPL forward flow:
+   *   1. Foundation: subscriber → merchant (plan amount)
+   *   2. Foundation: subscriber → treasury (40% of fee)
+   *   3. Foundation: subscriber → FeeRouter ATA (60% of fee)
+   *   4. SPL: FeeRouter ATA → calling keeper (forward)
+   *
+   * The program silently no-ops if the subscription is in trial or not yet due.
+   * Any wallet can call this — keeper identity is irrelevant to authorization.
+   *
+   * @param subscriptionPubkey - Subscription to bill
+   * @returns Transaction signature
+   * @throws "Subscription not found" if address is invalid
+   * @throws "Plan not found" if subscription references a missing plan
+   */
+  async executePayment(
+    subscriptionPubkey: PublicKey,
+    keeperTokenAccount: PublicKey,
+  ): Promise<TransactionSignature> {
+    const keeper = this.provider.wallet.publicKey;
+    const sub = await this._requireSubscription(subscriptionPubkey);
+    const plan = await this.fetchPlan(sub.plan);
+    if (!plan) throw new Error(`Plan not found: ${sub.plan.toBase58()}`);
+
+    const [configPDA] = PublicKey.findProgramAddressSync(
+      [Buffer.from("config")],
+      this.programId,
+    );
+    const configRaw = await this.program.account.protocolConfig.fetch(configPDA);
+
+    const usdcMint = this.usdcMint;
+    const treasuryTokenAccount = deriveAssociatedTokenAddress(
+      usdcMint,
+      configRaw.treasury,
+    );
+
+    const [feeRouterPDA] = getFeeRouterPDA(this.programId);
+    const feeRouterTokenAccount = getFeeRouterATA(feeRouterPDA, usdcMint);
+
+    const [foundationSubscriptionAuthorityPDA] =
+      getFoundationSubscriptionAuthorityPDA(sub.subscriber, usdcMint);
+    const [foundationEventAuthorityPDA] = getFoundationEventAuthorityPDA();
+
+    // Guard: if Foundation is already cancelled, the transfer_subscription CPI will
+    // fail on-chain. Abort here with a clear error to avoid wasting a transaction.
+    if (sub.foundationSubscriptionPubkey) {
+      const foundationStatus = await this._getFoundationSubscriptionStatus(
+        sub.foundationSubscriptionPubkey,
+      );
+      if (foundationStatus.cancelled) {
+        throw new Error(
+          `[SubscriptionSdk] executePayment: Foundation subscription is already cancelled for ${subscriptionPubkey.toBase58()}. ` +
+            `Use reconcileSubscriptionState() to inspect drift between Recuro and Foundation state.`,
+        );
+      }
+    }
+
+    return this.program.methods
+      .executePayment()
+      .accounts({
+        keeper,
+        config: configPDA,
+        subscription: subscriptionPubkey,
+        plan: sub.plan,
+        subscriberTokenAccount: sub.subscriberTokenAccount,
+        merchantTokenAccount: plan.merchantTokenAccount,
+        usdcMint,
+        treasuryTokenAccount,
+        keeperTokenAccount,
+        feeRouter: feeRouterPDA,
+        feeRouterTokenAccount,
+        foundationProgram: FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+        foundationPlan: plan.foundationPlanPubkey!,
+        foundationSubscription: sub.foundationSubscriptionPubkey!,
+        foundationSubscriptionAuthority: foundationSubscriptionAuthorityPDA,
+        foundationEventAuthority: foundationEventAuthorityPDA,
       })
       .rpc({ commitment: this.provider.opts.commitment });
   }
@@ -923,44 +980,6 @@ export class SubscriptionSdk {
   }
 
   /**
-   * Listen for subscription pauses.
-   *
-   * Called when a subscription is paused. Useful for tracking
-   * temporary cancellations and churn analysis.
-   *
-   * See PLAN_MANAGEMENT.md for complete merchant API.
-   *
-   * @param cb - Callback function receiving (event, slot, signature)
-   * @returns Listener ID (use with removeEventListener)
-   *
-   * @deprecated For subscription-only integrations, ignore this method
-   */
-  onSubscriptionPaused(
-    cb: (event: any, slot: number, signature: string) => void,
-  ): number {
-    return this.program.addEventListener("SubscriptionPaused", cb);
-  }
-
-  /**
-   * Listen for subscription resumptions.
-   *
-   * Called when a paused subscription is resumed.
-   * Useful for win-back tracking.
-   *
-   * See PLAN_MANAGEMENT.md for complete merchant API.
-   *
-   * @param cb - Callback function receiving (event, slot, signature)
-   * @returns Listener ID (use with removeEventListener)
-   *
-   * @deprecated For subscription-only integrations, ignore this method
-   */
-  onSubscriptionResumed(
-    cb: (event: any, slot: number, signature: string) => void,
-  ): number {
-    return this.program.addEventListener("SubscriptionResumed", cb);
-  }
-
-  /**
    * Listen for subscription expirations.
    *
    * Called when a subscription's delegate expires after 12 cycles.
@@ -984,8 +1003,75 @@ export class SubscriptionSdk {
   }
 
   // ──────────────────────────────────────────────────────────
+  // STATE RECONCILIATION
+  // ──────────────────────────────────────────────────────────
+
+  /**
+   * Check whether a Recuro subscription and its Foundation SubscriptionDelegation
+   * are in sync with each other.
+   *
+   * Use this to detect drift caused by merchant-side cancellations (which update
+   * Recuro state but cannot fire the Foundation CPI) or any other scenario where
+   * the two systems diverge.
+   *
+   * @param subscriptionPubkey - Recuro Subscription PDA to inspect
+   * @returns Recuro status, Foundation status, and whether they agree
+   */
+  async reconcileSubscriptionState(subscriptionPubkey: PublicKey): Promise<{
+    recuroStatus: SubscriptionAccount["status"];
+    foundationCancelled: boolean;
+    foundationExpiresAt: number | null;
+    inSync: boolean;
+  }> {
+    const sub = await this._requireSubscription(subscriptionPubkey);
+    const foundationStatus = sub.foundationSubscriptionPubkey
+      ? await this._getFoundationSubscriptionStatus(sub.foundationSubscriptionPubkey)
+      : { cancelled: false, expiresAt: null };
+
+    const recuroTerminal =
+      sub.status === "Cancelled" || sub.status === "Expired";
+    const inSync = recuroTerminal === foundationStatus.cancelled;
+
+    return {
+      recuroStatus: sub.status,
+      foundationCancelled: foundationStatus.cancelled,
+      foundationExpiresAt: foundationStatus.expiresAt,
+      inSync,
+    };
+  }
+
+  // ──────────────────────────────────────────────────────────
   // Private helpers
   // ──────────────────────────────────────────────────────────
+
+  /**
+   * Fetch and parse the Foundation SubscriptionDelegation account to determine
+   * whether Foundation has already cancelled this subscription.
+   *
+   * Foundation SubscriptionDelegation layout (repr(C, packed)):
+   *   [0]     discriminator (u8)
+   *   [1..33] plan (Address)
+   *   [33..65] subscriber (Address)
+   *   [65..73] expires_at_ts (i64, little-endian)
+   *
+   * When expires_at_ts > 0 and < now the Foundation delegation has expired/cancelled.
+   * Account missing (null) means it was closed — also treated as cancelled.
+   */
+  private async _getFoundationSubscriptionStatus(
+    foundationSubscriptionPubkey: PublicKey,
+  ): Promise<{ cancelled: boolean; expiresAt: number | null }> {
+    const info = await this.provider.connection.getAccountInfo(
+      foundationSubscriptionPubkey,
+    );
+    if (!info) return { cancelled: true, expiresAt: null };
+    if (info.data.length < 73) return { cancelled: false, expiresAt: null };
+
+    const expiresAt = Number(info.data.readBigInt64LE(65));
+    if (expiresAt === 0) return { cancelled: false, expiresAt: null };
+
+    const now = Math.floor(Date.now() / 1000);
+    return { cancelled: expiresAt < now, expiresAt };
+  }
 
   private validateCreatePlanParams(p: CreatePlanParams): void {
     if (!p.name || p.name.trim().length === 0) {
@@ -1048,6 +1134,7 @@ export class SubscriptionSdk {
       updatedAt: raw.updatedAt,
       status: this._decodePlanStatus(raw.status),
       bump: raw.bump,
+      foundationPlanPubkey: raw.foundationPlanPubkey ?? undefined,
     };
   }
 
@@ -1074,6 +1161,7 @@ export class SubscriptionSdk {
       totalFailures: raw.totalFailures ?? 0,
       status: this._decodeSubStatus(raw.status),
       bump: raw.bump,
+      foundationSubscriptionPubkey: raw.foundationSubscriptionPubkey ?? undefined,
     };
   }
 

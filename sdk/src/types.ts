@@ -30,6 +30,8 @@ export interface PlanAccount {
   updatedAt: BN;
   status: "Active" | "Paused" | "Archived";
   bump: number;
+  /** Foundation Subscriptions program Plan PDA — set at plan creation */
+  foundationPlanPubkey?: PublicKey;
 }
 
 export interface SubscriptionAccount {
@@ -51,6 +53,8 @@ export interface SubscriptionAccount {
   totalFailures: number;
   status: "Active" | "Paused" | "Cancelled" | "Expired";
   bump: number;
+  /** Foundation Subscriptions program SubscriptionDelegation PDA — set at subscription creation */
+  foundationSubscriptionPubkey?: PublicKey;
 }
 
 export interface ProtocolConfigAccount {

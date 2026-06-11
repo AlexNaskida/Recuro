@@ -70,6 +70,10 @@ pub enum SubscriptionError {
     PlanNotArchived,
     #[msg("Plan still has active subscribers and cannot be deleted")]
     PlanHasActiveSubscribers,
-    #[msg("Subscription plan account still exists; subscription is not orphaned")]
-    SubscriptionNotOrphaned,
+
+    // ── Foundation integration ─────────────────────────────────────────────────
+    #[msg("The supplied Foundation Subscriptions program ID is incorrect")]
+    InvalidFoundationProgram,
+    #[msg("FeeRouter PDA has already been initialized; call initialize_fee_router only once")]
+    FeeRouterAlreadyInitialized,
 }

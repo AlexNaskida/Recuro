@@ -1,5 +1,5 @@
 [workspace]
-members = ["programs/subscription", "programs/recuro-guard"]
+members = ["programs/subscription"]
 resolver = "2"
 
 [profile.release]

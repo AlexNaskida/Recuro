@@ -9,17 +9,45 @@
   "instructions": [
     {
       "name": "archive_plan",
-      "discriminator": [77, 134, 147, 53, 137, 113, 23, 160],
+      "discriminator": [
+        77,
+        134,
+        147,
+        53,
+        137,
+        113,
+        23,
+        160
+      ],
       "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         }
@@ -28,60 +56,23 @@
     },
     {
       "name": "cancel_subscription",
-      "discriminator": [60, 139, 189, 242, 191, 208, 143, 18],
+      "discriminator": [
+        60,
+        139,
+        189,
+        242,
+        191,
+        208,
+        143,
+        18
+      ],
       "accounts": [
         {
           "name": "authority",
-          "docs": ["Must be subscriber or merchant - validated in handler"],
-          "writable": true,
-          "signer": true
-        },
-        {
-          "name": "subscription",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "subscription.plan",
-                "account": "Subscription"
-              },
-              {
-                "kind": "account",
-                "path": "subscription.subscriber",
-                "account": "Subscription"
-              }
-            ]
-          }
-        },
-        { "name": "plan", "writable": true },
-        { "name": "subscriber_token_account", "writable": true },
-        {
-          "name": "token_program",
-          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "close_orphan_subscription",
-      "discriminator": [94, 184, 232, 144, 151, 147, 238, 13],
-      "accounts": [
-        {
-          "name": "caller",
           "docs": [
-            "Any signer may trigger orphan cleanup. Rent is always returned to subscriber."
+            "Must be subscriber or merchant — validated in handler"
           ],
+          "writable": true,
           "signer": true
         },
         {
@@ -92,7 +83,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -110,26 +112,61 @@
         },
         {
           "name": "plan",
+          "writable": true
+        },
+        {
+          "name": "foundation_program",
           "docs": [
-            "Must be the expected plan address and must be missing/empty on chain."
+            "Foundation Subscriptions program"
           ]
         },
         {
-          "name": "guard_program",
-          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
-        },
-        {
-          "name": "guard_account",
+          "name": "foundation_plan",
           "docs": [
-            "Guard account may be orphaned (uninitialized). Manual address validation in handler."
+            "Foundation Plan PDA — must match the one stored on our Plan account"
           ]
         },
         {
-          "name": "subscriber",
+          "name": "foundation_subscription",
           "docs": [
-            "Subscriber receives rent refund for both guard and subscription closes."
+            "Foundation SubscriptionDelegation PDA — must match the one stored on our Subscription"
           ],
           "writable": true
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
         },
         {
           "name": "system_program",
@@ -140,18 +177,46 @@
     },
     {
       "name": "close_subscription",
-      "discriminator": [33, 214, 169, 135, 35, 127, 78, 7],
+      "discriminator": [
+        33,
+        214,
+        169,
+        135,
+        35,
+        127,
+        78,
+        7
+      ],
       "accounts": [
-        { "name": "subscriber", "writable": true, "signer": true },
+        {
+          "name": "subscriber",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "subscription",
+          "docs": [
+            "Closes the Subscription PDA and returns rent to the subscriber.",
+            "Requires terminal status (Cancelled or Expired)."
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -165,21 +230,6 @@
                 "account": "Subscription"
               }
             ]
-          }
-        },
-        {
-          "name": "guard_program",
-          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
-        },
-        {
-          "name": "guard_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              { "kind": "const", "value": [103, 117, 97, 114, 100] },
-              { "kind": "account", "path": "subscription" }
-            ],
-            "program": { "kind": "account", "path": "guard_program" }
           }
         },
         {
@@ -191,17 +241,30 @@
     },
     {
       "name": "create_plan",
-      "discriminator": [77, 43, 141, 254, 212, 118, 41, 186],
+      "discriminator": [
+        77,
+        43,
+        141,
+        254,
+        212,
+        118,
+        41,
+        186
+      ],
       "accounts": [
         {
           "name": "merchant",
-          "docs": ["Merchant wallet - pays rent, becomes plan authority"],
+          "docs": [
+            "Merchant wallet - pays rent, becomes plan authority"
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "usdc_mint",
-          "docs": ["USDC SPL mint that this plan is denominated in"]
+          "docs": [
+            "USDC SPL mint that this plan is denominated in"
+          ]
         },
         {
           "name": "merchant_token_account",
@@ -210,36 +273,137 @@
           ],
           "pda": {
             "seeds": [
-              { "kind": "account", "path": "merchant" },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
-              { "kind": "account", "path": "usdc_mint" }
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
             ],
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
         },
         {
           "name": "plan",
-          "docs": ["New Plan PDA - created here, owned by this program"],
+          "docs": [
+            "New Plan PDA - created here, owned by this program"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "arg", "path": "params.plan_id" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "arg",
+                "path": "params.plan_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Protocol config — read for treasury address (destinations[1]) and max fee bps"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
             ]
           }
         },
@@ -258,43 +422,159 @@
         {
           "name": "rent",
           "address": "SysvarRent111111111111111111111111111111111"
+        },
+        {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — created here via CPI to Foundation program",
+            "Seeds on Foundation program: [b\"plan\", merchant, plan_id_le_bytes]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "arg",
+                "path": "params.plan_id"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — must already be initialized"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — becomes destinations[2] on the Foundation plan so the",
+            "FeeRouter PDA receives 60% of the protocol fee and can forward it to any keeper"
+          ]
         }
       ],
       "args": [
         {
           "name": "params",
-          "type": { "defined": { "name": "CreatePlanParams" } }
+          "type": {
+            "defined": {
+              "name": "CreatePlanParams"
+            }
+          }
         }
       ]
     },
     {
       "name": "create_subscription",
-      "discriminator": [65, 71, 10, 60, 249, 82, 197, 12],
+      "discriminator": [
+        65,
+        71,
+        10,
+        60,
+        249,
+        82,
+        197,
+        12
+      ],
       "accounts": [
         {
           "name": "subscriber",
-          "docs": ["Subscriber wallet - pays rent, signs once, keeps funds"],
+          "docs": [
+            "Subscriber wallet - pays rent, signs once, keeps funds"
+          ],
           "writable": true,
           "signer": true
         },
         {
           "name": "plan",
-          "docs": ["Plan PDA - verified active and has capacity"],
+          "docs": [
+            "Plan PDA - verified active and has capacity"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "plan.merchant", "account": "Plan" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "plan.merchant",
+                "account": "Plan"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         },
         {
           "name": "config",
-          "docs": ["Protocol config - provides the live fee basis points"],
+          "docs": [
+            "Protocol config — retained for ABI/IDL compatibility; fee calc moved to execute_payment"
+          ],
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
             ]
           }
         },
@@ -309,71 +589,280 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
-              { "kind": "account", "path": "plan" },
-              { "kind": "account", "path": "subscriber" }
+              {
+                "kind": "account",
+                "path": "plan"
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              }
             ]
           }
         },
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA - must exist; funds stay here until billing"
+            "Subscriber's USDC ATA - Foundation init_subscription_authority sets this as delegated"
           ],
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "account", "path": "subscriber" },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              },
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
-              { "kind": "account", "path": "usdc_mint" }
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
             ],
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
         },
         {
           "name": "usdc_mint",
-          "docs": ["USDC mint - must match the plan's registered mint"]
+          "docs": [
+            "USDC mint - must match the plan's registered mint"
+          ]
         },
         {
           "name": "merchant_token_account",
           "docs": [
-            "Merchant receive ATA (from plan) - passed through to guard init"
+            "Merchant receive ATA (from plan) - passed through to Foundation subscribe"
           ],
           "writable": true
         },
         {
-          "name": "guard_program",
-          "docs": ["Guard program"],
-          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+          "name": "merchant",
+          "docs": [
+            "Merchant wallet — required by Foundation subscribe CPI"
+          ]
         },
         {
-          "name": "guard_account",
+          "name": "foundation_program",
           "docs": [
-            "Guard PDA - created for this subscription, authorizes payments"
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — must match the one stored on our Plan account"
+          ]
+        },
+        {
+          "name": "foundation_subscription_authority",
+          "docs": [
+            "Foundation SubscriptionAuthority PDA — one per (subscriber, mint) pair",
+            "Seeds on Foundation program: [b\"SubscriptionAuthority\", subscriber, mint]",
+            "Created (or refreshed) by Foundation init_subscription_authority CPI"
           ],
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [103, 117, 97, 114, 100] },
-              { "kind": "account", "path": "subscription" }
+              {
+                "kind": "const",
+                "value": [
+                  83,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110,
+                  65,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              },
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
             ],
-            "program": { "kind": "account", "path": "guard_program" }
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_subscription",
+          "docs": [
+            "Foundation SubscriptionDelegation PDA — created by Foundation subscribe CPI",
+            "Seeds on Foundation program: [b\"subscription\", foundation_plan, subscriber]"
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "foundation_plan"
+              },
+              {
+                "kind": "account",
+                "path": "subscriber"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
           }
         },
         {
@@ -397,17 +886,45 @@
     },
     {
       "name": "delete_plan",
-      "discriminator": [41, 111, 169, 210, 93, 141, 108, 53],
+      "discriminator": [
+        41,
+        111,
+        169,
+        210,
+        93,
+        141,
+        108,
+        53
+      ],
       "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         },
@@ -420,21 +937,43 @@
     },
     {
       "name": "execute_payment",
-      "discriminator": [86, 4, 7, 7, 120, 139, 232, 139],
+      "discriminator": [
+        86,
+        4,
+        7,
+        7,
+        120,
+        139,
+        232,
+        139
+      ],
       "accounts": [
         {
           "name": "keeper",
           "docs": [
-            "Anyone may call this - timing is enforced by the program, not the signer."
+            "Anyone may call this — timing is enforced by the program, not the signer.",
+            "Any valid USDC token account — caller receives the keeper fee via FeeRouter."
           ],
           "signer": true
         },
         {
           "name": "config",
-          "docs": ["Protocol config - reads fee_bps and treasury"],
+          "docs": [
+            "Protocol config — reads fee_bps and treasury"
+          ],
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
             ]
           }
         },
@@ -446,7 +985,18 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
@@ -462,63 +1012,184 @@
             ]
           }
         },
-        { "name": "plan", "writable": true },
+        {
+          "name": "plan",
+          "writable": true
+        },
         {
           "name": "subscriber_token_account",
           "docs": [
-            "Subscriber's USDC ATA - source of ALL funds (plan amount + fee)"
+            "Subscriber's USDC ATA — source of ALL funds (plan amount + fee)"
           ],
           "writable": true
         },
         {
           "name": "merchant_token_account",
-          "docs": ["Merchant's USDC ATA - receives the full plan amount"],
+          "docs": [
+            "Merchant's USDC ATA — receives plan_amount via Foundation transfer_subscription"
+          ],
           "writable": true
         },
         {
-          "name": "guard_account",
-          "docs": [
-            "Guard account - validates payment authorization and timing"
-          ],
-          "writable": true,
-          "pda": {
-            "seeds": [
-              { "kind": "const", "value": [103, 117, 97, 114, 100] },
-              { "kind": "account", "path": "subscription" }
-            ],
-            "program": { "kind": "account", "path": "guard_program" }
-          }
-        },
-        {
           "name": "usdc_mint",
-          "docs": ["USDC mint for guarded transfer_checked"]
+          "docs": [
+            "USDC mint"
+          ]
         },
         {
           "name": "treasury_token_account",
-          "docs": ["Protocol treasury ATA - receives 40% of the fee"],
+          "docs": [
+            "Protocol treasury ATA — receives 40% of fee via Foundation transfer_subscription"
+          ],
           "writable": true
         },
         {
           "name": "keeper_token_account",
           "docs": [
-            "Keeper's USDC ATA - receives 60% of the fee as reward",
-            "Must be owned by the keeper signer to ensure rewards go to the correct address"
+            "Keeper's USDC ATA — receives 60% of fee forwarded from FeeRouter ATA"
           ],
           "writable": true
         },
-        { "name": "subscriber" },
         {
-          "name": "guard_program",
-          "docs": ["Guard program"],
-          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — pullers[0] on Foundation plan; signs Foundation calls and forwards keeper reward"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — destinations[2] on Foundation plan; receives 60% of fee, then forwarded to keeper"
+          ],
+          "writable": true
+        },
+        {
+          "name": "foundation_program",
+          "docs": [
+            "Foundation Subscriptions program"
+          ]
+        },
+        {
+          "name": "foundation_plan",
+          "docs": [
+            "Foundation Plan PDA — must match the one stored on our Plan account"
+          ]
+        },
+        {
+          "name": "foundation_subscription",
+          "docs": [
+            "Foundation SubscriptionDelegation PDA — must match the one stored on our Subscription"
+          ],
+          "writable": true
+        },
+        {
+          "name": "foundation_subscription_authority",
+          "docs": [
+            "Foundation SubscriptionAuthority PDA — the SPL delegate (u64::MAX approval)",
+            "Seeds on Foundation program: [b\"SubscriptionAuthority\", subscriber, mint]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  83,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110,
+                  65,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              },
+              {
+                "kind": "account",
+                "path": "plan.usdc_mint",
+                "account": "Plan"
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
+        },
+        {
+          "name": "foundation_event_authority",
+          "docs": [
+            "Foundation event authority PDA — used by Foundation for on-chain event emission",
+            "Seeds on Foundation program: [b\"event_authority\"]"
+          ],
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              }
+            ],
+            "program": {
+              "kind": "account",
+              "path": "foundation_program"
+            }
+          }
         },
         {
           "name": "token_program",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-        },
-        {
-          "name": "clock",
-          "address": "SysvarC1ock11111111111111111111111111111111"
         },
         {
           "name": "system_program",
@@ -529,15 +1200,38 @@
     },
     {
       "name": "initialize_config",
-      "discriminator": [208, 127, 21, 1, 194, 190, 196, 70],
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
       "accounts": [
-        { "name": "admin", "writable": true, "signer": true },
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
             ]
           }
         },
@@ -549,147 +1243,180 @@
       "args": [
         {
           "name": "args",
-          "type": { "defined": { "name": "InitializeConfigArgs" } }
+          "type": {
+            "defined": {
+              "name": "InitializeConfigArgs"
+            }
+          }
         }
       ]
     },
     {
-      "name": "pause_plan",
-      "discriminator": [208, 200, 160, 171, 212, 94, 249, 233],
-      "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
-        {
-          "name": "plan",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
-            ]
-          }
-        }
+      "name": "initialize_fee_router",
+      "discriminator": [
+        198,
+        11,
+        103,
+        84,
+        180,
+        59,
+        91,
+        66
       ],
-      "args": []
-    },
-    {
-      "name": "pause_subscription",
-      "discriminator": [18, 180, 147, 157, 114, 60, 213, 241],
       "accounts": [
-        { "name": "authority", "writable": true, "signer": true },
         {
-          "name": "subscription",
+          "name": "admin",
+          "docs": [
+            "Admin wallet — must equal config.admin"
+          ],
           "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "docs": [
+            "Protocol config — read for admin verification"
+          ],
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
                 ]
-              },
-              {
-                "kind": "account",
-                "path": "subscription.plan",
-                "account": "Subscription"
-              },
-              {
-                "kind": "account",
-                "path": "subscription.subscriber",
-                "account": "Subscription"
               }
             ]
           }
         },
-        { "name": "plan" },
         {
-          "name": "system_program",
-          "address": "11111111111111111111111111111111"
-        }
-      ],
-      "args": []
-    },
-    {
-      "name": "renew_subscription",
-      "discriminator": [45, 75, 154, 194, 160, 10, 111, 183],
-      "accounts": [
-        { "name": "subscriber", "writable": true, "signer": true },
-        {
-          "name": "plan",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "plan.merchant", "account": "Plan" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
-            ]
-          }
-        },
-        {
-          "name": "config",
-          "pda": {
-            "seeds": [
-              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
-            ]
-          }
-        },
-        {
-          "name": "subscription",
+          "name": "fee_router",
+          "docs": [
+            "FeeRouter PDA — created here"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  102,
+                  101,
+                  101,
+                  95,
+                  114,
+                  111,
+                  117,
+                  116,
+                  101,
+                  114
                 ]
-              },
-              { "kind": "account", "path": "plan" },
-              { "kind": "account", "path": "subscriber" }
+              }
             ]
           }
         },
         {
-          "name": "guard_account",
+          "name": "fee_router_token_account",
+          "docs": [
+            "FeeRouter USDC ATA — created if it doesn't already exist"
+          ],
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [103, 117, 97, 114, 100] },
-              { "kind": "account", "path": "subscription" }
-            ],
-            "program": { "kind": "account", "path": "guard_program" }
-          }
-        },
-        {
-          "name": "subscriber_token_account",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              { "kind": "account", "path": "subscriber" },
+              {
+                "kind": "account",
+                "path": "fee_router"
+              },
               {
                 "kind": "const",
                 "value": [
-                  6, 221, 246, 225, 215, 101, 161, 147, 217, 203, 225, 70, 206,
-                  235, 121, 172, 28, 180, 133, 237, 95, 91, 55, 145, 58, 140,
-                  245, 133, 126, 255, 0, 169
+                  6,
+                  221,
+                  246,
+                  225,
+                  215,
+                  101,
+                  161,
+                  147,
+                  217,
+                  203,
+                  225,
+                  70,
+                  206,
+                  235,
+                  121,
+                  172,
+                  28,
+                  180,
+                  133,
+                  237,
+                  95,
+                  91,
+                  55,
+                  145,
+                  58,
+                  140,
+                  245,
+                  133,
+                  126,
+                  255,
+                  0,
+                  169
                 ]
               },
-              { "kind": "account", "path": "usdc_mint" }
+              {
+                "kind": "account",
+                "path": "usdc_mint"
+              }
             ],
             "program": {
               "kind": "const",
               "value": [
-                140, 151, 37, 143, 78, 36, 137, 241, 187, 61, 16, 41, 20, 142,
-                13, 131, 11, 90, 19, 153, 218, 255, 16, 132, 4, 142, 123, 216,
-                219, 233, 248, 89
+                140,
+                151,
+                37,
+                143,
+                78,
+                36,
+                137,
+                241,
+                187,
+                61,
+                16,
+                41,
+                20,
+                142,
+                13,
+                131,
+                11,
+                90,
+                19,
+                153,
+                218,
+                255,
+                16,
+                132,
+                4,
+                142,
+                123,
+                216,
+                219,
+                233,
+                248,
+                89
               ]
             }
           }
         },
-        { "name": "usdc_mint" },
         {
-          "name": "guard_program",
-          "address": "4Fgs3dSAP869uEwsTd1tyh2pTkvLK1ji2BAhmfbBzCDr"
+          "name": "usdc_mint",
+          "docs": [
+            "USDC mint"
+          ]
         },
         {
           "name": "token_program",
@@ -701,24 +1428,52 @@
         },
         {
           "name": "system_program",
-          "address": "11111111111111111111111111111111111"
+          "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "resume_plan",
-      "discriminator": [67, 173, 251, 42, 169, 34, 132, 161],
+      "name": "pause_plan",
+      "discriminator": [
+        208,
+        200,
+        160,
+        171,
+        212,
+        94,
+        249,
+        233
+      ],
       "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         }
@@ -726,10 +1481,68 @@
       "args": []
     },
     {
-      "name": "resume_subscription",
-      "discriminator": [122, 92, 183, 0, 139, 188, 185, 71],
+      "name": "renew_subscription",
+      "discriminator": [
+        45,
+        75,
+        154,
+        194,
+        160,
+        10,
+        111,
+        183
+      ],
       "accounts": [
-        { "name": "authority", "writable": true, "signer": true },
+        {
+          "name": "subscriber",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "plan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "plan.merchant",
+                "account": "Plan"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
         {
           "name": "subscription",
           "writable": true,
@@ -738,23 +1551,31 @@
               {
                 "kind": "const",
                 "value": [
-                  115, 117, 98, 115, 99, 114, 105, 112, 116, 105, 111, 110
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
                 ]
               },
               {
                 "kind": "account",
-                "path": "subscription.plan",
-                "account": "Subscription"
+                "path": "plan"
               },
               {
                 "kind": "account",
-                "path": "subscription.subscriber",
-                "account": "Subscription"
+                "path": "subscriber"
               }
             ]
           }
         },
-        { "name": "plan" },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
@@ -763,18 +1584,93 @@
       "args": []
     },
     {
-      "name": "unarchive_plan",
-      "discriminator": [206, 11, 20, 6, 132, 43, 142, 94],
+      "name": "resume_plan",
+      "discriminator": [
+        67,
+        173,
+        251,
+        42,
+        169,
+        34,
+        132,
+        161
+      ],
       "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "unarchive_plan",
+      "discriminator": [
+        206,
+        11,
+        20,
+        6,
+        132,
+        43,
+        142,
+        94
+      ],
+      "accounts": [
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "plan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         }
@@ -783,105 +1679,306 @@
     },
     {
       "name": "update_config",
-      "discriminator": [29, 158, 252, 191, 10, 83, 219, 99],
+      "discriminator": [
+        29,
+        158,
+        252,
+        191,
+        10,
+        83,
+        219,
+        99
+      ],
       "accounts": [
-        { "name": "admin", "signer": true },
+        {
+          "name": "admin",
+          "signer": true
+        },
         {
           "name": "config",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [99, 111, 110, 102, 105, 103] }
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
             ]
           }
         }
       ],
       "args": [
-        { "name": "new_treasury", "type": "pubkey" },
-        { "name": "new_fee_bps", "type": "u16" }
+        {
+          "name": "new_treasury",
+          "type": "pubkey"
+        },
+        {
+          "name": "new_fee_bps",
+          "type": "u16"
+        }
       ]
     },
     {
       "name": "update_plan",
-      "discriminator": [119, 112, 58, 60, 76, 205, 1, 100],
+      "discriminator": [
+        119,
+        112,
+        58,
+        60,
+        76,
+        205,
+        1,
+        100
+      ],
       "accounts": [
-        { "name": "merchant", "writable": true, "signer": true },
+        {
+          "name": "merchant",
+          "writable": true,
+          "signer": true
+        },
         {
           "name": "plan",
           "writable": true,
           "pda": {
             "seeds": [
-              { "kind": "const", "value": [112, 108, 97, 110] },
-              { "kind": "account", "path": "merchant" },
-              { "kind": "account", "path": "plan.plan_id", "account": "Plan" }
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merchant"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "Plan"
+              }
             ]
           }
         }
       ],
       "args": [
-        { "name": "args", "type": { "defined": { "name": "UpdatePlanArgs" } } }
+        {
+          "name": "args",
+          "type": {
+            "defined": {
+              "name": "UpdatePlanArgs"
+            }
+          }
+        }
       ]
     }
   ],
   "accounts": [
     {
-      "name": "GuardAccount",
-      "discriminator": [38, 201, 126, 93, 149, 77, 3, 112]
+      "name": "FeeRouter",
+      "discriminator": [
+        180,
+        161,
+        131,
+        96,
+        121,
+        91,
+        71,
+        183
+      ]
     },
-    { "name": "Plan", "discriminator": [161, 231, 251, 119, 2, 12, 162, 2] },
+    {
+      "name": "Plan",
+      "discriminator": [
+        161,
+        231,
+        251,
+        119,
+        2,
+        12,
+        162,
+        2
+      ]
+    },
     {
       "name": "ProtocolConfig",
-      "discriminator": [207, 91, 250, 28, 152, 179, 215, 209]
+      "discriminator": [
+        207,
+        91,
+        250,
+        28,
+        152,
+        179,
+        215,
+        209
+      ]
     },
     {
       "name": "Subscription",
-      "discriminator": [64, 7, 26, 135, 102, 132, 98, 33]
+      "discriminator": [
+        64,
+        7,
+        26,
+        135,
+        102,
+        132,
+        98,
+        33
+      ]
     }
   ],
   "events": [
     {
       "name": "PaymentExecuted",
-      "discriminator": [153, 165, 141, 18, 246, 20, 204, 227]
+      "discriminator": [
+        153,
+        165,
+        141,
+        18,
+        246,
+        20,
+        204,
+        227
+      ]
     },
     {
       "name": "PaymentFailed",
-      "discriminator": [169, 93, 117, 164, 245, 205, 208, 112]
+      "discriminator": [
+        169,
+        93,
+        117,
+        164,
+        245,
+        205,
+        208,
+        112
+      ]
     },
     {
       "name": "PlanArchived",
-      "discriminator": [112, 108, 90, 151, 22, 144, 65, 46]
+      "discriminator": [
+        112,
+        108,
+        90,
+        151,
+        22,
+        144,
+        65,
+        46
+      ]
     },
     {
       "name": "PlanCreated",
-      "discriminator": [215, 11, 135, 121, 208, 119, 149, 149]
+      "discriminator": [
+        215,
+        11,
+        135,
+        121,
+        208,
+        119,
+        149,
+        149
+      ]
     },
     {
       "name": "PlanDeleted",
-      "discriminator": [1, 61, 176, 29, 106, 184, 43, 164]
+      "discriminator": [
+        1,
+        61,
+        176,
+        29,
+        106,
+        184,
+        43,
+        164
+      ]
     },
     {
       "name": "PlanUpdated",
-      "discriminator": [49, 51, 198, 31, 170, 70, 253, 195]
+      "discriminator": [
+        49,
+        51,
+        198,
+        31,
+        170,
+        70,
+        253,
+        195
+      ]
     },
     {
       "name": "SubscriptionCancelled",
-      "discriminator": [158, 216, 233, 205, 138, 62, 176, 239]
+      "discriminator": [
+        158,
+        216,
+        233,
+        205,
+        138,
+        62,
+        176,
+        239
+      ]
     },
     {
       "name": "SubscriptionCreated",
-      "discriminator": [215, 63, 169, 25, 179, 200, 180, 105]
+      "discriminator": [
+        215,
+        63,
+        169,
+        25,
+        179,
+        200,
+        180,
+        105
+      ]
     },
     {
       "name": "SubscriptionExpired",
-      "discriminator": [22, 7, 157, 5, 79, 164, 150, 39]
+      "discriminator": [
+        22,
+        7,
+        157,
+        5,
+        79,
+        164,
+        150,
+        39
+      ]
     },
     {
       "name": "SubscriptionPaused",
-      "discriminator": [102, 112, 218, 248, 248, 234, 67, 152]
+      "discriminator": [
+        102,
+        112,
+        218,
+        248,
+        248,
+        234,
+        67,
+        152
+      ]
     },
     {
       "name": "SubscriptionResumed",
-      "discriminator": [181, 238, 107, 157, 132, 237, 178, 98]
+      "discriminator": [
+        181,
+        238,
+        107,
+        157,
+        132,
+        237,
+        178,
+        98
+      ]
     }
   ],
   "errors": [
@@ -1027,8 +2124,13 @@
     },
     {
       "code": 6028,
-      "name": "SubscriptionNotOrphaned",
-      "msg": "Subscription plan account still exists; subscription is not orphaned"
+      "name": "InvalidFoundationProgram",
+      "msg": "The supplied Foundation Subscriptions program ID is incorrect"
+    },
+    {
+      "code": 6029,
+      "name": "FeeRouterAlreadyInitialized",
+      "msg": "FeeRouter PDA has already been initialized; call initialize_fee_router only once"
     }
   ],
   "types": [
@@ -1037,30 +2139,60 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan_id", "type": "u64" },
-          { "name": "name", "type": "string" },
-          { "name": "description", "type": "string" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "interval_seconds", "type": "i64" },
-          { "name": "trial_seconds", "type": "i64" },
-          { "name": "max_subscribers", "type": "u64" },
-          { "name": "merchant_receive_address", "type": { "option": "pubkey" } }
+          {
+            "name": "plan_id",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "interval_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "trial_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "max_subscribers",
+            "type": "u64"
+          },
+          {
+            "name": "merchant_receive_address",
+            "type": {
+              "option": "pubkey"
+            }
+          }
         ]
       }
     },
     {
-      "name": "GuardAccount",
+      "name": "FeeRouter",
+      "docs": [
+        "Protocol-owned PDA that acts as the intermediate recipient for keeper fees.",
+        "The FeeRouter ATA receives 60% of the protocol fee from Foundation's",
+        "transfer_subscription, then immediately forwards it to whichever keeper",
+        "called execute_payment — making the keeper network fully permissionless.",
+        "",
+        "PDA seeds: [\"fee_router\"]"
+      ],
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "merchant_receive", "type": "pubkey" },
-          { "name": "recuro_program", "type": "pubkey" },
-          { "name": "amount_per_period", "type": "u64" },
-          { "name": "period_seconds", "type": "i64" },
-          { "name": "last_executed_at", "type": "i64" },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "bump",
+            "type": "u8"
+          }
         ]
       }
     },
@@ -1069,8 +2201,14 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "fee_bps", "type": "u16" },
-          { "name": "treasury", "type": "pubkey" }
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          }
         ]
       }
     },
@@ -1079,15 +2217,42 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "fee_usdc", "type": "u64" },
-          { "name": "total_charged", "type": "u64" },
-          { "name": "payment_count", "type": "u64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "fee_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "total_charged",
+            "type": "u64"
+          },
+          {
+            "name": "payment_count",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1096,13 +2261,34 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "reason", "type": "string" },
-          { "name": "failed_count", "type": "u8" },
-          { "name": "will_expire", "type": "bool" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "reason",
+            "type": "string"
+          },
+          {
+            "name": "failed_count",
+            "type": "u8"
+          },
+          {
+            "name": "will_expire",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1111,26 +2297,94 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "merchant_token_account", "type": "pubkey" },
-          { "name": "usdc_mint", "type": "pubkey" },
-          { "name": "merchant_receive_address", "type": "pubkey" },
-          { "name": "plan_id", "type": "u64" },
-          { "name": "name", "type": "string" },
-          { "name": "description", "type": "string" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "interval_seconds", "type": "i64" },
-          { "name": "trial_seconds", "type": "i64" },
-          { "name": "max_subscribers", "type": "u64" },
-          { "name": "active_subscribers", "type": "u64" },
-          { "name": "total_subscribers_ever", "type": "u64" },
-          { "name": "total_revenue", "type": "u64" },
-          { "name": "fees_paid", "type": "u64" },
-          { "name": "successful_payments", "type": "u64" },
-          { "name": "created_at", "type": "i64" },
-          { "name": "updated_at", "type": "i64" },
-          { "name": "status", "type": { "defined": { "name": "PlanStatus" } } },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "usdc_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant_receive_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan_id",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "interval_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "trial_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "max_subscribers",
+            "type": "u64"
+          },
+          {
+            "name": "active_subscribers",
+            "type": "u64"
+          },
+          {
+            "name": "total_subscribers_ever",
+            "type": "u64"
+          },
+          {
+            "name": "total_revenue",
+            "type": "u64"
+          },
+          {
+            "name": "fees_paid",
+            "type": "u64"
+          },
+          {
+            "name": "successful_payments",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "PlanStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "foundation_plan_pubkey",
+            "type": "pubkey"
+          }
         ]
       }
     },
@@ -1139,9 +2393,18 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan", "type": "pubkey" },
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1150,15 +2413,42 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan", "type": "pubkey" },
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "merchant_receive_address", "type": "pubkey" },
-          { "name": "plan_id", "type": "u64" },
-          { "name": "name", "type": "string" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "interval_seconds", "type": "i64" },
-          { "name": "trial_seconds", "type": "i64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant_receive_address",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan_id",
+            "type": "u64"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "interval_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "trial_seconds",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1167,10 +2457,22 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan", "type": "pubkey" },
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "plan_id", "type": "u64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan_id",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1179,9 +2481,15 @@
       "type": {
         "kind": "enum",
         "variants": [
-          { "name": "Active" },
-          { "name": "Paused" },
-          { "name": "Archived" }
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Archived"
+          }
         ]
       }
     },
@@ -1190,9 +2498,18 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan", "type": "pubkey" },
-          { "name": "merchant", "type": "pubkey" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "merchant",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1201,11 +2518,26 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "admin", "type": "pubkey" },
-          { "name": "treasury", "type": "pubkey" },
-          { "name": "fee_bps", "type": "u16" },
-          { "name": "creation_paused", "type": "bool" },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "admin",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "creation_paused",
+            "type": "bool"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
         ]
       }
     },
@@ -1214,25 +2546,78 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "subscriber_token_account", "type": "pubkey" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "next_payment_at", "type": "i64" },
-          { "name": "started_at", "type": "i64" },
-          { "name": "trial_ends_at", "type": "i64" },
-          { "name": "last_paid_at", "type": "i64" },
-          { "name": "ended_at", "type": "i64" },
-          { "name": "total_paid", "type": "u64" },
-          { "name": "payment_count", "type": "u64" },
-          { "name": "failed_payment_count", "type": "u8" },
-          { "name": "billing_cycles", "type": "u8" },
-          { "name": "cycles_remaining", "type": "u8" },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber_token_account",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "next_payment_at",
+            "type": "i64"
+          },
+          {
+            "name": "started_at",
+            "type": "i64"
+          },
+          {
+            "name": "trial_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "last_paid_at",
+            "type": "i64"
+          },
+          {
+            "name": "ended_at",
+            "type": "i64"
+          },
+          {
+            "name": "total_paid",
+            "type": "u64"
+          },
+          {
+            "name": "payment_count",
+            "type": "u64"
+          },
+          {
+            "name": "failed_payment_count",
+            "type": "u8"
+          },
+          {
+            "name": "billing_cycles",
+            "type": "u8"
+          },
+          {
+            "name": "cycles_remaining",
+            "type": "u8"
+          },
           {
             "name": "status",
-            "type": { "defined": { "name": "SubscriptionStatus" } }
+            "type": {
+              "defined": {
+                "name": "SubscriptionStatus"
+              }
+            }
           },
-          { "name": "bump", "type": "u8" }
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "foundation_subscription_pubkey",
+            "type": "pubkey"
+          }
         ]
       }
     },
@@ -1241,13 +2626,34 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "cancelled_by", "type": "pubkey" },
-          { "name": "total_paid", "type": "u64" },
-          { "name": "payment_count", "type": "u64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "cancelled_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_paid",
+            "type": "u64"
+          },
+          {
+            "name": "payment_count",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1256,13 +2662,34 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "amount_usdc", "type": "u64" },
-          { "name": "trial_ends_at", "type": "i64" },
-          { "name": "next_payment_at", "type": "i64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount_usdc",
+            "type": "u64"
+          },
+          {
+            "name": "trial_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "next_payment_at",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1271,12 +2698,30 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "total_paid", "type": "u64" },
-          { "name": "payment_count", "type": "u64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "total_paid",
+            "type": "u64"
+          },
+          {
+            "name": "payment_count",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1285,11 +2730,26 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "paused_by", "type": "pubkey" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1298,11 +2758,26 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "subscription", "type": "pubkey" },
-          { "name": "plan", "type": "pubkey" },
-          { "name": "subscriber", "type": "pubkey" },
-          { "name": "next_payment_at", "type": "i64" },
-          { "name": "timestamp", "type": "i64" }
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "next_payment_at",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
         ]
       }
     },
@@ -1311,10 +2786,18 @@
       "type": {
         "kind": "enum",
         "variants": [
-          { "name": "Active" },
-          { "name": "Paused" },
-          { "name": "Cancelled" },
-          { "name": "Expired" }
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Cancelled"
+          },
+          {
+            "name": "Expired"
+          }
         ]
       }
     },
@@ -1323,10 +2806,30 @@
       "type": {
         "kind": "struct",
         "fields": [
-          { "name": "name", "type": { "option": "string" } },
-          { "name": "description", "type": { "option": "string" } },
-          { "name": "max_subscribers", "type": { "option": "u64" } },
-          { "name": "merchant_receive_address", "type": { "option": "pubkey" } }
+          {
+            "name": "name",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "description",
+            "type": {
+              "option": "string"
+            }
+          },
+          {
+            "name": "max_subscribers",
+            "type": {
+              "option": "u64"
+            }
+          },
+          {
+            "name": "merchant_receive_address",
+            "type": {
+              "option": "pubkey"
+            }
+          }
         ]
       }
     }

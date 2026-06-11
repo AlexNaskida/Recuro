@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import BN from "bn.js";
-import { PROGRAM_ID, CLOCKWORK_THREAD_PROGRAM_ID, SEEDS } from "../constants";
+import { PROGRAM_ID, CLOCKWORK_THREAD_PROGRAM_ID, SEEDS, FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID } from "../constants";
 
 /**
  * Derive the Plan PDA for a given merchant and planId.
@@ -47,6 +48,84 @@ export function getGuardPDA(
   return PublicKey.findProgramAddressSync(
     [Buffer.from("guard"), subscription.toBuffer()],
     guardProgramId,
+  );
+}
+
+// ── FeeRouter PDA helpers ─────────────────────────────────────────────────────
+
+/** FeeRouter PDA — seeds: ["fee_router"] on Recuro program */
+export function getFeeRouterPDA(
+  programId: PublicKey = PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("fee_router")],
+    programId,
+  );
+}
+
+/**
+ * FeeRouter USDC ATA — the token account that receives keeper fees from Foundation,
+ * then forwards them to the calling keeper.
+ * Uses the standard ATA derivation; owner is a PDA (off-curve) which is valid.
+ */
+export function getFeeRouterATA(
+  feeRouterPDA: PublicKey,
+  usdcMint: PublicKey,
+): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [feeRouterPDA.toBuffer(), TOKEN_PROGRAM_ID.toBuffer(), usdcMint.toBuffer()],
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+  )[0];
+}
+
+// ── Foundation Subscriptions PDA helpers ─────────────────────────────────────
+
+/** Foundation Plan PDA — seeds: ["plan", merchant, planId_le_bytes_8] on Foundation program */
+export function getFoundationPlanPDA(
+  merchant: PublicKey,
+  planId: number | BN,
+  foundationProgramId: PublicKey = FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+): [PublicKey, number] {
+  const idBn = BN.isBN(planId) ? planId : new BN(planId);
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(BigInt(idBn.toString()));
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("plan"), merchant.toBuffer(), idBuf],
+    foundationProgramId,
+  );
+}
+
+/** Foundation SubscriptionDelegation PDA — seeds: ["subscription", foundationPlanPDA, subscriber] */
+export function getFoundationSubscriptionPDA(
+  foundationPlanPDA: PublicKey,
+  subscriber: PublicKey,
+  foundationProgramId: PublicKey = FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("subscription"), foundationPlanPDA.toBuffer(), subscriber.toBuffer()],
+    foundationProgramId,
+  );
+}
+
+/** Foundation SubscriptionAuthority PDA — seeds: ["SubscriptionAuthority", user, tokenMint] */
+export function getFoundationSubscriptionAuthorityPDA(
+  user: PublicKey,
+  tokenMint: PublicKey,
+  foundationProgramId: PublicKey = FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("SubscriptionAuthority"), user.toBuffer(), tokenMint.toBuffer()],
+    foundationProgramId,
+  );
+}
+
+/** Foundation event authority PDA — seeds: ["event_authority"] */
+export function getFoundationEventAuthorityPDA(
+  foundationProgramId: PublicKey = FOUNDATION_SUBSCRIPTIONS_PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event_authority")],
+    foundationProgramId,
   );
 }
 
